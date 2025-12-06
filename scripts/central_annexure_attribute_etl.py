@@ -23,6 +23,17 @@ DATA_DIR = Path(__file__).parent.parent / "data"
 OUTPUT_DIR = Path(__file__).parent.parent / "output"
 
 
+def is_valid_serial_no(value):
+    """Check if value is a valid serial number (positive integer or float)"""
+    if value is None:
+        return False
+    try:
+        num = float(str(value).strip().replace(",", ""))
+        return num > 0
+    except (ValueError, TypeError):
+        return False
+
+
 def safe_float(value, default=0.0):
     """Safely convert value to float, return default if conversion fails"""
     if value is None:
@@ -87,6 +98,11 @@ def extract_central_report(filepath):
     # Data starts from row 12, headers are in rows 8-10
     # Structure similar to State Reports but at district level
     for row_idx in range(12, ws.max_row + 1):
+        # Check if row has valid serial number (skip summary/total rows)
+        serial_no = ws.cell(row=row_idx, column=1).value
+        if not is_valid_serial_no(serial_no):
+            continue
+
         # Check if row has data (column 2 = STATE should not be empty for data rows)
         state = ws.cell(row=row_idx, column=2).value
         if not state or str(state).strip() in ("", "Total", "TOTAL"):
@@ -205,6 +221,11 @@ def extract_annexure1(filepath):
 
     # Headers in rows 3-5, data starts from row 7
     for row_idx in range(7, ws.max_row + 1):
+        # Check if row has valid serial number (skip summary/total rows)
+        serial_no = ws.cell(row=row_idx, column=1).value
+        if not is_valid_serial_no(serial_no):
+            continue
+
         state = ws.cell(row=row_idx, column=2).value
         if not state or str(state).strip() in (
             "",
@@ -216,7 +237,7 @@ def extract_annexure1(filepath):
             continue
 
         record = {
-            "serial_no": safe_float(ws.cell(row=row_idx, column=1).value),
+            "serial_no": safe_float(serial_no),
             "state": safe_str(state),
             "year": year,
             # Ground Water Recharge (BCM)

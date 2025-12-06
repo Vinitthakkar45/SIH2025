@@ -1,15 +1,15 @@
+// Load environment variables FIRST before any other imports
+import dotenv from "dotenv";
+dotenv.config();
+
 import express from "express";
 import cors from "cors";
-import dotenv from "dotenv";
 
 import embedRouter from "./routes/embed.js";
 import searchRouter from "./routes/search.js";
 import chatRouter from "./routes/chat.js";
 import { initEmbedder } from "./services/embeddings.js";
 import { initVectorStore } from "./services/vectorStore.js";
-
-// Load environment variables
-dotenv.config();
 
 const app = express();
 const PORT = process.env.PORT || 3001;

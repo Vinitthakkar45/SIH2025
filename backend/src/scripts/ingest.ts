@@ -56,9 +56,10 @@ async function countLines(filePath: string): Promise<number> {
   return new Promise((resolve, reject) => {
     let count = 0;
     fs.createReadStream(filePath)
-      .on("data", (chunk: Buffer) => {
-        for (let i = 0; i < chunk.length; i++) {
-          if (chunk[i] === 10) count++; // newline character
+      .on("data", (chunk: string | Buffer) => {
+        const buffer = Buffer.isBuffer(chunk) ? chunk : Buffer.from(chunk);
+        for (let i = 0; i < buffer.length; i++) {
+          if (buffer[i] === 10) count++; // newline character
         }
       })
       .on("end", () => resolve(count))

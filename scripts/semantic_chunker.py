@@ -1127,6 +1127,24 @@ def process_all_sources():
 
     total_chunks = 0
     counts = defaultdict(int)
+    seen_ids = {}  # Track seen IDs to handle duplicates
+    duplicate_count = 0
+
+    def write_chunk(chunk: dict, outfile) -> bool:
+        """Write chunk to file, handling duplicate IDs by appending counter."""
+        nonlocal duplicate_count
+        original_id = chunk["id"]
+
+        if original_id in seen_ids:
+            # Generate unique ID by appending counter
+            seen_ids[original_id] += 1
+            chunk["id"] = f"{original_id}_{seen_ids[original_id]}"
+            duplicate_count += 1
+        else:
+            seen_ids[original_id] = 0
+
+        outfile.write(json.dumps(chunk, ensure_ascii=False) + "\n")
+        return True
 
     with open(OUTPUT_FILE, "w", encoding="utf-8") as outfile:
         # 1. State Reports
@@ -1145,7 +1163,7 @@ def process_all_sources():
                 for idx, record in enumerate(data.get("data", [])):
                     chunk = build_state_report_chunk(record, state, year, source, idx)
                     if chunk:
-                        outfile.write(json.dumps(chunk, ensure_ascii=False) + "\n")
+                        write_chunk(chunk, outfile)
                         total_chunks += 1
                         counts["state_report"] += 1
 
@@ -1164,7 +1182,7 @@ def process_all_sources():
                 for idx, record in enumerate(data.get("records", [])):
                     chunk = build_central_report_chunk(record, year, source, idx)
                     if chunk:
-                        outfile.write(json.dumps(chunk, ensure_ascii=False) + "\n")
+                        write_chunk(chunk, outfile)
                         total_chunks += 1
                         counts["central_report"] += 1
 
@@ -1184,7 +1202,7 @@ def process_all_sources():
                 for record in data.get("summary", []):
                     chunk = build_attribute_summary_chunk(record, year, source)
                     if chunk:
-                        outfile.write(json.dumps(chunk, ensure_ascii=False) + "\n")
+                        write_chunk(chunk, outfile)
                         total_chunks += 1
                         counts["attribute_summary"] += 1
 
@@ -1192,7 +1210,7 @@ def process_all_sources():
                 for idx, record in enumerate(data.get("detailed_table", [])):
                     chunk = build_attribute_detailed_chunk(record, year, source, idx)
                     if chunk:
-                        outfile.write(json.dumps(chunk, ensure_ascii=False) + "\n")
+                        write_chunk(chunk, outfile)
                         total_chunks += 1
                         counts["attribute_detailed"] += 1
 
@@ -1212,7 +1230,7 @@ def process_all_sources():
                 for record in data.get("records", []):
                     chunk = build_annexure1_chunk(record, year, source)
                     if chunk:
-                        outfile.write(json.dumps(chunk, ensure_ascii=False) + "\n")
+                        write_chunk(chunk, outfile)
                         total_chunks += 1
                         counts["annexure_1"] += 1
 
@@ -1227,7 +1245,7 @@ def process_all_sources():
                 for record in data.get("records", []):
                     chunk = build_annexure2_chunk(record, year, source)
                     if chunk:
-                        outfile.write(json.dumps(chunk, ensure_ascii=False) + "\n")
+                        write_chunk(chunk, outfile)
                         total_chunks += 1
                         counts["annexure_2"] += 1
 
@@ -1240,7 +1258,7 @@ def process_all_sources():
                 source = f"annexures/{filepath.name}"
 
                 for chunk in build_annexure3_chunks(data, year, source):
-                    outfile.write(json.dumps(chunk, ensure_ascii=False) + "\n")
+                    write_chunk(chunk, outfile)
                     total_chunks += 1
                     counts["annexure_3"] += 1
 
@@ -1253,9 +1271,12 @@ def process_all_sources():
                 source = f"annexures/{filepath.name}"
 
                 for chunk in build_annexure4_chunks(data, year, source):
-                    outfile.write(json.dumps(chunk, ensure_ascii=False) + "\n")
+                    write_chunk(chunk, outfile)
                     total_chunks += 1
                     counts["annexure_4"] += 1
+
+    if duplicate_count > 0:
+        print(f"\n⚠️  Resolved {duplicate_count} duplicate IDs by appending counters")
 
     return total_chunks, dict(counts)
 
