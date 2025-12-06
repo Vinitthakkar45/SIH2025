@@ -59,8 +59,19 @@ UNIT_NAMES = {
 
 
 def generate_id(*parts) -> str:
-    """Generate deterministic ID from parts."""
-    content = "|".join(str(p) for p in parts if p)
+    """Generate deterministic ID from parts.
+
+    Uses '_NULL_' placeholder for None/empty values to preserve position
+    and avoid collisions between different record types.
+    """
+    # Convert each part to string, using placeholder for None/empty to preserve position
+    normalized_parts = []
+    for p in parts:
+        if p is None or p == "":
+            normalized_parts.append("_NULL_")
+        else:
+            normalized_parts.append(str(p))
+    content = "|".join(normalized_parts)
     return hashlib.md5(content.encode()).hexdigest()[:16]
 
 
@@ -307,7 +318,9 @@ def build_state_report_chunk(
     }
 
 
-def build_central_report_chunk(record: dict, year: str, source: str) -> Optional[Dict]:
+def build_central_report_chunk(
+    record: dict, year: str, source: str, row_index: int = 0
+) -> Optional[Dict]:
     """Build a semantic chunk from a central report record (district-level)."""
 
     state = clean_name(record.get("state"), "state")
@@ -405,7 +418,7 @@ def build_central_report_chunk(record: dict, year: str, source: str) -> Optional
         metadata["categorization"] = categorization
 
     return {
-        "id": generate_id(state, district, None, year, "central_report"),
+        "id": generate_id(state, district, None, year, "central_report", row_index),
         "state": state,
         "district": district,
         "block": None,
@@ -491,7 +504,7 @@ def build_attribute_summary_chunk(
 
 
 def build_attribute_detailed_chunk(
-    record: dict, year: str, source: str
+    record: dict, year: str, source: str, row_index: int = 0
 ) -> Optional[Dict]:
     """Build a semantic chunk from attribute report detailed table (block-level)."""
 
@@ -585,7 +598,9 @@ def build_attribute_detailed_chunk(
         metadata["categorization"] = categorization
 
     return {
-        "id": generate_id(state, district, block, year, "attribute_detailed"),
+        "id": generate_id(
+            state, district, block, year, "attribute_detailed", row_index
+        ),
         "state": state,
         "district": district,
         "block": block,
@@ -1146,8 +1161,8 @@ def process_all_sources():
                 year = data.get("year", "")
                 source = f"central_reports/{filepath.name}"
 
-                for record in data.get("records", []):
-                    chunk = build_central_report_chunk(record, year, source)
+                for idx, record in enumerate(data.get("records", [])):
+                    chunk = build_central_report_chunk(record, year, source, idx)
                     if chunk:
                         outfile.write(json.dumps(chunk, ensure_ascii=False) + "\n")
                         total_chunks += 1
@@ -1174,8 +1189,8 @@ def process_all_sources():
                         counts["attribute_summary"] += 1
 
                 # Detailed
-                for record in data.get("detailed_table", []):
-                    chunk = build_attribute_detailed_chunk(record, year, source)
+                for idx, record in enumerate(data.get("detailed_table", [])):
+                    chunk = build_attribute_detailed_chunk(record, year, source, idx)
                     if chunk:
                         outfile.write(json.dumps(chunk, ensure_ascii=False) + "\n")
                         total_chunks += 1
