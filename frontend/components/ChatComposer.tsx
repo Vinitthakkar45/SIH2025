@@ -2,7 +2,7 @@
 
 import { Button } from "@heroui/button";
 import { Input, Spinner } from "@heroui/react";
-import { SentIcon } from "./icons";
+import { ArrowUp02Icon } from "./icons";
 
 interface ChatComposerProps {
   value: string;
@@ -45,11 +45,18 @@ export default function ChatComposer({
           <Button
             type="submit"
             disabled={isLoading || disabled || !value.trim()}
+            color={
+              isLoading || disabled || !value.trim() ? "default" : "primary"
+            }
             radius="full"
             isIconOnly
-            color="primary"
+            className="text-white"
           >
-            {isLoading ? <Spinner /> : <SentIcon size={18} />}
+            {isLoading ? (
+              <Spinner color="white" />
+            ) : (
+              <ArrowUp02Icon width={25} height={25} />
+            )}
           </Button>
         }
       />

@@ -1,14 +1,19 @@
 "use client";
 
 import ChartRenderer from "@/components/ChartRenderer";
-import MarkdownRenderer from "@/components/MarkdownRenderer";
 import ChatComposer from "@/components/ChatComposer";
+import {
+  ArrowDown02Icon,
+  DropletIcon,
+  MapsIcon,
+  MessageIcon,
+  SparklesIcon,
+} from "@/components/icons";
+import MarkdownRenderer from "@/components/MarkdownRenderer";
 import { Button } from "@heroui/button";
 import { Skeleton } from "@heroui/react";
-import { ArrowDownIcon, DropletIcon } from "@/components/icons";
 import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
-import { MapsIcon, MessageIcon } from "@/components/icons";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001";
 
@@ -184,7 +189,7 @@ export default function ChatPage() {
   ];
 
   return (
-    <div className="flex h-screen bg-zinc-900">
+    <div className="flex h-screen bg-dark-secondary">
       {/* Main Chat Area */}
       <div
         className={`flex flex-col flex-1 transition duration-300 ${
@@ -192,7 +197,7 @@ export default function ChatPage() {
         }`}
       >
         {/* Header */}
-        <header className="bg-zinc-800 px-4 py-3">
+        <header className="bg-dark-tertiary px-4 py-3">
           <div className="max-w-4xl mx-auto flex items-center justify-between">
             <Link className="flex items-center gap-3" href={"/"}>
               <div className="w-10 h-10 rounded-xl bg-primary flex items-center justify-center">
@@ -225,13 +230,13 @@ export default function ChatPage() {
         <main
           ref={messagesContainerRef}
           onScroll={handleScroll}
-          className="flex-1 overflow-y-auto p-4"
+          className="flex-1 overflow-y-auto p-4 bg-dark-primary"
         >
           <div className="max-w-4xl mx-auto space-y-4">
             {messages.length === 0 && (
               <div className="text-center py-12">
-                <div className="w-16 h-16 rounded-lg bg-zinc-800 flex items-center justify-center mx-auto mb-4">
-                  <DropletIcon size={32} className="text-blue-500" />
+                <div className="w-16 h-16 rounded-lg bg-dark-tertiary flex items-center justify-center mx-auto mb-4">
+                  <DropletIcon size={32} className="text-primary" />
                 </div>
                 <h2 className="text-xl font-semibold text-zinc-100 mb-2">
                   Welcome to INGRES AI
@@ -262,8 +267,17 @@ export default function ChatPage() {
                   message.role === "user" ? "justify-end" : "justify-start"
                 }`}
               >
+                {message.role === "assistant" && (
+                  <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center shrink-0 mt-2">
+                    <SparklesIcon
+                      width={23}
+                      height={23}
+                      className="text-primary"
+                    />
+                  </div>
+                )}
                 <div
-                  className={`max-w-[90%]  px-4 py-2 ${
+                  className={`max-w-[90%] px-4 py-2 ${
                     message.role === "user"
                       ? "bg-primary text-white rounded-3xl rounded-br-none w-fit"
                       : "w-full"
@@ -301,7 +315,7 @@ export default function ChatPage() {
         </main>
 
         {/* Input */}
-        <footer className="p-4 relative">
+        <footer className="p-4 relative bg-dark-primary">
           {/* Scroll to bottom button */}
           {showScrollButton && (
             <div className="absolute bottom-20 left-1/2 -translate-x-1/2">
@@ -315,7 +329,7 @@ export default function ChatPage() {
                   setShowScrollButton(false);
                 }}
               >
-                <ArrowDownIcon size={18} />
+                <ArrowDown02Icon size={18} />
               </Button>
             </div>
           )}
@@ -334,7 +348,7 @@ export default function ChatPage() {
       <div
         className={`${
           showMap ? "w-1/2 opacity-100" : "w-0 opacity-0"
-        } transition-all duration-300 bg-zinc-800 flex items-center justify-center`}
+        } transition-all duration-300 bg-dark-tertiary flex items-center justify-center`}
       >
         <div className="text-center text-zinc-400">
           <MapsIcon size={48} className="mx-auto mb-4 opacity-50" />

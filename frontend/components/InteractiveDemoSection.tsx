@@ -4,6 +4,7 @@ import ChartRenderer from "@/components/ChartRenderer";
 import ChatComposer from "@/components/ChatComposer";
 import { SparklesIcon } from "@/components/icons";
 import MarkdownRenderer from "@/components/MarkdownRenderer";
+import { Button, Chip } from "@heroui/react";
 import { useState } from "react";
 
 const EXAMPLES = [
@@ -127,21 +128,31 @@ export default function InteractiveDemoSection() {
           </h3>
         </div>
 
+        <div className="flex flex-wrap justify-center gap-3 mb-8">
+          {EXAMPLES.map((example, index) => (
+            <Button
+              key={index}
+              radius="full"
+              className="cursor-pointer"
+              onPress={() => handleQueryClick(example.query, index)}
+              color={selectedExample === index ? "primary" : "default"}
+              variant={selectedExample === index ? "solid" : "flat"}
+            >
+              {example.query}
+            </Button>
+          ))}
+        </div>
+
         <div className="bg-linear-to-br from-zinc-900/40 to-zinc-800/40 backdrop-filter backdrop-blur-xl border border-zinc-800/50 rounded-xl p-1 md:p-2">
           <div className="bg-zinc-950 rounded-lg p-6 min-h-[400px] flex flex-col">
-            {/* Chat History */}
             <div className="flex-1 space-y-6 mb-8">
-              {/* User Message */}
-              <div className="flex justify-end">
-                <div className="bg-blue-600 text-white px-4 py-2 rounded-2xl rounded-br-none text-sm max-w-[80%]">
-                  {currentExample.query}
-                </div>
-              </div>
-
-              {/* AI Response */}
               <div className="flex items-start gap-3">
-                <div className="w-8 h-8 rounded-full bg-blue-600/20 flex items-center justify-center shrink-0">
-                  <SparklesIcon size={14} className="text-blue-500" />
+                <div className="w-8 h-8 rounded-full bg-primary/20 flex items-center justify-center shrink-0">
+                  <SparklesIcon
+                    width={20}
+                    height={20}
+                    className="text-primary"
+                  />
                 </div>
                 <div className="space-y-3 max-w-[90%] flex-1">
                   <MarkdownRenderer
@@ -155,7 +166,6 @@ export default function InteractiveDemoSection() {
               </div>
             </div>
 
-            {/* Input Composer */}
             <ChatComposer
               value={input}
               onChange={setInput}
@@ -163,23 +173,6 @@ export default function InteractiveDemoSection() {
               placeholder="Ask about specific districts, extraction rates, or trends..."
             />
           </div>
-        </div>
-
-        {/* Quick Prompts */}
-        <div className="flex flex-wrap justify-center gap-3 mt-8">
-          {EXAMPLES.map((example, index) => (
-            <button
-              key={index}
-              onClick={() => handleQueryClick(example.query, index)}
-              className={`text-xs px-4 py-2 rounded-full transition-colors ${
-                selectedExample === index
-                  ? "bg-blue-600 text-white border border-blue-600"
-                  : "text-zinc-400 bg-zinc-900 hover:bg-zinc-800 border border-zinc-800"
-              }`}
-            >
-              &quot;{example.query}&quot;
-            </button>
-          ))}
         </div>
       </div>
     </section>

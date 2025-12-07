@@ -4,16 +4,41 @@
 @source '../node_modules/@heroui/theme/dist*.{js,ts,jsx,tsx}';
 @custom-variant dark (&:is(.dark *));
 
-:root {
-  --background: #ffffff;
-  --foreground: #171717;
-}
-
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
+
+  /* Brand Colors */
+  --color-primary: #3b82f6;
+  --color-primary-hover: #2563eb;
+  --color-primary-light: #60a5fa;
+
+  /* Accent Colors */
+  --color-accent-blue: #3b82f6;
+  --color-accent-green: #22c55e;
+  --color-accent-purple: #a855f7;
+  --color-accent-orange: #f97316;
+  --color-accent-red: #ef4444;
+  --color-accent-teal: #14b8a6;
+
+  /* Background Colors - Light */
+  --color-bg-primary: #ffffff;
+  --color-bg-secondary: #f9fafb;
+  --color-bg-tertiary: #f3f4f6;
+
+  /* Background Colors - Dark */
+  --color-dark-primary: var(--color-zinc-900);
+  --color-dark-secondary: var(--color-zinc-950);
+  --color-dark-tertiary: #27272a;
+  --color-dark-card: #1f1f23;
+  --color-dark-card-hover: #28282e;
+}
+
+:root {
+  --background: #ffffff;
+  --foreground: #171717;
 }
 
 @media (prefers-color-scheme: dark) {
