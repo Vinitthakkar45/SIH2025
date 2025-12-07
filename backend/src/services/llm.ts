@@ -57,20 +57,25 @@ ${context}
 ---
 User Question: ${query}`;
 
-  const messages: Array<{ role: "system" | "user" | "assistant"; content: string }> = [
+  const messages: Array<{
+    role: "system" | "user" | "assistant";
+    content: string;
+  }> = [
     { role: "system", content: SYSTEM_PROMPT },
     ...chatHistory.map((m) => ({ role: m.role, content: m.content })),
     { role: "user", content: contextMessage },
   ];
 
   const completion = await groq.chat.completions.create({
-    model: "llama-3.1-70b-versatile", // Fast and capable model on Groq
+    model: "openai/gpt-oss-120b", // Fast and capable model on Groq
     messages,
     temperature: 0.3, // Lower temperature for more factual responses
     max_tokens: 2048,
   });
 
-  return completion.choices[0]?.message?.content || "I couldn't generate a response.";
+  return (
+    completion.choices[0]?.message?.content || "I couldn't generate a response."
+  );
 }
 
 /**
@@ -89,7 +94,10 @@ ${context}
 ---
 User Question: ${query}`;
 
-  const messages: Array<{ role: "system" | "user" | "assistant"; content: string }> = [
+  const messages: Array<{
+    role: "system" | "user" | "assistant";
+    content: string;
+  }> = [
     { role: "system", content: SYSTEM_PROMPT },
     ...chatHistory.map((m) => ({ role: m.role, content: m.content })),
     { role: "user", content: contextMessage },
@@ -97,7 +105,7 @@ User Question: ${query}`;
 
   try {
     const stream = await groq.chat.completions.create({
-      model: "llama-3.1-70b-versatile",
+      model: "openai/gpt-oss-120b",
       messages,
       temperature: 0.3,
       max_tokens: 2048,
@@ -116,7 +124,9 @@ User Question: ${query}`;
 
     callbacks.onComplete(fullResponse);
   } catch (error) {
-    callbacks.onError(error instanceof Error ? error : new Error(String(error)));
+    callbacks.onError(
+      error instanceof Error ? error : new Error(String(error))
+    );
   }
 }
 

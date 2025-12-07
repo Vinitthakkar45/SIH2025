@@ -1,6 +1,6 @@
 import { db } from "../db/gw-db";
 import { groundwaterData, locations } from "../db/gw-schema";
-import { eq, desc, asc, sql, and, isNotNull } from "drizzle-orm";
+import { eq, desc, asc, sql, and, isNotNull, inArray } from "drizzle-orm";
 import {
   searchLocation,
   searchState,
@@ -11,6 +11,9 @@ import {
   getDistrictsOfState,
   getTaluksOfDistrict,
   getAllStates,
+  getAvailableYears,
+  getLocationsByNameAndType,
+  searchLocationForYear,
 } from "./locationSearch";
 
 export interface GroundwaterRecord {
@@ -211,6 +214,93 @@ function fieldToColumn(field: string): string | null {
   };
   return fieldMap[field.toLowerCase()] ?? null;
 }
+
+export interface HistoricalRecord {
+  year: string;
+  locationId: string;
+  locationName: string;
+  data: Record<string, unknown>;
+}
+
+export async function getHistoricalDataByLocationName(
+  locationName: string,
+  locationType: "STATE" | "DISTRICT" | "TALUK"
+): Promise<HistoricalRecord[]> {
+  const matchingLocations = getLocationsByNameAndType(
+    locationName,
+    locationType
+  );
+
+  if (matchingLocations.length === 0) return [];
+
+  const locationIds = matchingLocations.map((l) => l.id);
+
+  const result = await db
+    .select()
+    .from(groundwaterData)
+    .innerJoin(locations, eq(groundwaterData.locationId, locations.id))
+    .where(inArray(locations.id, locationIds));
+
+  return result
+    .map((row) => ({
+      year: row.locations.year,
+      locationId: row.locations.id,
+      locationName: row.locations.name,
+      data: row.groundwater_data,
+    }))
+    .sort((a, b) => a.year.localeCompare(b.year));
+}
+
+export async function searchAndGetHistoricalData(
+  query: string,
+  locationType: "STATE" | "DISTRICT" | "TALUK"
+): Promise<HistoricalRecord[]> {
+  const normalizedQuery = query.replace(/[_-]/g, " ").trim();
+
+  let results: { location: { id: string; name: string } }[];
+  if (locationType === "STATE") {
+    results = searchState(normalizedQuery);
+  } else if (locationType === "DISTRICT") {
+    results = searchDistrict(normalizedQuery);
+  } else {
+    results = searchTaluk(normalizedQuery);
+  }
+
+  if (results.length === 0) return [];
+
+  const bestMatchName = results[0].location.name;
+  return getHistoricalDataByLocationName(bestMatchName, locationType);
+}
+
+export async function getGroundwaterDataForYear(
+  query: string,
+  year: string,
+  locationType?: "STATE" | "DISTRICT" | "TALUK"
+): Promise<GroundwaterRecord | null> {
+  const results = searchLocationForYear(query, year, locationType);
+
+  if (results.length === 0) return null;
+
+  const bestMatch = results[0];
+  return getGroundwaterDataByLocationId(bestMatch.location.id);
+}
+
+export async function compareYears(
+  locationName: string,
+  locationType: "STATE" | "DISTRICT" | "TALUK",
+  years: string[]
+): Promise<HistoricalRecord[]> {
+  const historicalData = await getHistoricalDataByLocationName(
+    locationName,
+    locationType
+  );
+
+  if (years.length === 0) return historicalData;
+
+  return historicalData.filter((h) => years.includes(h.year));
+}
+
+export { getAvailableYears };
 
 export function formatGroundwaterDataForLLM(record: GroundwaterRecord): string {
   const data = record.data as Record<string, unknown>;
@@ -781,4 +871,212 @@ export function generateComparisonChartData(
   });
 
   return visualizations;
+}
+
+export function generateTrendChartData(
+  records: HistoricalRecord[],
+  locationName: string
+): object[] {
+  const visualizations: object[] = [];
+
+  if (records.length === 0) return visualizations;
+
+  const sortedRecords = [...records].sort((a, b) =>
+    a.year.localeCompare(b.year)
+  );
+
+  visualizations.push({
+    type: "trend_summary",
+    title: `Historical Trend: ${locationName}`,
+    years: sortedRecords.map((r) => r.year),
+    latestYear: sortedRecords[sortedRecords.length - 1].year,
+    earliestYear: sortedRecords[0].year,
+    dataPoints: sortedRecords.length,
+  });
+
+  const trendData = sortedRecords.map((r) => {
+    const data = r.data as Record<string, unknown>;
+    return {
+      year: r.year,
+      recharge: data.rechargeTotalTotal,
+      extraction: data.draftTotalTotal,
+      extractable: data.extractableTotal,
+      rainfall: data.rainfallTotal,
+      stageOfExtraction: data.stageOfExtractionTotal,
+      category: data.categoryTotal,
+    };
+  });
+
+  visualizations.push({
+    type: "table",
+    tableType: "trend",
+    title: `Year-wise Groundwater Data - ${locationName}`,
+    columns: [
+      "Year",
+      "Rainfall (mm)",
+      "Recharge (ham)",
+      "Extractable (ham)",
+      "Extraction (ham)",
+      "Stage (%)",
+      "Category",
+    ],
+    data: trendData,
+  });
+
+  visualizations.push({
+    type: "chart",
+    chartType: "line",
+    title: `Groundwater Extraction Trend - ${locationName}`,
+    description: "Historical trend of groundwater extraction (ham)",
+    data: trendData.map((t) => ({
+      year: t.year,
+      value: t.extraction,
+    })),
+  });
+
+  visualizations.push({
+    type: "chart",
+    chartType: "line",
+    title: `Stage of Extraction Trend - ${locationName}`,
+    description: "Historical trend of extraction stage (%)",
+    data: trendData.map((t) => ({
+      year: t.year,
+      value: t.stageOfExtraction,
+    })),
+    threshold: { safe: 70, critical: 90, overExploited: 100 },
+  });
+
+  visualizations.push({
+    type: "chart",
+    chartType: "multi_line",
+    title: `Recharge vs Extraction Trend - ${locationName}`,
+    description: "Comparison of recharge and extraction over years (ham)",
+    data: trendData.map((t) => ({
+      year: t.year,
+      recharge: t.recharge,
+      extraction: t.extraction,
+    })),
+  });
+
+  visualizations.push({
+    type: "chart",
+    chartType: "area",
+    title: `Extractable Resources Trend - ${locationName}`,
+    description: "Available extractable groundwater resources over years (ham)",
+    data: trendData.map((t) => ({
+      year: t.year,
+      value: t.extractable,
+    })),
+  });
+
+  visualizations.push({
+    type: "chart",
+    chartType: "bar",
+    title: `Rainfall Trend - ${locationName}`,
+    description: "Annual rainfall over years (mm)",
+    data: trendData.map((t) => ({
+      name: t.year,
+      value: t.rainfall,
+    })),
+  });
+
+  const categoryChanges: { year: string; category: string }[] = [];
+  for (let i = 0; i < trendData.length; i++) {
+    if (i === 0 || trendData[i].category !== trendData[i - 1].category) {
+      categoryChanges.push({
+        year: trendData[i].year,
+        category: String(trendData[i].category || "Unknown"),
+      });
+    }
+  }
+
+  if (categoryChanges.length > 1) {
+    visualizations.push({
+      type: "stats",
+      title: `Category Changes - ${locationName}`,
+      data: {
+        totalChanges: categoryChanges.length - 1,
+        history: categoryChanges,
+        currentCategory: trendData[trendData.length - 1].category || "Unknown",
+        initialCategory: trendData[0].category || "Unknown",
+      },
+    });
+  }
+
+  return visualizations;
+}
+
+export function formatHistoricalDataForLLM(
+  records: HistoricalRecord[]
+): string {
+  if (records.length === 0) return "No historical data available.";
+
+  const sortedRecords = [...records].sort((a, b) =>
+    a.year.localeCompare(b.year)
+  );
+
+  const locationName = sortedRecords[0].locationName;
+  const lines: string[] = [
+    `Historical Groundwater Data for ${locationName}`,
+    `Available Years: ${sortedRecords.map((r) => r.year).join(", ")}`,
+    "",
+  ];
+
+  for (const record of sortedRecords) {
+    const data = record.data as Record<string, unknown>;
+    lines.push(`--- ${record.year} ---`);
+    lines.push(`  Category: ${data.categoryTotal || "N/A"}`);
+    lines.push(`  Rainfall: ${formatNumber(data.rainfallTotal)} mm`);
+    lines.push(`  Recharge: ${formatNumber(data.rechargeTotalTotal)} ham`);
+    lines.push(`  Extractable: ${formatNumber(data.extractableTotal)} ham`);
+    lines.push(`  Extraction: ${formatNumber(data.draftTotalTotal)} ham`);
+    lines.push(
+      `  Stage of Extraction: ${formatNumber(data.stageOfExtractionTotal)}%`
+    );
+    lines.push("");
+  }
+
+  if (sortedRecords.length >= 2) {
+    const first = sortedRecords[0].data as Record<string, unknown>;
+    const last = sortedRecords[sortedRecords.length - 1].data as Record<
+      string,
+      unknown
+    >;
+
+    lines.push("--- Trend Analysis ---");
+
+    const extractionChange = calculateChange(
+      first.draftTotalTotal,
+      last.draftTotalTotal
+    );
+    const stageChange = calculateChange(
+      first.stageOfExtractionTotal,
+      last.stageOfExtractionTotal
+    );
+    const extractableChange = calculateChange(
+      first.extractableTotal,
+      last.extractableTotal
+    );
+
+    lines.push(
+      `  Extraction Change (${sortedRecords[0].year} to ${
+        sortedRecords[sortedRecords.length - 1].year
+      }): ${extractionChange}`
+    );
+    lines.push(`  Stage of Extraction Change: ${stageChange}`);
+    lines.push(`  Extractable Resources Change: ${extractableChange}`);
+  }
+
+  return lines.join("\n");
+}
+
+function calculateChange(oldVal: unknown, newVal: unknown): string {
+  const oldNum = Number(oldVal);
+  const newNum = Number(newVal);
+
+  if (isNaN(oldNum) || isNaN(newNum) || oldNum === 0) return "N/A";
+
+  const change = ((newNum - oldNum) / oldNum) * 100;
+  const sign = change >= 0 ? "+" : "";
+  return `${sign}${change.toFixed(1)}%`;
 }

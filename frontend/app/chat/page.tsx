@@ -21,7 +21,13 @@ import {
   Tooltip,
   Legend,
   ResponsiveContainer,
+  LineChart,
+  Line,
+  AreaChart,
+  Area,
 } from "recharts";
+import { MapProvider } from "./MapContext";
+import MapWrapper from "./MapWrapper";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001";
 
@@ -61,18 +67,30 @@ interface WaterBalanceData {
 }
 
 interface Visualization {
-  type: "chart" | "stats" | "table" | "summary";
-  chartType?: "bar" | "pie" | "grouped_bar" | "waterBalance";
+  type: "chart" | "stats" | "table" | "summary" | "trend_summary";
+  chartType?:
+    | "bar"
+    | "pie"
+    | "grouped_bar"
+    | "waterBalance"
+    | "line"
+    | "multi_line"
+    | "area";
   tableType?:
     | "recharge"
     | "discharges"
     | "extractable"
     | "extraction"
-    | "locations";
+    | "locations"
+    | "trend";
   title: string;
   description?: string;
   headerValue?: number;
   year?: string;
+  years?: string[];
+  latestYear?: string;
+  earliestYear?: string;
+  dataPoints?: number;
   columns?: string[];
   data: TableRow[] | ChartDataItem[] | SummaryData | WaterBalanceData;
   threshold?: { safe: number; critical: number; overExploited: number };
@@ -273,6 +291,39 @@ function CollapsibleTable({ viz }: { viz: Visualization }) {
                         {formatNumber(row.stageOfExtraction)}
                       </td>
                     </>
+                  ) : viz.tableType === "trend" ? (
+                    <>
+                      <td className="px-4 py-2 text-gray-300 font-medium">
+                        {String(row.year)}
+                      </td>
+                      <td className="px-4 py-2 text-gray-300">
+                        {formatNumber(row.rainfall)}
+                      </td>
+                      <td className="px-4 py-2 text-gray-300">
+                        {formatNumber(row.recharge)}
+                      </td>
+                      <td className="px-4 py-2 text-gray-300">
+                        {formatNumber(row.extractable)}
+                      </td>
+                      <td className="px-4 py-2 text-gray-300">
+                        {formatNumber(row.extraction)}
+                      </td>
+                      <td className="px-4 py-2 text-gray-300">
+                        {formatNumber(row.stageOfExtraction)}
+                      </td>
+                      <td className="px-4 py-2">
+                        <span
+                          className="px-2 py-1 rounded text-xs"
+                          style={{
+                            backgroundColor:
+                              CATEGORY_COLORS[String(row.category)] ||
+                              "#6b7280",
+                          }}
+                        >
+                          {String(row.category || "N/A")}
+                        </span>
+                      </td>
+                    </>
                   ) : (
                     <>
                       <td className="px-4 py-2 text-gray-300">{row.source}</td>
@@ -458,17 +509,213 @@ function StatsCard({ viz }: { viz: Visualization }) {
         {viz.title}
       </h4>
       <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
-        {Object.entries(stats).map(([key, value]) => (
-          <div key={key} className="bg-white dark:bg-gray-800 p-3 rounded-lg">
-            <p className="text-xs text-gray-500 dark:text-gray-400 capitalize">
-              {key.replace(/([A-Z])/g, " $1").trim()}
-            </p>
-            <p className="text-lg font-semibold text-gray-900 dark:text-white">
-              {typeof value === "number" ? formatNumber(value) : String(value)}
-            </p>
-          </div>
-        ))}
+        {Object.entries(stats).map(([key, value]) => {
+          if (key === "history" && Array.isArray(value)) {
+            return (
+              <div
+                key={key}
+                className="col-span-full bg-white dark:bg-gray-800 p-3 rounded-lg"
+              >
+                <p className="text-xs text-gray-500 dark:text-gray-400 mb-2">
+                  Category History
+                </p>
+                <div className="flex flex-wrap gap-2">
+                  {(value as { year: string; category: string }[]).map(
+                    (item, i) => (
+                      <span
+                        key={i}
+                        className="px-2 py-1 text-xs rounded-full"
+                        style={{
+                          backgroundColor:
+                            CATEGORY_COLORS[item.category] || "#6b7280",
+                        }}
+                      >
+                        {item.year}: {item.category}
+                      </span>
+                    )
+                  )}
+                </div>
+              </div>
+            );
+          }
+          return (
+            <div key={key} className="bg-white dark:bg-gray-800 p-3 rounded-lg">
+              <p className="text-xs text-gray-500 dark:text-gray-400 capitalize">
+                {key.replace(/([A-Z])/g, " $1").trim()}
+              </p>
+              <p className="text-lg font-semibold text-gray-900 dark:text-white">
+                {typeof value === "number"
+                  ? formatNumber(value)
+                  : String(value)}
+              </p>
+            </div>
+          );
+        })}
       </div>
+    </div>
+  );
+}
+
+function TrendSummaryCard({ viz }: { viz: Visualization }) {
+  return (
+    <div className="bg-gradient-to-br from-purple-900 to-purple-950 rounded-lg p-4 my-2 text-white">
+      <h4 className="font-semibold text-lg mb-3">{viz.title}</h4>
+      <div className="grid grid-cols-3 gap-4">
+        <div className="bg-purple-800/50 rounded-lg p-3 text-center">
+          <p className="text-purple-300 text-xs">Data Points</p>
+          <p className="text-2xl font-bold text-cyan-400">{viz.dataPoints}</p>
+        </div>
+        <div className="bg-purple-800/50 rounded-lg p-3 text-center">
+          <p className="text-purple-300 text-xs">From</p>
+          <p className="text-lg font-bold text-cyan-400">{viz.earliestYear}</p>
+        </div>
+        <div className="bg-purple-800/50 rounded-lg p-3 text-center">
+          <p className="text-purple-300 text-xs">To</p>
+          <p className="text-lg font-bold text-cyan-400">{viz.latestYear}</p>
+        </div>
+      </div>
+      {viz.years && (
+        <div className="mt-3 flex flex-wrap gap-2">
+          {viz.years.map((year) => (
+            <span
+              key={year}
+              className="px-2 py-1 bg-purple-700/50 rounded text-xs"
+            >
+              {year}
+            </span>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+function LineChartViz({ viz }: { viz: Visualization }) {
+  const data = viz.data as ChartDataItem[];
+  return (
+    <div className="bg-gray-50 dark:bg-gray-900 rounded-lg p-4 my-2">
+      <h4 className="font-semibold text-gray-900 dark:text-white mb-1">
+        {viz.title}
+      </h4>
+      {viz.description && (
+        <p className="text-sm text-gray-500 dark:text-gray-400 mb-3">
+          {viz.description}
+        </p>
+      )}
+      <ResponsiveContainer width="100%" height={250}>
+        <LineChart
+          data={data}
+          margin={{ top: 5, right: 20, left: 10, bottom: 5 }}
+        >
+          <CartesianGrid strokeDasharray="3 3" className="opacity-30" />
+          <XAxis dataKey="year" tick={{ fontSize: 11 }} />
+          <YAxis tick={{ fontSize: 12 }} />
+          <Tooltip formatter={(value) => formatNumber(value)} />
+          <Line
+            type="monotone"
+            dataKey="value"
+            stroke="#3b82f6"
+            strokeWidth={2}
+            dot={{ fill: "#3b82f6", r: 4 }}
+          />
+          {viz.threshold && (
+            <>
+              <Line
+                type="monotone"
+                dataKey={() => viz.threshold!.safe}
+                stroke="#10b981"
+                strokeDasharray="5 5"
+                dot={false}
+                name="Safe Threshold"
+              />
+              <Line
+                type="monotone"
+                dataKey={() => viz.threshold!.critical}
+                stroke="#f59e0b"
+                strokeDasharray="5 5"
+                dot={false}
+                name="Critical Threshold"
+              />
+            </>
+          )}
+        </LineChart>
+      </ResponsiveContainer>
+    </div>
+  );
+}
+
+function MultiLineChart({ viz }: { viz: Visualization }) {
+  const data = viz.data as ChartDataItem[];
+  const keys = data[0]
+    ? Object.keys(data[0]).filter((k) => k !== "year" && k !== "name")
+    : [];
+
+  return (
+    <div className="bg-gray-50 dark:bg-gray-900 rounded-lg p-4 my-2">
+      <h4 className="font-semibold text-gray-900 dark:text-white mb-1">
+        {viz.title}
+      </h4>
+      {viz.description && (
+        <p className="text-sm text-gray-500 dark:text-gray-400 mb-3">
+          {viz.description}
+        </p>
+      )}
+      <ResponsiveContainer width="100%" height={280}>
+        <LineChart
+          data={data}
+          margin={{ top: 5, right: 20, left: 10, bottom: 5 }}
+        >
+          <CartesianGrid strokeDasharray="3 3" className="opacity-30" />
+          <XAxis dataKey="year" tick={{ fontSize: 11 }} />
+          <YAxis tick={{ fontSize: 12 }} />
+          <Tooltip formatter={(value) => formatNumber(value)} />
+          <Legend />
+          {keys.map((key, i) => (
+            <Line
+              key={key}
+              type="monotone"
+              dataKey={key}
+              stroke={COLORS[i % COLORS.length]}
+              strokeWidth={2}
+              dot={{ fill: COLORS[i % COLORS.length], r: 4 }}
+            />
+          ))}
+        </LineChart>
+      </ResponsiveContainer>
+    </div>
+  );
+}
+
+function AreaChartViz({ viz }: { viz: Visualization }) {
+  const data = viz.data as ChartDataItem[];
+  return (
+    <div className="bg-gray-50 dark:bg-gray-900 rounded-lg p-4 my-2">
+      <h4 className="font-semibold text-gray-900 dark:text-white mb-1">
+        {viz.title}
+      </h4>
+      {viz.description && (
+        <p className="text-sm text-gray-500 dark:text-gray-400 mb-3">
+          {viz.description}
+        </p>
+      )}
+      <ResponsiveContainer width="100%" height={250}>
+        <AreaChart
+          data={data}
+          margin={{ top: 5, right: 20, left: 10, bottom: 5 }}
+        >
+          <CartesianGrid strokeDasharray="3 3" className="opacity-30" />
+          <XAxis dataKey="year" tick={{ fontSize: 11 }} />
+          <YAxis tick={{ fontSize: 12 }} />
+          <Tooltip formatter={(value) => formatNumber(value)} />
+          <Area
+            type="monotone"
+            dataKey="value"
+            stroke="#10b981"
+            fill="#10b981"
+            fillOpacity={0.3}
+          />
+        </AreaChart>
+      </ResponsiveContainer>
     </div>
   );
 }
@@ -476,6 +723,10 @@ function StatsCard({ viz }: { viz: Visualization }) {
 function VisualizationRenderer({ viz }: { viz: Visualization }) {
   if (viz.type === "summary") {
     return <SummaryCard viz={viz} />;
+  }
+
+  if (viz.type === "trend_summary") {
+    return <TrendSummaryCard viz={viz} />;
   }
 
   if (viz.type === "table") {
@@ -498,6 +749,15 @@ function VisualizationRenderer({ viz }: { viz: Visualization }) {
     }
     if (viz.chartType === "bar") {
       return <SimpleBarChart viz={viz} />;
+    }
+    if (viz.chartType === "line") {
+      return <LineChartViz viz={viz} />;
+    }
+    if (viz.chartType === "multi_line") {
+      return <MultiLineChart viz={viz} />;
+    }
+    if (viz.chartType === "area") {
+      return <AreaChartViz viz={viz} />;
     }
   }
 
@@ -581,7 +841,8 @@ export default function ChatPage() {
                 data.type === "chart" ||
                 data.type === "stats" ||
                 data.type === "table" ||
-                data.type === "summary"
+                data.type === "summary" ||
+                data.type === "trend_summary"
               ) {
                 charts.push(data);
                 setMessages((prev) => {
@@ -637,9 +898,9 @@ export default function ChatPage() {
 
   const suggestedQueries = [
     "What is the groundwater status in Gujarat?",
-    "Which states have the highest extraction rate?",
-    "Compare Maharashtra and Karnataka groundwater",
-    "Show category distribution for all states",
+    "Show historical trend for Maharashtra",
+    "Compare extraction trends across years for Tamil Nadu",
+    "How has groundwater extraction changed in Karnataka over the years?",
   ];
 
   return (
@@ -792,12 +1053,10 @@ export default function ChatPage() {
 
       {/* Map Panel */}
       {showMap && (
-        <div className="w-1/2 border-l border-gray-200 dark:border-gray-700 bg-gray-100 dark:bg-gray-900 flex items-center justify-center">
-          <div className="text-center text-gray-500 dark:text-gray-400">
-            <Map size={48} className="mx-auto mb-4 opacity-50" />
-            <p className="font-medium">Map View</p>
-            <p className="text-sm">Map integration coming soon</p>
-          </div>
+        <div className="w-1/2 border-l border-gray-200 dark:border-gray-700 bg-gray-900">
+          <MapProvider>
+            <MapWrapper />
+          </MapProvider>
         </div>
       )}
     </div>

@@ -5,6 +5,7 @@ import {
   getAllStates,
   getDistrictsOfState,
   getTaluksOfDistrict,
+  getAvailableYears,
 } from "./locationSearch";
 import {
   searchAndGetGroundwaterData,
@@ -15,6 +16,11 @@ import {
   formatGroundwaterDataForLLM,
   generateChartData,
   generateComparisonChartData,
+  searchAndGetHistoricalData,
+  formatHistoricalDataForLLM,
+  generateTrendChartData,
+  getGroundwaterDataForYear,
+  compareYears,
 } from "./groundwaterService";
 
 export const searchGroundwaterDataTool = tool(
@@ -480,6 +486,178 @@ function metricToField(metric: string): string {
   return map[metric] ?? metric;
 }
 
+export const getHistoricalDataTool = tool(
+  async ({ locationName, locationType }) => {
+    const type = locationType.toUpperCase() as "STATE" | "DISTRICT" | "TALUK";
+    const records = await searchAndGetHistoricalData(locationName, type);
+
+    if (records.length === 0) {
+      return JSON.stringify({
+        found: false,
+        message: `No historical data found for "${locationName}"`,
+        availableYears: getAvailableYears(),
+      });
+    }
+
+    return JSON.stringify({
+      found: true,
+      locationName: records[0].locationName,
+      yearsAvailable: records.map((r) => r.year),
+      dataPointCount: records.length,
+      textSummary: formatHistoricalDataForLLM(records),
+      charts: generateTrendChartData(records, records[0].locationName),
+    });
+  },
+  {
+    name: "get_historical_data",
+    description: `Get historical groundwater data across all available years for a location to analyze trends.
+
+AVAILABLE YEARS: 2016-2017, 2019-2020, 2021-2022, 2022-2023, 2023-2024, 2024-2025
+
+WHEN TO USE:
+- User asks about trends or historical changes
+- User wants to see how groundwater has changed over time
+- User asks "how has extraction changed in Maharashtra over the years"
+- User wants to compare a location's data across different years
+- User asks about year-over-year changes
+
+DATA RETURNED:
+- Year-wise data table
+- Trend charts (line charts showing changes over time)
+- Comparison of recharge vs extraction trends
+- Category changes over time`,
+    schema: z.object({
+      locationName: z
+        .string()
+        .describe("Name of the location (state, district, or taluk)"),
+      locationType: z
+        .enum(["state", "district", "taluk"])
+        .describe("Type of location"),
+    }),
+  }
+);
+
+export const getDataForYearTool = tool(
+  async ({ locationName, year, locationType }) => {
+    const type = locationType?.toUpperCase() as
+      | "STATE"
+      | "DISTRICT"
+      | "TALUK"
+      | undefined;
+    const record = await getGroundwaterDataForYear(locationName, year, type);
+
+    if (!record) {
+      return JSON.stringify({
+        found: false,
+        message: `No data found for "${locationName}" in year ${year}`,
+        availableYears: getAvailableYears(),
+      });
+    }
+
+    return JSON.stringify({
+      found: true,
+      year: record.location.year,
+      textSummary: formatGroundwaterDataForLLM(record),
+      charts: generateChartData(record),
+    });
+  },
+  {
+    name: "get_data_for_year",
+    description: `Get groundwater data for a specific location for a specific year.
+
+AVAILABLE YEARS: 2016-2017, 2019-2020, 2021-2022, 2022-2023, 2023-2024, 2024-2025
+
+WHEN TO USE:
+- User specifically asks about data for a particular year
+- User asks "what was Maharashtra's groundwater status in 2021-2022"
+- User wants to check data for an older year
+- Default to latest year (2024-2025) if user doesn't specify a year`,
+    schema: z.object({
+      locationName: z.string().describe("Name of the location"),
+      year: z.string().describe("Year in format YYYY-YYYY (e.g., '2022-2023')"),
+      locationType: z
+        .enum(["state", "district", "taluk"])
+        .optional()
+        .describe("Type of location for disambiguation"),
+    }),
+  }
+);
+
+export const compareYearsTool = tool(
+  async ({ locationName, locationType, years }) => {
+    const type = locationType.toUpperCase() as "STATE" | "DISTRICT" | "TALUK";
+    const records = await compareYears(locationName, type, years || []);
+
+    if (records.length === 0) {
+      return JSON.stringify({
+        found: false,
+        message: `No data found for "${locationName}"`,
+        availableYears: getAvailableYears(),
+      });
+    }
+
+    const filteredRecords = years?.length
+      ? records.filter((r) => years.includes(r.year))
+      : records;
+
+    return JSON.stringify({
+      found: true,
+      locationName: records[0].locationName,
+      yearsCompared: filteredRecords.map((r) => r.year),
+      textSummary: formatHistoricalDataForLLM(filteredRecords),
+      charts: generateTrendChartData(filteredRecords, records[0].locationName),
+    });
+  },
+  {
+    name: "compare_years",
+    description: `Compare groundwater data for a location across specific years.
+
+AVAILABLE YEARS: 2016-2017, 2019-2020, 2021-2022, 2022-2023, 2023-2024, 2024-2025
+
+WHEN TO USE:
+- User wants to compare specific years (e.g., "compare 2019-2020 and 2024-2025")
+- User asks what changed between two years
+- User wants year-on-year comparison
+
+If years are not specified, returns all available years.`,
+    schema: z.object({
+      locationName: z.string().describe("Name of the location"),
+      locationType: z
+        .enum(["state", "district", "taluk"])
+        .describe("Type of location"),
+      years: z
+        .array(z.string())
+        .optional()
+        .describe(
+          "Specific years to compare (format: YYYY-YYYY). If empty, compares all available years."
+        ),
+    }),
+  }
+);
+
+export const getAvailableYearsTool = tool(
+  async () => {
+    const years = getAvailableYears();
+    return JSON.stringify({
+      found: true,
+      years,
+      earliest: years[0],
+      latest: years[years.length - 1],
+      count: years.length,
+    });
+  },
+  {
+    name: "get_available_years",
+    description: `Get the list of years for which groundwater data is available.
+
+WHEN TO USE:
+- User asks what years of data are available
+- User wants to know the time range of available data
+- Before making historical queries to verify year availability`,
+    schema: z.object({}),
+  }
+);
+
 export const allTools = [
   searchGroundwaterDataTool,
   compareLocationsTool,
@@ -487,4 +665,8 @@ export const allTools = [
   getCategorySummaryTool,
   listLocationsTool,
   getLocationDetailsTool,
+  getHistoricalDataTool,
+  getDataForYearTool,
+  compareYearsTool,
+  getAvailableYearsTool,
 ];

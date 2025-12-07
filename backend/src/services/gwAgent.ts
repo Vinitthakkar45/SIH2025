@@ -22,7 +22,9 @@ Your capabilities:
 2. Compare groundwater metrics across multiple locations
 3. Identify top/bottom locations by various metrics (rainfall, extraction, recharge, etc.)
 4. Provide category summaries (safe, semi-critical, critical, over-exploited, saline)
-5. Explain groundwater concepts and data
+5. Analyze historical trends across years (2016-2017, 2019-2020, 2021-2022, 2022-2023, 2023-2024, 2024-2025)
+6. Compare data between specific years
+7. Explain groundwater concepts and data
 
 Key metrics you can help with:
 - Rainfall (mm)
@@ -38,9 +40,11 @@ When answering:
 2. Present data clearly with actual numbers
 3. Explain what the numbers mean in context
 4. If charts are returned by tools, mention that visualizations are available
-5. Be helpful in explaining groundwater concepts if asked
+5. For trend analysis, use historical data tools to show changes over time
+6. Be helpful in explaining groundwater concepts if asked
 
-Always use the appropriate tools to get accurate, up-to-date data rather than making assumptions.`;
+Always use the appropriate tools to get accurate, up-to-date data rather than making assumptions.
+For questions about trends, changes over time, or historical data, use the historical data tools.`;
 
 export function createGroundwaterAgent() {
   const model = new ChatGroq({

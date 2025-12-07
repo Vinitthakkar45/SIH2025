@@ -177,3 +177,48 @@ export function getTaluksOfDistrict(districtId: string): LocationRecord[] {
     (l) => l.type === "TALUK" && l.parentId === districtId
   );
 }
+
+export function getAvailableYears(): string[] {
+  const years = new Set<string>();
+  for (const l of locationCache) {
+    years.add(l.year);
+  }
+  return Array.from(years).sort();
+}
+
+export function getLocationsByNameAndType(
+  name: string,
+  type: "COUNTRY" | "STATE" | "DISTRICT" | "TALUK"
+): LocationRecord[] {
+  const normalizedName = name.replace(/[_-]/g, " ").trim().toLowerCase();
+  return locationCache.filter(
+    (l) =>
+      l.type === type &&
+      l.name.replace(/[_-]/g, " ").trim().toLowerCase() === normalizedName
+  );
+}
+
+export function searchLocationForYear(
+  query: string,
+  year: string,
+  type?: "COUNTRY" | "STATE" | "DISTRICT" | "TALUK"
+): SearchResult[] {
+  if (!fuse) {
+    throw new Error(
+      "Location search not initialized. Call initLocationSearch first."
+    );
+  }
+
+  const normalizedQuery = query.replace(/[_-]/g, " ").trim();
+  const results = fuse.search(normalizedQuery);
+
+  let filtered = results.filter((r) => r.item.year === year);
+  if (type) {
+    filtered = filtered.filter((r) => r.item.type === type);
+  }
+
+  return filtered.slice(0, 5).map((r) => ({
+    location: r.item,
+    score: 1 - (r.score ?? 0),
+  }));
+}

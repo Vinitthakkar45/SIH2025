@@ -2,8 +2,25 @@ import { db } from "../db/gw-db";
 import { groundwaterData, locations } from "../db/gw-schema";
 
 const BASE_URL = "https://ingres.iith.ac.in/api";
-const YEAR = "2024-2025";
 const INDIA_UUID = "ffce954d-24e1-494b-ba7e-0931d8ad6085";
+
+const AVAILABLE_YEARS = [
+  "2016-2017",
+  "2019-2020",
+  "2021-2022",
+  "2022-2023",
+  "2023-2024",
+  "2024-2025",
+];
+
+const YEAR_TO_API_PARAM: Record<string, string> = {
+  "2016-2017": "2016",
+  "2019-2020": "2019",
+  "2021-2022": "2021",
+  "2022-2023": "2022",
+  "2023-2024": "2023",
+  "2024-2025": "2024",
+};
 
 const HEADERS = {
   Accept: "application/json, text/plain, */*",
@@ -237,16 +254,17 @@ interface MapBlockData {
   };
 }
 
-async function fetchAvailableStates(): Promise<StateInfo[]> {
-  console.log("Fetching available states...");
+async function fetchAvailableStates(year: string): Promise<StateInfo[]> {
+  const apiYear = YEAR_TO_API_PARAM[year] || year.split("-")[0];
+  console.log(`Fetching available states for year ${year}...`);
   return fetchJson<StateInfo[]>(`${BASE_URL}/locations/latestversion`, {
-    year: "2024",
+    year: apiYear,
     view: "admin",
   });
 }
 
-async function fetchCountryData(): Promise<LocationData[]> {
-  console.log("Fetching country level data (all states)...");
+async function fetchCountryData(year: string): Promise<LocationData[]> {
+  console.log(`Fetching country level data (all states) for ${year}...`);
   return fetchJson<LocationData[]>(
     `${BASE_URL}/gec/getBusinessDataForUserOpen`,
     {
@@ -255,7 +273,7 @@ async function fetchCountryData(): Promise<LocationData[]> {
       loctype: "COUNTRY",
       view: "admin",
       locuuid: INDIA_UUID,
-      year: YEAR,
+      year: year,
       computationType: "normal",
       component: "recharge",
       period: "annual",
@@ -271,9 +289,10 @@ async function fetchCountryData(): Promise<LocationData[]> {
 
 async function fetchStateData(
   stateName: string,
-  stateUuid: string
+  stateUuid: string,
+  year: string
 ): Promise<LocationData[]> {
-  console.log(`Fetching districts for state: ${stateName}`);
+  console.log(`Fetching districts for state: ${stateName} (${year})`);
   return fetchJson<LocationData[]>(
     `${BASE_URL}/gec/getBusinessDataForUserOpen`,
     {
@@ -282,7 +301,7 @@ async function fetchStateData(
       loctype: "STATE",
       view: "admin",
       locuuid: stateUuid,
-      year: YEAR,
+      year: year,
       computationType: "normal",
       component: "recharge",
       period: "annual",
@@ -297,9 +316,10 @@ async function fetchStateData(
 }
 
 async function fetchMapBlockData(
-  stateUuids: string[]
+  stateUuids: string[],
+  year: string
 ): Promise<MapBlockData[]> {
-  console.log("Fetching block data for all states...");
+  console.log(`Fetching block data for all states (${year})...`);
   return fetchJson<MapBlockData[]>(`${BASE_URL}/gec/mapBusinessData`, {
     verificationStatus: 1,
     approvalLevel: 1,
@@ -309,7 +329,7 @@ async function fetchMapBlockData(
     period: "annual",
     stateuuid: INDIA_UUID,
     view: "admin",
-    year: YEAR,
+    year: year,
     areaType: "total",
     layerName: "gec:indgec_mandal_all",
     component: "category",
@@ -530,38 +550,21 @@ async function clearDatabase() {
   console.log("Database cleared.");
 }
 
-async function seedDatabase() {
+async function seedYearData(year: string, indiaId: string): Promise<void> {
+  console.log(`\n========== Seeding data for ${year} ==========\n`);
+
   try {
-    await clearDatabase();
-
-    // Create India (Country level)
-    console.log("Creating India entry...");
-    const [india] = await db
-      .insert(locations)
-      .values({
-        externalId: INDIA_UUID,
-        name: "INDIA",
-        type: "COUNTRY",
-        year: YEAR,
-        parentId: null,
-      })
-      .returning();
-
-    // Fetch available states
-    const availableStates = await fetchAvailableStates();
+    const availableStates = await fetchAvailableStates(year);
     const stateUuids = availableStates.map((s) => s.id);
-    console.log(`Found ${availableStates.length} states`);
+    console.log(`Found ${availableStates.length} states for ${year}`);
 
-    // Fetch country-level data (states with data)
-    const statesData = await fetchCountryData();
+    const statesData = await fetchCountryData(year);
 
-    // Create a map of state name to UUID
     const stateNameToUuid = new Map<string, string>();
     for (const state of availableStates) {
       stateNameToUuid.set(state.state_name.toUpperCase(), state.id);
     }
 
-    // Insert states and their groundwater data
     const stateIdMap = new Map<string, string>();
     for (const stateData of statesData) {
       if (stateData.locationName === "total") continue;
@@ -574,15 +577,15 @@ async function seedDatabase() {
         continue;
       }
 
-      console.log(`Inserting state: ${stateData.locationName}`);
+      console.log(`Inserting state: ${stateData.locationName} (${year})`);
       const [stateRecord] = await db
         .insert(locations)
         .values({
-          externalId,
+          externalId: `${externalId}_${year}`,
           name: stateData.locationName,
           type: "STATE",
-          year: YEAR,
-          parentId: india.id,
+          year: year,
+          parentId: indiaId,
         })
         .returning();
 
@@ -594,19 +597,21 @@ async function seedDatabase() {
       });
     }
 
-    // Fetch block data for mapping names
-    console.log("Fetching block data for name mapping...");
-    const blockData = await fetchMapBlockData(stateUuids);
-    const blockNameMap = new Map<string, MapBlockData>();
-    for (const block of blockData) {
-      const uuid = block.locationUUID || block.locUUID;
-      if (uuid) {
-        blockNameMap.set(uuid, block);
+    console.log(`Fetching block data for name mapping (${year})...`);
+    let blockNameMap = new Map<string, MapBlockData>();
+    try {
+      const blockData = await fetchMapBlockData(stateUuids, year);
+      for (const block of blockData) {
+        const uuid = block.locationUUID || block.locUUID;
+        if (uuid) {
+          blockNameMap.set(uuid, block);
+        }
       }
+      console.log(`Mapped ${blockNameMap.size} blocks`);
+    } catch (error) {
+      console.error(`Error fetching block data for ${year}:`, error);
     }
-    console.log(`Mapped ${blockNameMap.size} blocks`);
 
-    // For each state, fetch districts
     for (const [stateExternalId, stateDbId] of stateIdMap) {
       const stateName = statesData.find(
         (s) => s.locationUUID === stateExternalId
@@ -614,19 +619,25 @@ async function seedDatabase() {
       if (!stateName) continue;
 
       try {
-        const districtsData = await fetchStateData(stateName, stateExternalId);
+        const districtsData = await fetchStateData(
+          stateName,
+          stateExternalId,
+          year
+        );
 
         for (const districtData of districtsData) {
           if (districtData.locationName === "total") continue;
 
-          console.log(`  Inserting district: ${districtData.locationName}`);
+          console.log(
+            `  Inserting district: ${districtData.locationName} (${year})`
+          );
           const [districtRecord] = await db
             .insert(locations)
             .values({
-              externalId: districtData.locationUUID,
+              externalId: `${districtData.locationUUID}_${year}`,
               name: districtData.locationName,
               type: "DISTRICT",
-              year: YEAR,
+              year: year,
               parentId: stateDbId,
             })
             .returning();
@@ -636,7 +647,6 @@ async function seedDatabase() {
             ...extractGroundwaterData(districtData),
           });
 
-          // Insert taluks from reportSummary
           if (districtData.reportSummary) {
             for (const [talukUuid, talukSummary] of Object.entries(
               districtData.reportSummary
@@ -647,15 +657,15 @@ async function seedDatabase() {
               if (!talukBlockData) continue;
 
               console.log(
-                `    Inserting taluk: ${talukBlockData.locationName}`
+                `    Inserting taluk: ${talukBlockData.locationName} (${year})`
               );
               const [talukRecord] = await db
                 .insert(locations)
                 .values({
-                  externalId: talukUuid,
+                  externalId: `${talukUuid}_${year}`,
                   name: talukBlockData.locationName,
                   type: "TALUK",
-                  year: YEAR,
+                  year: year,
                   parentId: districtRecord.id,
                 })
                 .returning();
@@ -668,14 +678,49 @@ async function seedDatabase() {
           }
         }
 
-        // Rate limiting
         await new Promise((resolve) => setTimeout(resolve, 500));
       } catch (error) {
-        console.error(`Error fetching districts for ${stateName}:`, error);
+        console.error(
+          `Error fetching districts for ${stateName} (${year}):`,
+          error
+        );
       }
     }
 
-    console.log("Database seeding completed!");
+    console.log(`Completed seeding for ${year}`);
+  } catch (error) {
+    console.error(`Error seeding data for ${year}:`, error);
+  }
+}
+
+async function seedDatabase() {
+  try {
+    await clearDatabase();
+
+    console.log("Creating India entries for all years...");
+    const indiaIds = new Map<string, string>();
+
+    for (const year of AVAILABLE_YEARS) {
+      const [india] = await db
+        .insert(locations)
+        .values({
+          externalId: `${INDIA_UUID}_${year}`,
+          name: "INDIA",
+          type: "COUNTRY",
+          year: year,
+          parentId: null,
+        })
+        .returning();
+      indiaIds.set(year, india.id);
+    }
+
+    for (const year of AVAILABLE_YEARS) {
+      const indiaId = indiaIds.get(year)!;
+      await seedYearData(year, indiaId);
+      await new Promise((resolve) => setTimeout(resolve, 2000));
+    }
+
+    console.log("\nDatabase seeding completed for all years!");
   } catch (error) {
     console.error("Error seeding database:", error);
     throw error;

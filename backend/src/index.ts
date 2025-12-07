@@ -5,6 +5,7 @@ import express from "express";
 import cors from "cors";
 
 import gwChatRouter from "./routes/gwChat.js";
+import gwMapRouter from "./routes/gwMap.js";
 import { initLocationSearch } from "./services/locationSearch.js";
 
 dotenv.config();
@@ -17,6 +18,7 @@ app.use(express.json({ limit: "10mb" }));
 
 // Routes
 app.use("/api/gw-chat", gwChatRouter);
+app.use("/api/gw-map", gwMapRouter);
 
 // Health check
 app.get("/api/health", (_req, res) => {
