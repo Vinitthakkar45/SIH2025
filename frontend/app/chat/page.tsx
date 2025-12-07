@@ -15,6 +15,8 @@ import {
   Legend,
   ResponsiveContainer,
 } from "recharts";
+import { Button } from "@heroui/button";
+import { Input, Textarea } from "@heroui/react";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001";
 
@@ -56,17 +58,15 @@ function ChartRenderer({ chart }: { chart: ChartData }) {
   if (chart.type === "stats") {
     const stats = chart.data as Record<string, unknown>;
     return (
-      <div className="bg-gray-50 dark:bg-gray-900 rounded-lg p-4 my-2">
-        <h4 className="font-semibold text-gray-900 dark:text-white mb-3">
-          {chart.title}
-        </h4>
+      <div className="bg-zinc-800 rounded-lg p-4 my-2">
+        <h4 className="font-semibold text-zinc-100 mb-3">{chart.title}</h4>
         <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
           {Object.entries(stats).map(([key, value]) => (
-            <div key={key} className="bg-white dark:bg-gray-800 p-3 rounded-lg">
-              <p className="text-xs text-gray-500 dark:text-gray-400 capitalize">
+            <div key={key} className="bg-zinc-900 p-3 rounded-lg">
+              <p className="text-xs text-zinc-400 capitalize">
                 {key.replace(/([A-Z])/g, " $1").trim()}
               </p>
-              <p className="text-lg font-semibold text-gray-900 dark:text-white">
+              <p className="text-lg font-semibold text-zinc-100">
                 {typeof value === "number"
                   ? value.toLocaleString(undefined, {
                       maximumFractionDigits: 2,
@@ -83,14 +83,10 @@ function ChartRenderer({ chart }: { chart: ChartData }) {
   if (chart.chartType === "bar") {
     const data = chart.data as Record<string, unknown>[];
     return (
-      <div className="bg-gray-50 dark:bg-gray-900 rounded-lg p-4 my-2">
-        <h4 className="font-semibold text-gray-900 dark:text-white mb-1">
-          {chart.title}
-        </h4>
+      <div className="bg-zinc-800 rounded-lg p-4 my-2">
+        <h4 className="font-semibold text-zinc-100 mb-1">{chart.title}</h4>
         {chart.description && (
-          <p className="text-sm text-gray-500 dark:text-gray-400 mb-3">
-            {chart.description}
-          </p>
+          <p className="text-sm text-zinc-400 mb-3">{chart.description}</p>
         )}
         <ResponsiveContainer width="100%" height={250}>
           <BarChart
@@ -121,14 +117,10 @@ function ChartRenderer({ chart }: { chart: ChartData }) {
   if (chart.chartType === "pie") {
     const data = chart.data as { name: string; value: number }[];
     return (
-      <div className="bg-gray-50 dark:bg-gray-900 rounded-lg p-4 my-2">
-        <h4 className="font-semibold text-gray-900 dark:text-white mb-1">
-          {chart.title}
-        </h4>
+      <div className="bg-zinc-800 rounded-lg p-4 my-2">
+        <h4 className="font-semibold text-zinc-100 mb-1">{chart.title}</h4>
         {chart.description && (
-          <p className="text-sm text-gray-500 dark:text-gray-400 mb-3">
-            {chart.description}
-          </p>
+          <p className="text-sm text-zinc-400 mb-3">{chart.description}</p>
         )}
         <ResponsiveContainer width="100%" height={250}>
           <PieChart>
@@ -297,7 +289,7 @@ export default function ChatPage() {
   ];
 
   return (
-    <div className="flex h-screen bg-gray-50 dark:bg-gray-900">
+    <div className="flex h-screen bg-zinc-900">
       {/* Main Chat Area */}
       <div
         className={`flex flex-col flex-1 transition-all duration-300 ${
@@ -305,34 +297,33 @@ export default function ChatPage() {
         }`}
       >
         {/* Header */}
-        <header className="bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 px-4 py-3">
+        <header className="bg-zinc-800 px-4 py-3">
           <div className="max-w-4xl mx-auto flex items-center justify-between">
             <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-full bg-blue-600 flex items-center justify-center">
+              <div className="w-10 h-10 rounded-lg bg-blue-600 flex items-center justify-center">
                 <span className="text-white text-xl">💧</span>
               </div>
               <div>
-                <h1 className="font-semibold text-gray-900 dark:text-white">
+                <h1 className="font-semibold text-zinc-100">
                   INGRES AI Assistant
                 </h1>
-                <p className="text-sm text-gray-500 dark:text-gray-400">
+                <p className="text-sm text-zinc-400">
                   Groundwater Resource Information
                 </p>
               </div>
             </div>
-            <button
-              onClick={() => setShowMap(!showMap)}
-              className={`flex items-center gap-2 px-4 py-2 rounded-lg transition-colors ${
-                showMap
-                  ? "bg-blue-600 text-white"
-                  : "bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600"
-              }`}
+            <Button
+              onPress={() => setShowMap(!showMap)}
+              className={`flex items-center gap-2 px-4 py-2 rounded-lg transition-colors `}
+              color={showMap ? "default" : "primary"}
+              startContent={
+                showMap ? <MessageSquare size={18} /> : <Map size={18} />
+              }
             >
-              {showMap ? <MessageSquare size={18} /> : <Map size={18} />}
               <span className="text-sm font-medium">
                 {showMap ? "Hide Map" : "Show Map"}
               </span>
-            </button>
+            </Button>
           </div>
         </header>
 
@@ -341,25 +332,25 @@ export default function ChatPage() {
           <div className="max-w-4xl mx-auto space-y-4">
             {messages.length === 0 && (
               <div className="text-center py-12">
-                <div className="w-16 h-16 rounded-full bg-blue-100 dark:bg-blue-900 flex items-center justify-center mx-auto mb-4">
+                <div className="w-16 h-16 rounded-lg bg-zinc-800 flex items-center justify-center mx-auto mb-4">
                   <span className="text-3xl">💧</span>
                 </div>
-                <h2 className="text-xl font-semibold text-gray-900 dark:text-white mb-2">
+                <h2 className="text-xl font-semibold text-zinc-100 mb-2">
                   Welcome to INGRES AI
                 </h2>
-                <p className="text-gray-500 dark:text-gray-400 mb-6 max-w-md mx-auto">
+                <p className="text-zinc-400 mb-6 max-w-md mx-auto">
                   Ask me anything about India&apos;s groundwater resources -
                   state data, district comparisons, extraction levels, and more.
                 </p>
                 <div className="flex flex-wrap justify-center gap-2">
                   {suggestedQueries.map((q) => (
-                    <button
+                    <Button
                       key={q}
-                      onClick={() => handleSubmit(q)}
-                      className="px-4 py-2 text-sm bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-full hover:bg-gray-50 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300 transition-colors"
+                      onPress={() => handleSubmit(q)}
+                      variant="flat"
                     >
                       {q}
-                    </button>
+                    </Button>
                   ))}
                 </div>
               </div>
@@ -373,14 +364,14 @@ export default function ChatPage() {
                 }`}
               >
                 <div
-                  className={`max-w-[90%] rounded-2xl px-4 py-3 ${
+                  className={`max-w-[90%] rounded-lg px-4 py-3 ${
                     message.role === "user"
                       ? "bg-blue-600 text-white"
-                      : "bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700"
+                      : "bg-zinc-800"
                   }`}
                 >
                   {message.isLoading && !message.content ? (
-                    <div className="flex items-center gap-2 text-gray-500 dark:text-gray-400">
+                    <div className="flex items-center gap-2 text-zinc-400">
                       <Loader2 className="animate-spin" size={16} />
                       <span>Thinking...</span>
                     </div>
@@ -388,9 +379,7 @@ export default function ChatPage() {
                     <>
                       <p
                         className={`whitespace-pre-wrap ${
-                          message.role === "assistant"
-                            ? "text-gray-800 dark:text-gray-200"
-                            : ""
+                          message.role === "assistant" ? "text-zinc-200" : ""
                         }`}
                       >
                         {message.content}
@@ -413,41 +402,48 @@ export default function ChatPage() {
         </main>
 
         {/* Input */}
-        <footer className="bg-white dark:bg-gray-800 border-t border-gray-200 dark:border-gray-700 p-4">
+        <footer className="p-4">
           <form
             onSubmit={(e) => {
               e.preventDefault();
               handleSubmit(input);
             }}
-            className="max-w-4xl mx-auto flex gap-2"
+            className="max-w-2xl mx-auto flex gap-2"
           >
-            <input
+            <Input
               type="text"
+              size="lg"
               value={input}
+              radius="full"
               onChange={(e) => setInput(e.target.value)}
               placeholder="Ask about groundwater data..."
               disabled={isLoading}
-              className="flex-1 px-4 py-3 rounded-full border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900 text-gray-900 dark:text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:opacity-50"
+              variant="flat"
+              classNames={{ inputWrapper: "pr-1" }}
+              endContent={
+                <Button
+                  type="submit"
+                  disabled={isLoading || !input.trim()}
+                  radius="full"
+                  isIconOnly
+                  color="primary"
+                >
+                  {isLoading ? (
+                    <Loader2 className="animate-spin" size={18} />
+                  ) : (
+                    <Send size={18} />
+                  )}
+                </Button>
+              }
             />
-            <button
-              type="submit"
-              disabled={isLoading || !input.trim()}
-              className="px-6 py-3 bg-blue-600 text-white rounded-full font-medium hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors flex items-center gap-2"
-            >
-              {isLoading ? (
-                <Loader2 className="animate-spin" size={18} />
-              ) : (
-                <Send size={18} />
-              )}
-            </button>
           </form>
         </footer>
       </div>
 
       {/* Map Panel */}
       {showMap && (
-        <div className="w-1/2 border-l border-gray-200 dark:border-gray-700 bg-gray-100 dark:bg-gray-900 flex items-center justify-center">
-          <div className="text-center text-gray-500 dark:text-gray-400">
+        <div className="w-1/2 bg-zinc-800 flex items-center justify-center">
+          <div className="text-center text-zinc-400">
             <Map size={48} className="mx-auto mb-4 opacity-50" />
             <p className="font-medium">Map View</p>
             <p className="text-sm">Map integration coming soon</p>
