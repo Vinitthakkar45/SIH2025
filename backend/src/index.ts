@@ -8,8 +8,6 @@ import embedRouter from "./routes/embed.js";
 import searchRouter from "./routes/search.js";
 import chatRouter from "./routes/chat.js";
 import gwChatRouter from "./routes/gwChat.js";
-import { initEmbedder } from "./services/embeddings.js";
-import { initVectorStore } from "./services/vectorStore.js";
 import { initLocationSearch } from "./services/locationSearch.js";
 
 dotenv.config();

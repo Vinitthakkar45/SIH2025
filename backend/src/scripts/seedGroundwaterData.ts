@@ -1,6 +1,5 @@
 import { db } from "../db/gw-db";
-import { locations, groundwaterData } from "../db/gw-schema";
-import { eq } from "drizzle-orm";
+import { groundwaterData, locations } from "../db/gw-schema";
 
 const BASE_URL = "https://ingres.iith.ac.in/api";
 const YEAR = "2024-2025";
