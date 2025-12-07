@@ -1,22 +1,12 @@
 "use client";
 
-import { useState, useRef, useEffect } from "react";
-import { Map, MessageSquare, Send, Loader2 } from "lucide-react";
-import {
-  BarChart,
-  Bar,
-  PieChart,
-  Pie,
-  Cell,
-  XAxis,
-  YAxis,
-  CartesianGrid,
-  Tooltip,
-  Legend,
-  ResponsiveContainer,
-} from "recharts";
+import ChartRenderer from "@/components/ChartRenderer";
+import MarkdownRenderer from "@/components/MarkdownRenderer";
 import { Button } from "@heroui/button";
-import { Input, Textarea } from "@heroui/react";
+import { Input, Skeleton } from "@heroui/react";
+import { Loader2, Map, MessageSquare, Send, ArrowDown } from "lucide-react";
+import Link from "next/link";
+import { useEffect, useRef, useState } from "react";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001";
 
@@ -35,139 +25,42 @@ interface Message {
   isLoading?: boolean;
 }
 
-const COLORS = [
-  "#3b82f6",
-  "#10b981",
-  "#f59e0b",
-  "#ef4444",
-  "#8b5cf6",
-  "#ec4899",
-];
-
-const CATEGORY_COLORS: Record<string, string> = {
-  safe: "#10b981",
-  semi_critical: "#3b82f6",
-  critical: "#f59e0b",
-  over_exploited: "#ef4444",
-  salinity: "#8b5cf6",
-  hilly_area: "#6b7280",
-  no_data: "#9ca3af",
-};
-
-function ChartRenderer({ chart }: { chart: ChartData }) {
-  if (chart.type === "stats") {
-    const stats = chart.data as Record<string, unknown>;
-    return (
-      <div className="bg-zinc-800 rounded-lg p-4 my-2">
-        <h4 className="font-semibold text-zinc-100 mb-3">{chart.title}</h4>
-        <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
-          {Object.entries(stats).map(([key, value]) => (
-            <div key={key} className="bg-zinc-900 p-3 rounded-lg">
-              <p className="text-xs text-zinc-400 capitalize">
-                {key.replace(/([A-Z])/g, " $1").trim()}
-              </p>
-              <p className="text-lg font-semibold text-zinc-100">
-                {typeof value === "number"
-                  ? value.toLocaleString(undefined, {
-                      maximumFractionDigits: 2,
-                    })
-                  : String(value)}
-              </p>
-            </div>
-          ))}
-        </div>
-      </div>
-    );
-  }
-
-  if (chart.chartType === "bar") {
-    const data = chart.data as Record<string, unknown>[];
-    return (
-      <div className="bg-zinc-800 rounded-lg p-4 my-2">
-        <h4 className="font-semibold text-zinc-100 mb-1">{chart.title}</h4>
-        {chart.description && (
-          <p className="text-sm text-zinc-400 mb-3">{chart.description}</p>
-        )}
-        <ResponsiveContainer width="100%" height={250}>
-          <BarChart
-            data={data}
-            margin={{ top: 5, right: 20, left: 10, bottom: 5 }}
-          >
-            <CartesianGrid strokeDasharray="3 3" className="opacity-30" />
-            <XAxis dataKey="name" tick={{ fontSize: 12 }} />
-            <YAxis tick={{ fontSize: 12 }} />
-            <Tooltip />
-            <Legend />
-            {data[0] &&
-              Object.keys(data[0])
-                .filter((k) => k !== "name" && k !== "category")
-                .map((key, i) => (
-                  <Bar
-                    key={key}
-                    dataKey={key}
-                    fill={COLORS[i % COLORS.length]}
-                  />
-                ))}
-          </BarChart>
-        </ResponsiveContainer>
-      </div>
-    );
-  }
-
-  if (chart.chartType === "pie") {
-    const data = chart.data as { name: string; value: number }[];
-    return (
-      <div className="bg-zinc-800 rounded-lg p-4 my-2">
-        <h4 className="font-semibold text-zinc-100 mb-1">{chart.title}</h4>
-        {chart.description && (
-          <p className="text-sm text-zinc-400 mb-3">{chart.description}</p>
-        )}
-        <ResponsiveContainer width="100%" height={250}>
-          <PieChart>
-            <Pie
-              data={data}
-              dataKey="value"
-              nameKey="name"
-              cx="50%"
-              cy="50%"
-              outerRadius={80}
-              label={({ name, percent }) =>
-                `${name} (${(percent * 100).toFixed(0)}%)`
-              }
-            >
-              {data.map((entry, index) => (
-                <Cell
-                  key={entry.name}
-                  fill={
-                    CATEGORY_COLORS[entry.name] || COLORS[index % COLORS.length]
-                  }
-                />
-              ))}
-            </Pie>
-            <Tooltip />
-            <Legend />
-          </PieChart>
-        </ResponsiveContainer>
-      </div>
-    );
-  }
-
-  return null;
-}
-
 export default function ChatPage() {
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [showMap, setShowMap] = useState(false);
+  const [showScrollButton, setShowScrollButton] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const messagesContainerRef = useRef<HTMLDivElement>(null);
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   };
 
+  const checkScrollPosition = () => {
+    if (!messagesContainerRef.current) return;
+
+    const { scrollTop, scrollHeight, clientHeight } =
+      messagesContainerRef.current;
+    const isScrollable = scrollHeight > clientHeight;
+    const isAtBottom = scrollHeight - scrollTop - clientHeight < 50;
+
+    setShowScrollButton(isScrollable && !isAtBottom);
+  };
+
+  const handleScroll = () => {
+    checkScrollPosition();
+  };
+
   useEffect(() => {
-    scrollToBottom();
+    // Check scroll position when messages update
+    checkScrollPosition();
+
+    // Auto-scroll to bottom when new messages are added (if not manually scrolled up)
+    if (!showScrollButton) {
+      scrollToBottom();
+    }
   }, [messages]);
 
   const handleSubmit = async (query: string) => {
@@ -292,15 +185,15 @@ export default function ChatPage() {
     <div className="flex h-screen bg-zinc-900">
       {/* Main Chat Area */}
       <div
-        className={`flex flex-col flex-1 transition-all duration-300 ${
+        className={`flex flex-col flex-1 transition duration-300 ${
           showMap ? "w-1/2" : "w-full"
         }`}
       >
         {/* Header */}
         <header className="bg-zinc-800 px-4 py-3">
           <div className="max-w-4xl mx-auto flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-lg bg-blue-600 flex items-center justify-center">
+            <Link className="flex items-center gap-3" href={"/"}>
+              <div className="w-10 h-10 rounded-xl bg-primary flex items-center justify-center">
                 <span className="text-white text-xl">💧</span>
               </div>
               <div>
@@ -311,10 +204,9 @@ export default function ChatPage() {
                   Groundwater Resource Information
                 </p>
               </div>
-            </div>
+            </Link>
             <Button
               onPress={() => setShowMap(!showMap)}
-              className={`flex items-center gap-2 px-4 py-2 rounded-lg transition-colors `}
               color={showMap ? "default" : "primary"}
               startContent={
                 showMap ? <MessageSquare size={18} /> : <Map size={18} />
@@ -328,7 +220,11 @@ export default function ChatPage() {
         </header>
 
         {/* Messages */}
-        <main className="flex-1 overflow-y-auto p-4">
+        <main
+          ref={messagesContainerRef}
+          onScroll={handleScroll}
+          className="flex-1 overflow-y-auto p-4"
+        >
           <div className="max-w-4xl mx-auto space-y-4">
             {messages.length === 0 && (
               <div className="text-center py-12">
@@ -364,26 +260,26 @@ export default function ChatPage() {
                 }`}
               >
                 <div
-                  className={`max-w-[90%] rounded-lg px-4 py-3 ${
+                  className={`max-w-[90%]  px-4 py-2 ${
                     message.role === "user"
-                      ? "bg-blue-600 text-white"
-                      : "bg-zinc-800"
+                      ? "bg-primary text-white rounded-3xl rounded-br-none w-fit"
+                      : "w-full"
                   }`}
                 >
                   {message.isLoading && !message.content ? (
-                    <div className="flex items-center gap-2 text-zinc-400">
-                      <Loader2 className="animate-spin" size={16} />
-                      <span>Thinking...</span>
+                    <div className="space-y-3 w-full">
+                      <Skeleton className="h-3 w-1/3 rounded-lg" />
+                      <Skeleton className="h-3 w-3/4 rounded-lg" />
+                      <Skeleton className="h-3 w-2/3 rounded-lg" />
                     </div>
                   ) : (
                     <>
-                      <p
-                        className={`whitespace-pre-wrap ${
+                      <MarkdownRenderer
+                        content={message.content}
+                        className={
                           message.role === "assistant" ? "text-zinc-200" : ""
-                        }`}
-                      >
-                        {message.content}
-                      </p>
+                        }
+                      />
                       {message.charts && message.charts.length > 0 && (
                         <div className="mt-3 space-y-3">
                           {message.charts.map((chart, i) => (
@@ -402,7 +298,25 @@ export default function ChatPage() {
         </main>
 
         {/* Input */}
-        <footer className="p-4">
+        <footer className="p-4 relative">
+          {/* Scroll to bottom button */}
+          {showScrollButton && (
+            <div className="absolute bottom-20 left-1/2 -translate-x-1/2">
+              <Button
+                isIconOnly
+                radius="full"
+                size="sm"
+                color="default"
+                onPress={() => {
+                  scrollToBottom();
+                  setShowScrollButton(false);
+                }}
+              >
+                <ArrowDown size={18} />
+              </Button>
+            </div>
+          )}
+
           <form
             onSubmit={(e) => {
               e.preventDefault();
@@ -441,15 +355,16 @@ export default function ChatPage() {
       </div>
 
       {/* Map Panel */}
-      {showMap && (
-        <div className="w-1/2 bg-zinc-800 flex items-center justify-center">
-          <div className="text-center text-zinc-400">
-            <Map size={48} className="mx-auto mb-4 opacity-50" />
-            <p className="font-medium">Map View</p>
-            <p className="text-sm">Map integration coming soon</p>
-          </div>
+      <div
+        className={`${
+          showMap ? "w-1/2 opacity-100" : "w-0 opacity-0"
+        } transition-all duration-300 bg-zinc-800 flex items-center justify-center`}
+      >
+        <div className="text-center text-zinc-400">
+          <Map size={48} className="mx-auto mb-4 opacity-50" />
+          <p className="font-medium">Map View</p>
         </div>
-      )}
+      </div>
     </div>
   );
 }

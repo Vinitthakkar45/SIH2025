@@ -3,13 +3,13 @@
 import { HeroUIProvider } from "@heroui/react";
 
 export default function HeroUiClientProvider({
-	children,
+  children,
 }: Readonly<{
-	children: React.ReactNode;
+  children: React.ReactNode;
 }>) {
-	return <HeroUIProvider>
-		<main className="dark">
-			{children}
-		</main>
-	</HeroUIProvider>;
+  return (
+    <HeroUIProvider>
+      <main className="dark">{children}</main>
+    </HeroUIProvider>
+  );
 }
