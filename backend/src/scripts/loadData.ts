@@ -2,6 +2,7 @@ import fs from "fs";
 import path from "path";
 import { Pool } from "pg";
 import { drizzle } from "drizzle-orm/node-postgres";
+import dotenv from "dotenv";
 import {
   stateReport,
   centralReport,
@@ -19,12 +20,14 @@ import {
   annexure4b,
 } from "../db/schema";
 
+dotenv.config();
+
 const pool = new Pool({
-  user: "postgres",
-  password: "postgres",
-  host: "localhost",
-  port: 5432,
-  database: "ingres",
+  user: process.env.POSTGRES_USER || "postgres",
+  password: process.env.POSTGRES_PASSWORD || "postgres",
+  host: process.env.POSTGRES_HOST || "localhost",
+  port: parseInt(process.env.POSTGRES_PORT || "5432"),
+  database: process.env.POSTGRES_DB || "ingres",
 });
 
 const db = drizzle(pool);
