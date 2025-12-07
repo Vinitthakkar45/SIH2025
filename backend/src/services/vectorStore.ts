@@ -110,6 +110,9 @@ export async function searchSimilar(
     state?: string;
     year?: string;
     categorization?: string;
+    source_type?: string;
+    district?: string;
+    block?: string;
   }
 ): Promise<SearchResult[]> {
   const coll = await initVectorStore();
@@ -124,6 +127,9 @@ export async function searchSimilar(
     if (filters.state) conditions.push({ state: filters.state });
     if (filters.year) conditions.push({ year: filters.year });
     if (filters.categorization) conditions.push({ categorization: filters.categorization });
+    if (filters.source_type) conditions.push({ source_type: filters.source_type });
+    if (filters.district) conditions.push({ district: filters.district });
+    if (filters.block) conditions.push({ block: filters.block });
 
     if (conditions.length === 1) {
       whereFilter = conditions[0];
