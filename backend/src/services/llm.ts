@@ -15,7 +15,6 @@ function getGroqClient(): Groq {
   return groq;
 }
 
-
 // System prompt for the RAG assistant
 const SYSTEM_PROMPT = `You are INGRES AI Assistant, a groundwater data expert for India. Your role is to provide SHORT, PRECISE answers based ONLY on the provided context.
 
@@ -25,6 +24,7 @@ CRITICAL RULES:
 3. Keep responses BRIEF (3-5 bullet points max for simple queries)
 4. Use exact numbers from context with units (ham, mm, %, ha)
 5. If specific data isn't in context, say "Data not available" - don't guess
+6. ALWAYS respond in markdown format
 
 RESPONSE FORMAT:
 - For single location: Direct bullet points with key metrics but if user specifies more provide more details
@@ -60,7 +60,11 @@ export interface StreamCallbacks {
 /**
  * Generate a response using Groq LLM with context from RAG
  */
-export async function generateResponse(query: string, context: string, chatHistory: Message[] = []): Promise<string> {
+export async function generateResponse(
+  query: string,
+  context: string,
+  chatHistory: Message[] = []
+): Promise<string> {
   const contextMessage = `Context (use ONLY this data):
 ${context}
 
@@ -68,7 +72,10 @@ Question: ${query}
 
 Remember: Be brief and precise. Only use data from context above.`;
 
-  const messages: Array<{ role: "system" | "user" | "assistant"; content: string }> = [
+  const messages: Array<{
+    role: "system" | "user" | "assistant";
+    content: string;
+  }> = [
     { role: "system", content: SYSTEM_PROMPT },
     ...chatHistory.map((m) => ({ role: m.role, content: m.content })),
     { role: "user", content: contextMessage },
@@ -81,7 +88,9 @@ Remember: Be brief and precise. Only use data from context above.`;
     max_tokens: 512, // Shorter responses
   });
 
-  return completion.choices[0]?.message?.content || "I couldn't generate a response.";
+  return (
+    completion.choices[0]?.message?.content || "I couldn't generate a response."
+  );
 }
 
 /**
@@ -100,7 +109,10 @@ Question: ${query}
 
 Remember: Be brief and precise. Only use data from context above.`;
 
-  const messages: Array<{ role: "system" | "user" | "assistant"; content: string }> = [
+  const messages: Array<{
+    role: "system" | "user" | "assistant";
+    content: string;
+  }> = [
     { role: "system", content: SYSTEM_PROMPT },
     ...chatHistory.map((m) => ({ role: m.role, content: m.content })),
     { role: "user", content: contextMessage },
@@ -127,14 +139,19 @@ Remember: Be brief and precise. Only use data from context above.`;
 
     callbacks.onComplete(fullResponse);
   } catch (error) {
-    callbacks.onError(error instanceof Error ? error : new Error(String(error)));
+    callbacks.onError(
+      error instanceof Error ? error : new Error(String(error))
+    );
   }
 }
 
 /**
  * Generate suggested follow-up questions
  */
-export async function generateSuggestions(query: string, context: string): Promise<string[]> {
+export async function generateSuggestions(
+  query: string,
+  context: string
+): Promise<string[]> {
   const prompt = `Based on this groundwater data query and context, suggest 3 relevant follow-up questions the user might want to ask. Return only the questions, one per line.
 
 Query: ${query}

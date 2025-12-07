@@ -4,6 +4,7 @@ import {
   invokeGroundwaterChat,
   ChatMessage,
 } from "../services/gwAgent";
+import { generateSuggestions } from "../services/llm";
 
 const router: IRouter = Router();
 
@@ -92,7 +93,16 @@ router.post("/stream", async (req: Request, res: Response) => {
           );
         }
       },
-      onComplete: (fullResponse) => {
+      onComplete: async (fullResponse) => {
+        // Generate suggestions based on the query and response
+        try {
+          const suggestions = await generateSuggestions(query, fullResponse);
+          res.write(
+            `data: ${JSON.stringify({ type: "suggestions", suggestions })}\n\n`
+          );
+        } catch (error) {
+          console.error("Failed to generate suggestions:", error);
+        }
         res.write(`data: ${JSON.stringify({ type: "done" })}\n\n`);
         res.end();
       },

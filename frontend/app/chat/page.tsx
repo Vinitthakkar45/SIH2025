@@ -29,6 +29,7 @@ interface Message {
   role: "user" | "assistant";
   content: string;
   charts?: ChartData[];
+  suggestions?: string[];
   isLoading?: boolean;
 }
 
@@ -136,6 +137,16 @@ export default function ChatPage() {
                   updated[lastIdx] = {
                     ...updated[lastIdx],
                     charts: [...charts],
+                  };
+                  return updated;
+                });
+              } else if (data.type === "suggestions") {
+                setMessages((prev) => {
+                  const updated = [...prev];
+                  const lastIdx = updated.length - 1;
+                  updated[lastIdx] = {
+                    ...updated[lastIdx],
+                    suggestions: data.suggestions,
                   };
                   return updated;
                 });
@@ -304,6 +315,26 @@ export default function ChatPage() {
                           ))}
                         </div>
                       )}
+                      {message.suggestions &&
+                        message.suggestions.length > 0 && (
+                          <div className="mt-4 mb-10">
+                            <p className="text-sm text-zinc-400 mb-2 font-medium">
+                              Follow-up questions:
+                            </p>
+                            <div className="flex flex-wrap gap-2">
+                              {message.suggestions.map((suggestion, i) => (
+                                <Button
+                                  key={i}
+                                  onPress={() => handleSubmit(suggestion)}
+                                  variant="light"
+                                  className="border-dashed border-zinc-600 border-1 text-zinc-400 font-light"
+                                >
+                                  {suggestion}
+                                </Button>
+                              ))}
+                            </div>
+                          </div>
+                        )}
                     </>
                   )}
                 </div>

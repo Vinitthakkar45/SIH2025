@@ -53,7 +53,7 @@ export default function ChatComposer({
             className="text-white"
           >
             {isLoading ? (
-              <Spinner color="white" />
+              <Spinner color="white" size="sm" />
             ) : (
               <ArrowUp02Icon width={25} height={25} />
             )}
