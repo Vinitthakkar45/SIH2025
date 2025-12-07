@@ -16,7 +16,6 @@ let locationCache: LocationRecord[] = [];
 let fuse: Fuse<LocationRecord> | null = null;
 
 export async function initLocationSearch(): Promise<void> {
-  console.log("📍 Loading locations for fuzzy search...");
   locationCache = await db.select().from(locations);
 
   fuse = new Fuse(locationCache, {
@@ -25,8 +24,6 @@ export async function initLocationSearch(): Promise<void> {
     includeScore: true,
     ignoreLocation: true,
   });
-
-  console.log(`✅ Loaded ${locationCache.length} locations`);
 }
 
 export interface SearchResult {
