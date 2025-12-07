@@ -4,6 +4,7 @@ import {
   invokeGroundwaterChat,
   ChatMessage,
 } from "../services/gwAgent";
+import { generateSuggestions } from "../services/llm";
 import logger from "../utils/logger";
 
 const router: IRouter = Router();
@@ -128,6 +129,38 @@ router.post("/stream", async (req: Request, res: Response) => {
       "Stream request failed"
     );
     res.status(500).json({ error: "Failed to start streaming" });
+  }
+});
+
+/**
+ * POST /api/gw-chat/suggestions
+ * Generate follow-up suggestions based on query and context
+ */
+router.post("/suggestions", async (req: Request, res: Response) => {
+  try {
+    const { query, context = "" } = req.body;
+
+    if (!query || typeof query !== "string") {
+      res.status(400).json({ error: "Missing or invalid 'query' field" });
+      return;
+    }
+
+    logger.info({ query }, "Suggestions request received");
+
+    const suggestions = await generateSuggestions(query, context);
+
+    logger.info(
+      { suggestionsCount: suggestions.length },
+      "Suggestions generated"
+    );
+
+    res.json({ suggestions });
+  } catch (error) {
+    logger.error(
+      { err: error, query: req.body.query },
+      "Suggestions request failed"
+    );
+    res.status(500).json({ error: "Failed to generate suggestions" });
   }
 });
 

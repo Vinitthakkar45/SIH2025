@@ -101,6 +101,7 @@ interface Message {
   content: string;
   charts?: Visualization[];
   isLoading?: boolean;
+  suggestions?: string[];
 }
 
 const COLORS = [
@@ -861,6 +862,33 @@ export default function ChatPage() {
                   updated[lastIdx] = { ...updated[lastIdx], isLoading: false };
                   return updated;
                 });
+
+                // Fetch suggestions after response completes
+                try {
+                  const suggestionsRes = await fetch(
+                    `${API_URL}/api/gw-chat/suggestions`,
+                    {
+                      method: "POST",
+                      headers: { "Content-Type": "application/json" },
+                      body: JSON.stringify({
+                        query,
+                        context: assistantContent.substring(0, 500),
+                      }),
+                    }
+                  );
+
+                  if (suggestionsRes.ok) {
+                    const { suggestions } = await suggestionsRes.json();
+                    setMessages((prev) => {
+                      const updated = [...prev];
+                      const lastIdx = updated.length - 1;
+                      updated[lastIdx] = { ...updated[lastIdx], suggestions };
+                      return updated;
+                    });
+                  }
+                } catch (err) {
+                  console.error("Failed to fetch suggestions:", err);
+                }
               } else if (data.type === "error") {
                 setMessages((prev) => {
                   const updated = [...prev];
@@ -1009,6 +1037,26 @@ export default function ChatPage() {
                           ))}
                         </div>
                       )}
+                      {message.suggestions &&
+                        message.suggestions.length > 0 &&
+                        message.role === "assistant" && (
+                          <div className="mt-3 pt-3 border-t border-gray-100 dark:border-gray-700">
+                            <p className="text-xs text-gray-500 dark:text-gray-400 mb-2">
+                              Suggested follow-up questions:
+                            </p>
+                            <div className="flex flex-wrap gap-2">
+                              {message.suggestions.map((suggestion, i) => (
+                                <button
+                                  key={i}
+                                  onClick={() => handleSubmit(suggestion)}
+                                  className="text-xs px-3 py-1.5 bg-blue-50 dark:bg-blue-900/20 text-blue-700 dark:text-blue-300 rounded-full hover:bg-blue-100 dark:hover:bg-blue-900/30 transition-colors border border-blue-200 dark:border-blue-800"
+                                >
+                                  {suggestion}
+                                </button>
+                              ))}
+                            </div>
+                          </div>
+                        )}
                     </>
                   )}
                 </div>

@@ -4,12 +4,7 @@ import logger from "../utils/logger";
 
 dotenv.config();
 
-if (!process.env.GEMINI_API_KEY) {
-  logger.error("GEMINI_API_KEY is required");
-  throw new Error("GEMINI_API_KEY environment variable is required");
-}
-
-const gemini = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
+const gemini = new GoogleGenerativeAI(process.env.GOOGLE_API_KEY || "");
 
 // System prompt for the RAG assistant
 const SYSTEM_PROMPT = `You are INGRES AI Assistant, an expert on India's groundwater resources. You help users understand groundwater data from the INGRES (India-WRIS National Groundwater Resource Estimation System) database.
