@@ -1,0 +1,66 @@
+# Tools/Runtime versions
+[tools]
+node = "20"
+pnpm = "latest"
+
+# Task definitions
+[tasks.install]
+description = "Install dependencies for all packages"
+run = "pnpm install"
+
+[tasks.dev]
+description = "Run frontend and backend in development mode"
+depends = ["docker:up"]
+run = "pnpm dev"
+
+[tasks."dev:frontend"]
+description = "Run frontend development server"
+run = "pnpm --filter @sih2025/frontend dev"
+
+[tasks."dev:backend"]
+description = "Run backend development server"
+run = "pnpm --filter @sih2025/backend dev"
+
+[tasks."docker:up"]
+description = "Start Docker services (PostgreSQL, ChromaDB, Adminer)"
+run = "docker compose up -d"
+
+[tasks."docker:down"]
+description = "Stop Docker services"
+run = "docker compose down"
+
+[tasks."docker:logs"]
+description = "View Docker service logs"
+run = "docker compose logs -f"
+
+[tasks."db:generate"]
+description = "Generate Drizzle migrations"
+run = "pnpm --filter @sih2025/backend db:generate"
+
+[tasks."db:migrate"]
+description = "Run Drizzle migrations"
+run = "pnpm --filter @sih2025/backend db:migrate"
+
+[tasks."db:push"]
+description = "Push schema changes to database"
+run = "pnpm --filter @sih2025/backend db:push"
+
+[tasks."db:seed"]
+description = "Seed groundwater data"
+run = "pnpm --filter @sih2025/backend db:seed"
+
+[tasks.ingest]
+description = "Ingest data into vector store"
+run = "pnpm --filter @sih2025/backend ingest"
+
+[tasks."load:data"]
+description = "Load data from scripts"
+run = "pnpm --filter @sih2025/backend load:data"
+
+[tasks.build]
+description = "Build frontend and backend for production"
+run = "pnpm build"
+
+[tasks.clean]
+description = "Clean node_modules and build artifacts"
+run = "pnpm clean && rm -rf node_modules .turbo"

@@ -1,0 +1,9 @@
+packages:
+  - frontend
+  - backend
+
+onlyBuiltDependencies:
+  - esbuild
+  - protobufjs
+  - sharp
+  - unrs-resolver

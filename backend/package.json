@@ -1,5 +1,5 @@
 {
-  "name": "ingres-rag-backend",
+  "name": "@sih2025/backend",
   "version": "1.0.0",
   "description": "RAG backend for INGRES groundwater data with local embeddings",
   "main": "dist/index.js",
@@ -7,12 +7,13 @@
     "dev": "tsx watch src/index.ts",
     "build": "tsc",
     "start": "node dist/index.js",
-    "drizzle:generate": "drizzle-kit generate",
-    "drizzle:migrate": "drizzle-kit migrate",
-    "drizzle:push": "drizzle-kit push",
+    "db:generate": "drizzle-kit generate",
+    "db:migrate": "drizzle-kit migrate",
+    "db:push": "drizzle-kit push",
+    "db:seed": "tsx src/scripts/seedGroundwaterData.ts",
     "ingest": "tsx src/scripts/ingest.ts",
     "load:data": "tsx src/scripts/loadData.ts",
-    "seed:gw": "tsx src/scripts/seedGroundwaterData.ts"
+    "clean": "rm -rf dist node_modules"
   },
   "dependencies": {
     "@langchain/core": "^1.1.4",

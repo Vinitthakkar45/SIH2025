@@ -1,12 +1,13 @@
 {
-  "name": "frontend",
+  "name": "@sih2025/frontend",
   "version": "0.1.0",
   "private": true,
   "scripts": {
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "eslint"
+    "lint": "eslint",
+    "clean": "rm -rf .next node_modules"
   },
   "dependencies": {
     "lucide-react": "^0.556.0",
