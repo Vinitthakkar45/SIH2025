@@ -2,6 +2,7 @@ import {
   ActivityIcon,
   ArrowRightIcon,
   BarChartIcon,
+  Chat01Icon,
   CheckmarkCircle01Icon,
   CodeIcon,
   CpuIcon,
@@ -25,7 +26,7 @@ export default function Home() {
   return (
     <div className="antialiased selection:bg-blue-500/30 selection:text-blue-200">
       {/* Navigation */}
-      <nav className="fixed top-0 w-full z-50 border-b border-zinc-800/50 bg-zinc-950/80 backdrop-blur-md">
+      <nav className="fixed top-0 w-full z-50 bg-zinc-950/80 backdrop-blur-md">
         <div className="max-w-7xl mx-auto px-6 h-16 flex items-center justify-between">
           <div className="flex items-center gap-2">
             <DropletIcon size={20} className="text-blue-500" />
@@ -33,40 +34,15 @@ export default function Home() {
               INGRES AI
             </span>
           </div>
-          <div className="hidden md:flex items-center gap-8 text-sm text-zinc-400 font-medium">
-            <a
-              href="#features"
-              className="hover:text-zinc-100 transition-colors"
-            >
-              Features
-            </a>
-            <a
-              href="#use-cases"
-              className="hover:text-zinc-100 transition-colors"
-            >
-              Use Cases
-            </a>
-            <a href="#data" className="hover:text-zinc-100 transition-colors">
-              Data
-            </a>
-            <a href="#tech" className="hover:text-zinc-100 transition-colors">
-              Tech
-            </a>
-          </div>
-          <div className="flex items-center gap-4">
-            <Link
-              href="/chat"
-              className="text-xs font-medium text-zinc-400 hover:text-white transition-colors hidden sm:block"
-            >
-              Log in
-            </Link>
-            <Link
-              href="/chat"
-              className="bg-zinc-100 hover:bg-white text-zinc-900 text-xs font-medium px-4 py-2 rounded-full transition-colors"
+          <Link href="/chat">
+            <Button
+              color="primary"
+              className="font-medium"
+              endContent={<MessageIcon width={18} height={18} />}
             >
               Start Chatting
-            </Link>
-          </div>
+            </Button>
+          </Link>
         </div>
       </nav>
 
@@ -88,7 +64,7 @@ export default function Home() {
         ></div>
 
         <div className="relative z-10 max-w-5xl mx-auto px-6 text-center">
-          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-zinc-900/50 border border-zinc-800 mb-8 animate-pulse">
+          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-zinc-900/50 mb-8 animate-pulse">
             <span className="relative flex h-2 w-2">
               <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-blue-400 opacity-75"></span>
               <span className="relative inline-flex rounded-full h-2 w-2 bg-blue-500"></span>
@@ -99,7 +75,7 @@ export default function Home() {
           </div>
 
           <div className="flex justify-center mb-6">
-            <div className="h-16 w-16 md:h-20 md:w-20 rounded-2xl bg-linear-to-br from-zinc-800 to-zinc-900 border border-zinc-700 flex items-center justify-center shadow-2xl shadow-blue-500/10">
+            <div className="h-16 w-16 md:h-20 md:w-20 rounded-2xl bg-zinc-900 flex items-center justify-center shadow-2xl shadow-blue-500/10">
               <DropletIcon size={40} className="text-blue-500" />
             </div>
           </div>
@@ -141,7 +117,7 @@ export default function Home() {
       </section>
 
       {/* Stats Section */}
-      <section className="border-y border-zinc-900 bg-zinc-950/50 backdrop-blur-sm relative z-20">
+      <section className="bg-zinc-950/50 backdrop-blur-sm relative z-20">
         <div className="max-w-7xl mx-auto px-6 py-12">
           <div className="grid grid-cols-2 md:grid-cols-4 gap-8 md:gap-12">
             <div className="text-center md:text-left">
@@ -200,8 +176,8 @@ export default function Home() {
 
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {/* Feature 1 */}
-            <div className="group p-8 rounded-2xl bg-zinc-900/40 border border-zinc-800 hover:border-zinc-700 transition-all hover:bg-zinc-900/60">
-              <div className="h-10 w-10 rounded-lg bg-zinc-800 border border-zinc-700 flex items-center justify-center mb-6 text-blue-400">
+            <div className="group p-8 rounded-2xl bg-zinc-900/40 transition-all hover:bg-zinc-900/60">
+              <div className="h-10 w-10 rounded-lg bg-zinc-800 flex items-center justify-center mb-6 text-blue-400">
                 <MessageIcon size={20} className="text-blue-400" />
               </div>
               <h3 className="text-lg font-medium text-zinc-100 mb-2">
@@ -214,8 +190,8 @@ export default function Home() {
             </div>
 
             {/* Feature 2 */}
-            <div className="group p-8 rounded-2xl bg-zinc-900/40 border border-zinc-800 hover:border-zinc-700 transition-all hover:bg-zinc-900/60">
-              <div className="h-10 w-10 rounded-lg bg-zinc-800 border border-zinc-700 flex items-center justify-center mb-6 text-green-400">
+            <div className="group p-8 rounded-2xl bg-zinc-900/40 transition-all hover:bg-zinc-900/60">
+              <div className="h-10 w-10 rounded-lg bg-zinc-800 flex items-center justify-center mb-6 text-green-400">
                 <DatabaseIcon size={20} className="text-green-400" />
               </div>
               <h3 className="text-lg font-medium text-zinc-100 mb-2">
@@ -228,8 +204,8 @@ export default function Home() {
             </div>
 
             {/* Feature 3 */}
-            <div className="group p-8 rounded-2xl bg-zinc-900/40 border border-zinc-800 hover:border-zinc-700 transition-all hover:bg-zinc-900/60">
-              <div className="h-10 w-10 rounded-lg bg-zinc-800 border border-zinc-700 flex items-center justify-center mb-6 text-purple-400">
+            <div className="group p-8 rounded-2xl bg-zinc-900/40 transition-all hover:bg-zinc-900/60">
+              <div className="h-10 w-10 rounded-lg bg-zinc-800 flex items-center justify-center mb-6 text-purple-400">
                 <BarChartIcon size={20} className="text-purple-400" />
               </div>
               <h3 className="text-lg font-medium text-zinc-100 mb-2">
@@ -242,8 +218,8 @@ export default function Home() {
             </div>
 
             {/* Feature 4 */}
-            <div className="group p-8 rounded-2xl bg-zinc-900/40 border border-zinc-800 hover:border-zinc-700 transition-all hover:bg-zinc-900/60">
-              <div className="h-10 w-10 rounded-lg bg-zinc-800 border border-zinc-700 flex items-center justify-center mb-6 text-orange-400">
+            <div className="group p-8 rounded-2xl bg-zinc-900/40 transition-all hover:bg-zinc-900/60">
+              <div className="h-10 w-10 rounded-lg bg-zinc-800 flex items-center justify-center mb-6 text-orange-400">
                 <FilterIcon size={20} className="text-orange-400" />
               </div>
               <h3 className="text-lg font-medium text-zinc-100 mb-2">
@@ -256,8 +232,8 @@ export default function Home() {
             </div>
 
             {/* Feature 5 */}
-            <div className="group p-8 rounded-2xl bg-zinc-900/40 border border-zinc-800 hover:border-zinc-700 transition-all hover:bg-zinc-900/60">
-              <div className="h-10 w-10 rounded-lg bg-zinc-800 border border-zinc-700 flex items-center justify-center mb-6 text-red-400">
+            <div className="group p-8 rounded-2xl bg-zinc-900/40 transition-all hover:bg-zinc-900/60">
+              <div className="h-10 w-10 rounded-lg bg-zinc-800 flex items-center justify-center mb-6 text-red-400">
                 <ActivityIcon size={20} className="text-red-400" />
               </div>
               <h3 className="text-lg font-medium text-zinc-100 mb-2">
@@ -270,8 +246,8 @@ export default function Home() {
             </div>
 
             {/* Feature 6 */}
-            <div className="group p-8 rounded-2xl bg-zinc-900/40 border border-zinc-800 hover:border-zinc-700 transition-all hover:bg-zinc-900/60">
-              <div className="h-10 w-10 rounded-lg bg-zinc-800 border border-zinc-700 flex items-center justify-center mb-6 text-teal-400">
+            <div className="group p-8 rounded-2xl bg-zinc-900/40 transition-all hover:bg-zinc-900/60">
+              <div className="h-10 w-10 rounded-lg bg-zinc-800 flex items-center justify-center mb-6 text-teal-400">
                 <MapPinIcon size={20} className="text-teal-400" />
               </div>
               <h3 className="text-lg font-medium text-zinc-100 mb-2">
@@ -287,10 +263,7 @@ export default function Home() {
       </section>
 
       {/* Data Sources & Metrics Grid */}
-      <section
-        id="data"
-        className="py-24 border-y border-zinc-900 bg-zinc-900/20"
-      >
+      <section id="data" className="py-24 bg-zinc-900/20">
         <div className="max-w-7xl mx-auto px-6">
           <div className="flex flex-col md:flex-row gap-16">
             <div className="flex-1">
@@ -300,7 +273,8 @@ export default function Home() {
               <ul className="space-y-4">
                 <li className="flex gap-3 items-start">
                   <CheckmarkCircle01Icon
-                    size={16}
+                    width={23}
+                    height={23}
                     className="text-green-500 mt-1"
                   />
                   <div>
@@ -314,7 +288,8 @@ export default function Home() {
                 </li>
                 <li className="flex gap-3 items-start">
                   <CheckmarkCircle01Icon
-                    size={16}
+                    width={23}
+                    height={23}
                     className="text-green-500 mt-1"
                   />
                   <div>
@@ -328,7 +303,8 @@ export default function Home() {
                 </li>
                 <li className="flex gap-3 items-start">
                   <CheckmarkCircle01Icon
-                    size={16}
+                    width={23}
+                    height={23}
                     className="text-green-500 mt-1"
                   />
                   <div>
@@ -348,7 +324,7 @@ export default function Home() {
                 Key Highlights
               </h2>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <div className="p-4 rounded-lg bg-zinc-900 border border-zinc-800">
+                <div className="p-4 rounded-lg bg-zinc-900">
                   <h4 className="text-sm font-medium text-zinc-200 mb-1">
                     100% Local Processing
                   </h4>
@@ -356,7 +332,7 @@ export default function Home() {
                     No external API dependencies for embeddings.
                   </p>
                 </div>
-                <div className="p-4 rounded-lg bg-zinc-900 border border-zinc-800">
+                <div className="p-4 rounded-lg bg-zinc-900">
                   <h4 className="text-sm font-medium text-zinc-200 mb-1">
                     Context-Aware
                   </h4>
@@ -364,7 +340,7 @@ export default function Home() {
                     Maintains conversation history for better flow.
                   </p>
                 </div>
-                <div className="p-4 rounded-lg bg-zinc-900 border border-zinc-800">
+                <div className="p-4 rounded-lg bg-zinc-900">
                   <h4 className="text-sm font-medium text-zinc-200 mb-1">
                     Privacy-Focused
                   </h4>
@@ -372,7 +348,7 @@ export default function Home() {
                     No data collection or user tracking.
                   </p>
                 </div>
-                <div className="p-4 rounded-lg bg-zinc-900 border border-zinc-800">
+                <div className="p-4 rounded-lg bg-zinc-900">
                   <h4 className="text-sm font-medium text-zinc-200 mb-1">
                     Open Data
                   </h4>
@@ -389,13 +365,14 @@ export default function Home() {
       {/* Use Cases */}
       <section id="use-cases" className="py-24">
         <div className="max-w-7xl mx-auto px-6">
-          <h2 className="text-3xl font-medium text-white tracking-tight mb-12 text-center">
+          <h2 className="text-3xl font-semibold text-white tracking-tight mb-12 text-center">
             Who Can Benefit
           </h2>
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
             {/* Case 1 */}
-            <div className="border-l border-zinc-800 pl-6 hover:border-blue-500 transition-colors duration-300">
+            <div className="pl-6 relative group">
+              <div className="h-full absolute left-0 group-hover:opacity-100 opacity-0 min-w-1 rounded-full top-0 bg-primary" />
               <h3 className="text-lg font-medium text-zinc-100 mb-2">
                 Researchers & Scientists
               </h3>
@@ -405,7 +382,7 @@ export default function Home() {
               </p>
             </div>
             {/* Case 2 */}
-            <div className="border-l border-zinc-800 pl-6 hover:border-blue-500 transition-colors duration-300">
+            <div className="pl-6">
               <h3 className="text-lg font-medium text-zinc-100 mb-2">
                 Policy Makers
               </h3>
@@ -415,7 +392,7 @@ export default function Home() {
               </p>
             </div>
             {/* Case 3 */}
-            <div className="border-l border-zinc-800 pl-6 hover:border-blue-500 transition-colors duration-300">
+            <div className="pl-6">
               <h3 className="text-lg font-medium text-zinc-100 mb-2">
                 Farmers & Agriculture
               </h3>
@@ -425,7 +402,7 @@ export default function Home() {
               </p>
             </div>
             {/* Case 4 */}
-            <div className="border-l border-zinc-800 pl-6 hover:border-blue-500 transition-colors duration-300">
+            <div className="pl-6">
               <h3 className="text-lg font-medium text-zinc-100 mb-2">
                 NGOs & Activists
               </h3>
@@ -435,7 +412,7 @@ export default function Home() {
               </p>
             </div>
             {/* Case 5 */}
-            <div className="border-l border-zinc-800 pl-6 hover:border-blue-500 transition-colors duration-300">
+            <div className="pl-6">
               <h3 className="text-lg font-medium text-zinc-100 mb-2">
                 Students & Educators
               </h3>
@@ -445,7 +422,7 @@ export default function Home() {
               </p>
             </div>
             {/* Case 6 */}
-            <div className="border-l border-zinc-800 pl-6 hover:border-blue-500 transition-colors duration-300">
+            <div className="pl-6">
               <h3 className="text-lg font-medium text-zinc-100 mb-2">
                 Urban Planners
               </h3>
@@ -459,7 +436,7 @@ export default function Home() {
       </section>
 
       {/* Tech Stack */}
-      <section id="tech" className="py-20 border-t border-zinc-900 bg-zinc-950">
+      <section id="tech" className="py-20 bg-zinc-950">
         <div className="max-w-7xl mx-auto px-6 text-center">
           <h2 className="text-sm font-medium text-zinc-500 uppercase tracking-widest mb-10">
             Built With Advanced Technology
@@ -500,7 +477,7 @@ export default function Home() {
         </div>
       </section>
 
-      <footer className="border-t border-zinc-900 bg-zinc-950 pt-16 pb-8">
+      <footer className="bg-zinc-950 pt-16 pb-8">
         <div className="max-w-7xl mx-auto px-6">
           <div className="pt-8 flex flex-col md:flex-row justify-between items-center gap-4">
             <p className="text-xs text-zinc-600">

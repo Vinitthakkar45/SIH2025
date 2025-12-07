@@ -10,6 +10,7 @@
     "clean": "rm -rf .next node_modules"
   },
   "dependencies": {
+    "@fontsource-variable/inter": "^5.2.8",
     "@heroui/button": "^2.2.27",
     "@heroui/react": "^2.8.5",
     "@theexperiencecompany/gaia-icons": "^1.9.0",

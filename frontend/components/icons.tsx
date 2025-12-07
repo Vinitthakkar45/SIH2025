@@ -1,1 +1,1 @@
-export * from "@theexperiencecompany/gaia-icons/solid-rounded";
+export * from "@theexperiencecompany/gaia-icons/duotone-rounded";
