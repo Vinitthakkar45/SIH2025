@@ -3,6 +3,7 @@ import { embed } from "./embeddings.js";
 
 let client: ChromaClient | null = null;
 let collection: Collection | null = null;
+const collectionCache = new Map<string, Collection>();
 
 const CHROMA_URL = process.env.CHROMA_URL || "http://localhost:8000";
 const COLLECTION_NAME = process.env.COLLECTION_NAME || "ingres_groundwater";
@@ -61,6 +62,7 @@ export async function initVectorStore(): Promise<Collection> {
 
   console.log(`🔄 Connecting to ChromaDB at ${CHROMA_URL}...`);
 
+  try {
   client = new ChromaClient({ path: CHROMA_URL });
 
   // Get or create the collection
@@ -76,6 +78,12 @@ export async function initVectorStore(): Promise<Collection> {
   console.log(`✅ Connected to ChromaDB. Collection "${COLLECTION_NAME}" has ${count} documents.`);
 
   return collection;
+  } catch (error) {
+    console.error(`❌ Failed to connect to ChromaDB at ${CHROMA_URL}`);
+    console.error(`   Make sure ChromaDB is running: docker-compose up -d`);
+    console.error(`   Error: ${error instanceof Error ? error.message : String(error)}`);
+    throw error;
+  }
 }
 
 /**
@@ -180,4 +188,91 @@ export async function resetCollection(): Promise<void> {
 
   collection = null;
   await initVectorStore();
+}
+
+/**
+ * Get or create a collection by name (for dynamic collections)
+ */
+export async function getOrCreateCollection(collectionName: string): Promise<Collection> {
+  // Check cache first
+  if (collectionCache.has(collectionName)) {
+    return collectionCache.get(collectionName)!;
+  }
+
+  // Initialize client if needed
+  if (!client) {
+    client = new ChromaClient({ path: CHROMA_URL });
+  }
+
+  // Get or create the collection
+  const coll = await client.getOrCreateCollection({
+    name: collectionName,
+    metadata: {
+      description: `Collection: ${collectionName}`,
+      "hnsw:space": "cosine",
+    },
+  });
+
+  // Cache it
+  collectionCache.set(collectionName, coll);
+  return coll;
+}
+
+/**
+ * Add documents to a specific collection
+ */
+export async function addDocumentsToCollection(
+  collectionName: string,
+  documents: ChunkDocument[],
+  embeddings: number[][]
+): Promise<void> {
+  const coll = await getOrCreateCollection(collectionName);
+
+  const BATCH_SIZE = 100;
+
+  for (let i = 0; i < documents.length; i += BATCH_SIZE) {
+    const batchDocs = documents.slice(i, i + BATCH_SIZE);
+    const batchEmbeddings = embeddings.slice(i, i + BATCH_SIZE);
+
+    await coll.add({
+      ids: batchDocs.map((d) => d.id),
+      embeddings: batchEmbeddings,
+      documents: batchDocs.map((d) => d.text),
+      metadatas: batchDocs.map((d) => sanitizeMetadata(d.metadata)),
+    });
+  }
+}
+
+/**
+ * Query a specific collection
+ */
+export async function queryCollection(
+  collectionName: string,
+  query: string,
+  nResults: number = 3
+): Promise<SearchResult[]> {
+  const coll = await getOrCreateCollection(collectionName);
+
+  // Generate embedding for the query
+  const queryEmbedding = await embed(query);
+
+  const results = await coll.query({
+    queryEmbeddings: [queryEmbedding],
+    nResults,
+  });
+
+  // Transform results
+  const searchResults: SearchResult[] = [];
+  if (results.ids[0]) {
+    for (let i = 0; i < results.ids[0].length; i++) {
+      searchResults.push({
+        id: results.ids[0][i],
+        text: results.documents?.[0]?.[i] || "",
+        metadata: (results.metadatas?.[0]?.[i] as ChunkDocument["metadata"]) || {},
+        distance: results.distances?.[0]?.[i] || 0,
+      });
+    }
+  }
+
+  return searchResults;
 }

@@ -28,6 +28,7 @@ export default function ChatPage() {
   const [input, setInput] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [suggestions, setSuggestions] = useState<string[]>([]);
+  const [isStreaming, setIsStreaming] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   const scrollToBottom = () => {
@@ -38,6 +39,16 @@ export default function ChatPage() {
     scrollToBottom();
   }, [messages]);
 
+  // Auto-scroll during streaming (less aggressive)
+  useEffect(() => {
+    if (isStreaming) {
+      const interval = setInterval(() => {
+        scrollToBottom();
+      }, 300);
+      return () => clearInterval(interval);
+    }
+  }, [isStreaming]);
+
   const handleSubmit = async (query: string) => {
     if (!query.trim() || isLoading) return;
 
@@ -45,6 +56,7 @@ export default function ChatPage() {
     setMessages((prev) => [...prev, userMessage]);
     setInput("");
     setIsLoading(true);
+    setIsStreaming(true);
     setSuggestions([]);
 
     try {
@@ -66,6 +78,7 @@ export default function ChatPage() {
 
       let assistantContent = "";
       let sources: Source[] = [];
+      let buffer = "";
 
       // Add empty assistant message that we'll update
       setMessages((prev) => [...prev, { role: "assistant", content: "", sources: [] }]);
@@ -74,8 +87,12 @@ export default function ChatPage() {
         const { done, value } = await reader.read();
         if (done) break;
 
-        const chunk = decoder.decode(value);
-        const lines = chunk.split("\n");
+        // Decode chunk and add to buffer
+        buffer += decoder.decode(value, { stream: true });
+        const lines = buffer.split("\n");
+        
+        // Keep the last incomplete line in buffer
+        buffer = lines.pop() || "";
 
         for (const line of lines) {
           if (line.startsWith("data: ")) {
@@ -91,31 +108,87 @@ export default function ChatPage() {
                 });
               } else if (data.type === "token") {
                 assistantContent += data.content;
+                // Update message with new content for smooth word-by-word streaming
                 setMessages((prev) => {
                   const updated = [...prev];
                   updated[updated.length - 1].content = assistantContent;
                   return updated;
                 });
+                // Smooth scroll to bottom as content streams (throttled)
+                requestAnimationFrame(() => {
+                  scrollToBottom();
+                });
               } else if (data.type === "suggestions") {
                 setSuggestions(data.suggestions);
+              } else if (data.type === "done") {
+                // Streaming complete
+              } else if (data.type === "error") {
+                setIsStreaming(false);
+                throw new Error(data.error || "Streaming error");
               }
-            } catch {
-              // Ignore parse errors for incomplete chunks
+            } catch (e) {
+              // Ignore JSON parse errors for incomplete chunks
+              if (e instanceof Error && !e.message.includes("JSON")) {
+                console.error("Stream parsing error:", e);
+              }
             }
+          }
+        }
+      }
+
+      // Process any remaining buffer
+      if (buffer.trim()) {
+        const line = buffer.trim();
+        if (line.startsWith("data: ")) {
+          try {
+            const data = JSON.parse(line.slice(6));
+            if (data.type === "token") {
+              assistantContent += data.content;
+              setMessages((prev) => {
+                const updated = [...prev];
+                updated[updated.length - 1].content = assistantContent;
+                return updated;
+              });
+            }
+          } catch {
+            // Ignore parse errors
           }
         }
       }
     } catch (error) {
       console.error("Chat error:", error);
-      setMessages((prev) => [
-        ...prev,
-        {
-          role: "assistant",
-          content: "Sorry, I encountered an error. Please try again.",
-        },
-      ]);
+      const errorMessage = error instanceof Error 
+        ? error.message 
+        : "Sorry, I encountered an error. Please try again.";
+      
+      setMessages((prev) => {
+        // Remove the empty assistant message if it exists
+        const updated = prev.filter((msg, idx) => 
+          !(idx === prev.length - 1 && msg.role === "assistant" && !msg.content)
+        );
+        
+        // Provide user-friendly error message
+        let userMessage = `❌ **Error**: ${errorMessage}`;
+        
+        if (errorMessage.includes("timeout") || errorMessage.includes("timed out")) {
+          userMessage += `\n\n💡 **Possible solutions:**\n- The model may be taking too long to respond\n- Try a shorter or simpler question\n- Check if Ollama is still loading the model\n- Wait a moment and try again`;
+        } else if (errorMessage.includes("connect") || errorMessage.includes("ECONNREFUSED")) {
+          userMessage += `\n\n💡 **Please check:**\n- Ollama API server is running: \`docker-compose ps\` in Ollama/\n- Ollama service is accessible: \`curl http://localhost:11434/api/tags\`\n- Backend can reach Ollama API: \`curl http://localhost:8080/health\``;
+        } else {
+          userMessage += `\n\n💡 **Troubleshooting:**\n- Check backend logs for more details\n- Verify Ollama services are running\n- Try refreshing the page`;
+        }
+        
+        return [
+          ...updated,
+          {
+            role: "assistant",
+            content: userMessage,
+          },
+        ];
+      });
     } finally {
       setIsLoading(false);
+      setIsStreaming(false);
     }
   };
 
@@ -183,6 +256,9 @@ export default function ChatPage() {
 
                 <p className={`whitespace-pre-wrap ${message.role === "assistant" ? "text-gray-800 dark:text-gray-200" : ""}`}>
                   {message.content}
+                  {isStreaming && idx === messages.length - 1 && message.role === "assistant" && (
+                    <span className="inline-block w-0.5 h-5 ml-1 bg-blue-600 dark:bg-blue-400 typing-cursor" aria-label="typing" />
+                  )}
                   {isLoading && idx === messages.length - 1 && message.role === "assistant" && !message.content && (
                     <span className="inline-flex gap-1">
                       <span className="animate-bounce">●</span>
