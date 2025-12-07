@@ -3,33 +3,48 @@ import dotenv from "dotenv";
 
 dotenv.config();
 
-const groq = new Groq({
-  apiKey: process.env.GROQ_API_KEY,
-});
+// Lazy initialization of Groq client
+let groq: Groq | null = null;
+
+function getGroqClient(): Groq {
+  if (!groq) {
+    groq = new Groq({
+      apiKey: process.env.GROQ_API_KEY,
+    });
+  }
+  return groq;
+}
 
 
 // System prompt for the RAG assistant
-const SYSTEM_PROMPT = `You are INGRES AI Assistant, an expert on India's groundwater resources. You help users understand groundwater data from the INGRES (India-WRIS National Groundwater Resource Estimation System) database.
+const SYSTEM_PROMPT = `You are INGRES AI Assistant, a groundwater data expert for India. Your role is to provide SHORT, PRECISE answers based ONLY on the provided context.
 
-You have access to detailed groundwater data including:
-- State and district-level reports
-- Block-wise groundwater assessments
-- Annual rainfall data
-- Groundwater recharge statistics
-- Extraction levels and sustainability status (Safe, Semi-Critical, Critical, Over-Exploited, Saline)
+CRITICAL RULES:
+1. ONLY use data from the provided context - never make up statistics
+2. Focus on the EXACT location/year the user asked about - ignore other locations in context
+3. Keep responses BRIEF (3-5 bullet points max for simple queries)
+4. Use exact numbers from context with units (ham, mm, %, ha)
+5. If specific data isn't in context, say "Data not available" - don't guess
 
-When answering:
-1. Be precise and cite specific data from the provided context
-2. Use the exact numbers and statistics when available
-3. Explain technical terms in simple language
-4. If data is not available in the context, clearly say so
-5. Suggest related queries the user might find helpful
+RESPONSE FORMAT:
+- For single location: Direct bullet points with key metrics but if user specifies more provide more details
+- For comparisons: Simple table format
+- NO lengthy introductions or explanations
+- NO repeating the question back
+- Bold only the most critical values (status, extraction %)
 
-Format your responses with:
-- Clear headings for different sections
-- Bullet points for lists
-- Bold for important statistics
-- Tables when comparing multiple regions`;
+KEY METRICS TO PRIORITIZE:
+• Groundwater Status (Safe/Semi-Critical/Critical/Over-Exploited)
+• Stage of Extraction (%)
+• Annual Recharge vs Extraction (ham)
+• Net Availability (ham)
+
+Example good response:
+**Aibawk, Aizawl, Mizoram (2024-2025)**
+• Status: **SAFE**
+• Extraction: 5.98 ham / 8.61 ham extractable (**69.5%**)
+• Annual Recharge: 9.57 ham
+• Net Availability: 2.35 ham`;
 
 export interface Message {
   role: "user" | "assistant" | "system";
@@ -45,17 +60,13 @@ export interface StreamCallbacks {
 /**
  * Generate a response using Groq LLM with context from RAG
  */
-export async function generateResponse(
-  query: string,
-  context: string,
-  chatHistory: Message[] = []
-): Promise<string> {
-  const contextMessage = `Here is the relevant groundwater data context to help answer the user's question:
-
+export async function generateResponse(query: string, context: string, chatHistory: Message[] = []): Promise<string> {
+  const contextMessage = `Context (use ONLY this data):
 ${context}
 
----
-User Question: ${query}`;
+Question: ${query}
+
+Remember: Be brief and precise. Only use data from context above.`;
 
   const messages: Array<{ role: "system" | "user" | "assistant"; content: string }> = [
     { role: "system", content: SYSTEM_PROMPT },
@@ -63,11 +74,11 @@ User Question: ${query}`;
     { role: "user", content: contextMessage },
   ];
 
-  const completion = await groq.chat.completions.create({
-    model: "llama-3.1-70b-versatile", // Fast and capable model on Groq
+  const completion = await getGroqClient().chat.completions.create({
+    model: "llama-3.3-70b-versatile",
     messages,
-    temperature: 0.3, // Lower temperature for more factual responses
-    max_tokens: 2048,
+    temperature: 0.1, // Very low for factual, consistent responses
+    max_tokens: 512, // Shorter responses
   });
 
   return completion.choices[0]?.message?.content || "I couldn't generate a response.";
@@ -82,12 +93,12 @@ export async function generateStreamingResponse(
   chatHistory: Message[] = [],
   callbacks: StreamCallbacks
 ): Promise<void> {
-  const contextMessage = `Here is the relevant groundwater data context to help answer the user's question:
-
+  const contextMessage = `Context (use ONLY this data):
 ${context}
 
----
-User Question: ${query}`;
+Question: ${query}
+
+Remember: Be brief and precise. Only use data from context above.`;
 
   const messages: Array<{ role: "system" | "user" | "assistant"; content: string }> = [
     { role: "system", content: SYSTEM_PROMPT },
@@ -96,11 +107,11 @@ User Question: ${query}`;
   ];
 
   try {
-    const stream = await groq.chat.completions.create({
-      model: "llama-3.1-70b-versatile",
+    const stream = await getGroqClient().chat.completions.create({
+      model: "llama-3.3-70b-versatile",
       messages,
-      temperature: 0.3,
-      max_tokens: 2048,
+      temperature: 0.1,
+      max_tokens: 512,
       stream: true,
     });
 
@@ -123,16 +134,13 @@ User Question: ${query}`;
 /**
  * Generate suggested follow-up questions
  */
-export async function generateSuggestions(
-  query: string,
-  context: string
-): Promise<string[]> {
+export async function generateSuggestions(query: string, context: string): Promise<string[]> {
   const prompt = `Based on this groundwater data query and context, suggest 3 relevant follow-up questions the user might want to ask. Return only the questions, one per line.
 
 Query: ${query}
 Context summary: ${context.substring(0, 500)}...`;
 
-  const completion = await groq.chat.completions.create({
+  const completion = await getGroqClient().chat.completions.create({
     model: "llama-3.1-8b-instant", // Faster model for suggestions
     messages: [{ role: "user", content: prompt }],
     temperature: 0.7,

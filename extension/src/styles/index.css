@@ -1,0 +1,154 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Reset styles for the extension container to avoid host page conflicts */
+#ingres-chatbot-root {
+	all: initial;
+	font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+	font-size: 16px;
+	line-height: 1.5;
+	color: #1f2937;
+	-webkit-font-smoothing: antialiased;
+	-moz-osx-font-smoothing: grayscale;
+}
+
+#ingres-chatbot-root *,
+#ingres-chatbot-root *::before,
+#ingres-chatbot-root *::after {
+	box-sizing: border-box;
+}
+
+/* Scrollbar Styles */
+#ingres-chatbot-root ::-webkit-scrollbar {
+	width: 6px;
+	height: 6px;
+}
+
+#ingres-chatbot-root ::-webkit-scrollbar-track {
+	background: transparent;
+}
+
+#ingres-chatbot-root ::-webkit-scrollbar-thumb {
+	background: #d1d5db;
+	border-radius: 3px;
+}
+
+#ingres-chatbot-root ::-webkit-scrollbar-thumb:hover {
+	background: #9ca3af;
+}
+
+/* Custom animations */
+@keyframes wave {
+
+	0%,
+	60%,
+	100% {
+		transform: translateY(0);
+	}
+
+	30% {
+		transform: translateY(-5px);
+	}
+}
+
+.ig-animate-wave {
+	animation: wave 1.5s ease-in-out infinite;
+}
+
+/* Markdown content styles */
+#ingres-chatbot-root .ig-prose {
+	font-size: 0.875rem;
+}
+
+#ingres-chatbot-root .ig-prose p {
+	margin: 0;
+}
+
+#ingres-chatbot-root .ig-prose p+p {
+	margin-top: 0.5rem;
+}
+
+#ingres-chatbot-root .ig-prose ul,
+#ingres-chatbot-root .ig-prose ol {
+	margin: 0.5rem 0;
+	padding-left: 1.25rem;
+}
+
+#ingres-chatbot-root .ig-prose li {
+	margin: 0.25rem 0;
+}
+
+#ingres-chatbot-root .ig-prose code {
+	font-size: 0.8125rem;
+	background-color: rgba(0, 0, 0, 0.05);
+	padding: 0.125rem 0.375rem;
+	border-radius: 0.25rem;
+}
+
+#ingres-chatbot-root .ig-prose pre {
+	background-color: #1f2937;
+	color: #f9fafb;
+	padding: 0.75rem;
+	border-radius: 0.5rem;
+	overflow-x: auto;
+	margin: 0.5rem 0;
+}
+
+#ingres-chatbot-root .ig-prose pre code {
+	background: none;
+	padding: 0;
+	color: inherit;
+}
+
+/* Table styles */
+#ingres-chatbot-root .ig-prose table {
+	width: 100%;
+	border-collapse: collapse;
+	font-size: 0.75rem;
+	margin: 0.5rem 0;
+}
+
+#ingres-chatbot-root .ig-prose th,
+#ingres-chatbot-root .ig-prose td {
+	border: 1px solid #e5e7eb;
+	padding: 0.375rem 0.5rem;
+	text-align: left;
+}
+
+#ingres-chatbot-root .ig-prose th {
+	background-color: #f9fafb;
+	font-weight: 600;
+}
+
+/* Inverted prose for user messages */
+#ingres-chatbot-root .ig-prose-invert code {
+	background-color: rgba(255, 255, 255, 0.1);
+	color: inherit;
+}
+
+/* Focus styles */
+#ingres-chatbot-root textarea:focus,
+#ingres-chatbot-root select:focus,
+#ingres-chatbot-root button:focus {
+	outline: none;
+}
+
+#ingres-chatbot-root textarea:focus-visible,
+#ingres-chatbot-root select:focus-visible,
+#ingres-chatbot-root button:focus-visible {
+	outline: 2px solid #0ea5e9;
+	outline-offset: 2px;
+}
+
+/* Water gradient background */
+.ig-water-gradient {
+	background: linear-gradient(135deg, #0ea5e9 0%, #3b82f6 100%);
+}
+
+/* Glassmorphism effect */
+.ig-glass {
+	background: rgba(255, 255, 255, 0.9);
+	backdrop-filter: blur(10px);
+	-webkit-backdrop-filter: blur(10px);
+}

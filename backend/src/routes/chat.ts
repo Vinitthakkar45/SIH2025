@@ -1,13 +1,45 @@
 import { Router, Request, Response } from "express";
-import { searchSimilar } from "../services/vectorStore.js";
-import {
-  generateResponse,
-  generateStreamingResponse,
-  generateSuggestions,
-  Message,
-} from "../services/llm.js";
+import { searchSimilar, SearchResult } from "../services/vectorStore.js";
+import { generateResponse, generateStreamingResponse, generateSuggestions, Message } from "../services/llm.js";
 
 const router = Router();
+
+/**
+ * Detect if query is asking for state-level overview (no specific district/block)
+ */
+function isStateLevelQuery(query: string, filters?: Record<string, string>): boolean {
+  const queryLower = query.toLowerCase();
+  // Check if query mentions district or block-level terms
+  const hasBlockTerms = /\b(block|district|taluk|tehsil|mandal)\b/i.test(query);
+  // Check if filters specify district or block
+  const hasDistrictFilter = filters?.district || filters?.block;
+  // Check for overview/summary keywords
+  const hasOverviewTerms = /\b(overview|summary|state|total|overall|information about|info about|tell me about)\b/i.test(query);
+
+  return !hasBlockTerms && !hasDistrictFilter && (hasOverviewTerms || queryLower.split(" ").length <= 6);
+}
+
+/**
+ * Get comprehensive state-level data by fetching from multiple source types
+ */
+async function getStateLevelContext(query: string, state: string, year: string): Promise<SearchResult[]> {
+  const results: SearchResult[] = [];
+
+  // Priority order for state-level data
+  const sourceTypes = ["annexure_1", "annexure_3a", "annexure_3c", "annexure_3e", "attribute_summary"];
+
+  for (const sourceType of sourceTypes) {
+    const sourceResults = await searchSimilar(query, 2, {
+      state,
+      year,
+      source_type: sourceType,
+    });
+    results.push(...sourceResults);
+  }
+
+  // Sort by relevance and take top results
+  return results.sort((a, b) => a.distance - b.distance).slice(0, 8);
+}
 
 /**
  * POST /api/chat
@@ -22,20 +54,22 @@ router.post("/", async (req: Request, res: Response) => {
       return;
     }
 
-    // Step 1: Search for relevant context
-    const searchResults = await searchSimilar(query, topK, filters);
+    let searchResults: SearchResult[];
+
+    // Smart detection: If asking about a state without district/block, fetch state-level summaries
+    if (filters?.state && filters?.year && isStateLevelQuery(query, filters) && !filters?.source_type) {
+      console.log(`📊 Detected state-level query for ${filters.state} (${filters.year})`);
+      searchResults = await getStateLevelContext(query, filters.state, filters.year);
+    } else {
+      // Standard search
+      searchResults = await searchSimilar(query, topK, filters);
+    }
 
     // Step 2: Build context string from search results
-    const context = searchResults
-      .map((r, i) => `[${i + 1}] ${r.text}`)
-      .join("\n\n");
+    const context = searchResults.map((r, i) => `[${i + 1}] ${r.text}`).join("\n\n");
 
     // Step 3: Generate response using LLM
-    const response = await generateResponse(
-      query,
-      context,
-      chatHistory as Message[]
-    );
+    const response = await generateResponse(query, context, chatHistory as Message[]);
 
     // Step 4: Generate follow-up suggestions
     const suggestions = await generateSuggestions(query, context);
@@ -74,8 +108,14 @@ router.post("/stream", async (req: Request, res: Response) => {
     res.setHeader("Cache-Control", "no-cache");
     res.setHeader("Connection", "keep-alive");
 
-    // Step 1: Search for relevant context
-    const searchResults = await searchSimilar(query, topK, filters);
+    // Smart detection for state-level queries
+    let searchResults: SearchResult[];
+    if (filters?.state && filters?.year && isStateLevelQuery(query, filters) && !filters?.source_type) {
+      console.log(`📊 [Stream] Detected state-level query for ${filters.state} (${filters.year})`);
+      searchResults = await getStateLevelContext(query, filters.state, filters.year);
+    } else {
+      searchResults = await searchSimilar(query, topK, filters);
+    }
 
     // Send sources first
     res.write(
@@ -91,9 +131,7 @@ router.post("/stream", async (req: Request, res: Response) => {
     );
 
     // Step 2: Build context string
-    const context = searchResults
-      .map((r, i) => `[${i + 1}] ${r.text}`)
-      .join("\n\n");
+    const context = searchResults.map((r, i) => `[${i + 1}] ${r.text}`).join("\n\n");
 
     // Step 3: Stream response
     await generateStreamingResponse(query, context, chatHistory as Message[], {
@@ -103,16 +141,12 @@ router.post("/stream", async (req: Request, res: Response) => {
       onComplete: async (fullResponse) => {
         // Generate suggestions after response is complete
         const suggestions = await generateSuggestions(query, context);
-        res.write(
-          `data: ${JSON.stringify({ type: "suggestions", suggestions })}\n\n`
-        );
+        res.write(`data: ${JSON.stringify({ type: "suggestions", suggestions })}\n\n`);
         res.write(`data: ${JSON.stringify({ type: "done" })}\n\n`);
         res.end();
       },
       onError: (error) => {
-        res.write(
-          `data: ${JSON.stringify({ type: "error", error: error.message })}\n\n`
-        );
+        res.write(`data: ${JSON.stringify({ type: "error", error: error.message })}\n\n`);
         res.end();
       },
     });
