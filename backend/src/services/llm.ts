@@ -1,8 +1,12 @@
 import Groq from "groq-sdk";
+import dotenv from "dotenv";
+
+dotenv.config();
 
 const groq = new Groq({
   apiKey: process.env.GROQ_API_KEY,
 });
+
 
 // System prompt for the RAG assistant
 const SYSTEM_PROMPT = `You are INGRES AI Assistant, an expert on India's groundwater resources. You help users understand groundwater data from the INGRES (India-WRIS National Groundwater Resource Estimation System) database.

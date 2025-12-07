@@ -1,6 +1,5 @@
 // Load environment variables FIRST before any other imports
 import dotenv from "dotenv";
-dotenv.config();
 
 import express from "express";
 import cors from "cors";
@@ -8,9 +7,12 @@ import cors from "cors";
 import embedRouter from "./routes/embed.js";
 import searchRouter from "./routes/search.js";
 import chatRouter from "./routes/chat.js";
+import gwChatRouter from "./routes/gwChat.js";
 import { initEmbedder } from "./services/embeddings.js";
 import { initVectorStore } from "./services/vectorStore.js";
+import { initLocationSearch } from "./services/locationSearch.js";
 
+dotenv.config();
 const app = express();
 const PORT = process.env.PORT || 3001;
 
@@ -22,6 +24,7 @@ app.use(express.json({ limit: "10mb" }));
 app.use("/api/embed", embedRouter);
 app.use("/api/search", searchRouter);
 app.use("/api/chat", chatRouter);
+app.use("/api/gw-chat", gwChatRouter);
 
 // Health check
 app.get("/api/health", (_req, res) => {
@@ -33,11 +36,8 @@ async function start() {
   console.log("🚀 Starting INGRES RAG Backend...\n");
 
   try {
-    // Pre-load embedding model
-    await initEmbedder();
-
-    // Connect to ChromaDB
-    await initVectorStore();
+    // Initialize location search for groundwater queries
+    await initLocationSearch();
 
     app.listen(PORT, () => {
       console.log(`\n✅ Server running at http://localhost:${PORT}`);
@@ -47,6 +47,8 @@ async function start() {
       console.log(`   GET  /api/search/stats - Get vector store stats`);
       console.log(`   POST /api/chat      - RAG chat (non-streaming)`);
       console.log(`   POST /api/chat/stream - RAG chat (streaming)`);
+      console.log(`   POST /api/gw-chat   - Groundwater chat (non-streaming)`);
+      console.log(`   POST /api/gw-chat/stream - Groundwater chat (streaming)`);
       console.log(`   GET  /api/health    - Health check`);
     });
   } catch (error) {

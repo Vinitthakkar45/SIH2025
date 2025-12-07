@@ -1,33 +1,173 @@
 "use client";
 
 import { useState, useRef, useEffect } from "react";
+import { Map, MessageSquare, Send, Loader2 } from "lucide-react";
+import {
+  BarChart,
+  Bar,
+  PieChart,
+  Pie,
+  Cell,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  Legend,
+  ResponsiveContainer,
+} from "recharts";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001";
 
-interface Source {
-  id: string;
-  text: string;
-  metadata: {
-    state?: string;
-    district?: string;
-    block?: string;
-    year?: string;
-    categorization?: string;
-  };
-  relevance: number;
+interface ChartData {
+  type: "chart" | "stats";
+  chartType?: "bar" | "pie";
+  title: string;
+  description?: string;
+  data: Record<string, unknown>[] | Record<string, unknown>;
 }
 
 interface Message {
   role: "user" | "assistant";
   content: string;
-  sources?: Source[];
+  charts?: ChartData[];
+  isLoading?: boolean;
+}
+
+const COLORS = [
+  "#3b82f6",
+  "#10b981",
+  "#f59e0b",
+  "#ef4444",
+  "#8b5cf6",
+  "#ec4899",
+];
+
+const CATEGORY_COLORS: Record<string, string> = {
+  safe: "#10b981",
+  semi_critical: "#3b82f6",
+  critical: "#f59e0b",
+  over_exploited: "#ef4444",
+  salinity: "#8b5cf6",
+  hilly_area: "#6b7280",
+  no_data: "#9ca3af",
+};
+
+function ChartRenderer({ chart }: { chart: ChartData }) {
+  if (chart.type === "stats") {
+    const stats = chart.data as Record<string, unknown>;
+    return (
+      <div className="bg-gray-50 dark:bg-gray-900 rounded-lg p-4 my-2">
+        <h4 className="font-semibold text-gray-900 dark:text-white mb-3">
+          {chart.title}
+        </h4>
+        <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+          {Object.entries(stats).map(([key, value]) => (
+            <div key={key} className="bg-white dark:bg-gray-800 p-3 rounded-lg">
+              <p className="text-xs text-gray-500 dark:text-gray-400 capitalize">
+                {key.replace(/([A-Z])/g, " $1").trim()}
+              </p>
+              <p className="text-lg font-semibold text-gray-900 dark:text-white">
+                {typeof value === "number"
+                  ? value.toLocaleString(undefined, {
+                      maximumFractionDigits: 2,
+                    })
+                  : String(value)}
+              </p>
+            </div>
+          ))}
+        </div>
+      </div>
+    );
+  }
+
+  if (chart.chartType === "bar") {
+    const data = chart.data as Record<string, unknown>[];
+    return (
+      <div className="bg-gray-50 dark:bg-gray-900 rounded-lg p-4 my-2">
+        <h4 className="font-semibold text-gray-900 dark:text-white mb-1">
+          {chart.title}
+        </h4>
+        {chart.description && (
+          <p className="text-sm text-gray-500 dark:text-gray-400 mb-3">
+            {chart.description}
+          </p>
+        )}
+        <ResponsiveContainer width="100%" height={250}>
+          <BarChart
+            data={data}
+            margin={{ top: 5, right: 20, left: 10, bottom: 5 }}
+          >
+            <CartesianGrid strokeDasharray="3 3" className="opacity-30" />
+            <XAxis dataKey="name" tick={{ fontSize: 12 }} />
+            <YAxis tick={{ fontSize: 12 }} />
+            <Tooltip />
+            <Legend />
+            {data[0] &&
+              Object.keys(data[0])
+                .filter((k) => k !== "name" && k !== "category")
+                .map((key, i) => (
+                  <Bar
+                    key={key}
+                    dataKey={key}
+                    fill={COLORS[i % COLORS.length]}
+                  />
+                ))}
+          </BarChart>
+        </ResponsiveContainer>
+      </div>
+    );
+  }
+
+  if (chart.chartType === "pie") {
+    const data = chart.data as { name: string; value: number }[];
+    return (
+      <div className="bg-gray-50 dark:bg-gray-900 rounded-lg p-4 my-2">
+        <h4 className="font-semibold text-gray-900 dark:text-white mb-1">
+          {chart.title}
+        </h4>
+        {chart.description && (
+          <p className="text-sm text-gray-500 dark:text-gray-400 mb-3">
+            {chart.description}
+          </p>
+        )}
+        <ResponsiveContainer width="100%" height={250}>
+          <PieChart>
+            <Pie
+              data={data}
+              dataKey="value"
+              nameKey="name"
+              cx="50%"
+              cy="50%"
+              outerRadius={80}
+              label={({ name, percent }) =>
+                `${name} (${(percent * 100).toFixed(0)}%)`
+              }
+            >
+              {data.map((entry, index) => (
+                <Cell
+                  key={entry.name}
+                  fill={
+                    CATEGORY_COLORS[entry.name] || COLORS[index % COLORS.length]
+                  }
+                />
+              ))}
+            </Pie>
+            <Tooltip />
+            <Legend />
+          </PieChart>
+        </ResponsiveContainer>
+      </div>
+    );
+  }
+
+  return null;
 }
 
 export default function ChatPage() {
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState("");
   const [isLoading, setIsLoading] = useState(false);
-  const [suggestions, setSuggestions] = useState<string[]>([]);
+  const [showMap, setShowMap] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   const scrollToBottom = () => {
@@ -45,17 +185,22 @@ export default function ChatPage() {
     setMessages((prev) => [...prev, userMessage]);
     setInput("");
     setIsLoading(true);
-    setSuggestions([]);
+
+    // Add loading assistant message
+    setMessages((prev) => [
+      ...prev,
+      { role: "assistant", content: "", charts: [], isLoading: true },
+    ]);
 
     try {
-      // Use streaming endpoint
-      const response = await fetch(`${API_URL}/api/chat/stream`, {
+      const response = await fetch(`${API_URL}/api/gw-chat/stream`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           query,
-          chatHistory: messages.slice(-6), // Last 3 exchanges
-          topK: 5,
+          chatHistory: messages
+            .slice(-6)
+            .map((m) => ({ role: m.role, content: m.content })),
         }),
       });
 
@@ -65,10 +210,7 @@ export default function ChatPage() {
       const decoder = new TextDecoder();
 
       let assistantContent = "";
-      let sources: Source[] = [];
-
-      // Add empty assistant message that we'll update
-      setMessages((prev) => [...prev, { role: "assistant", content: "", sources: [] }]);
+      const charts: ChartData[] = [];
 
       while (reader) {
         const { done, value } = await reader.read();
@@ -82,22 +224,47 @@ export default function ChatPage() {
             try {
               const data = JSON.parse(line.slice(6));
 
-              if (data.type === "sources") {
-                sources = data.sources;
-                setMessages((prev) => {
-                  const updated = [...prev];
-                  updated[updated.length - 1].sources = sources;
-                  return updated;
-                });
-              } else if (data.type === "token") {
+              if (data.type === "token") {
                 assistantContent += data.content;
                 setMessages((prev) => {
                   const updated = [...prev];
-                  updated[updated.length - 1].content = assistantContent;
+                  const lastIdx = updated.length - 1;
+                  updated[lastIdx] = {
+                    ...updated[lastIdx],
+                    content: assistantContent,
+                    isLoading: false,
+                  };
                   return updated;
                 });
-              } else if (data.type === "suggestions") {
-                setSuggestions(data.suggestions);
+              } else if (data.type === "chart" || data.type === "stats") {
+                charts.push(data);
+                setMessages((prev) => {
+                  const updated = [...prev];
+                  const lastIdx = updated.length - 1;
+                  updated[lastIdx] = {
+                    ...updated[lastIdx],
+                    charts: [...charts],
+                  };
+                  return updated;
+                });
+              } else if (data.type === "done") {
+                setMessages((prev) => {
+                  const updated = [...prev];
+                  const lastIdx = updated.length - 1;
+                  updated[lastIdx] = { ...updated[lastIdx], isLoading: false };
+                  return updated;
+                });
+              } else if (data.type === "error") {
+                setMessages((prev) => {
+                  const updated = [...prev];
+                  const lastIdx = updated.length - 1;
+                  updated[lastIdx] = {
+                    role: "assistant",
+                    content: `Error: ${data.error}`,
+                    isLoading: false,
+                  };
+                  return updated;
+                });
               }
             } catch {
               // Ignore parse errors for incomplete chunks
@@ -107,136 +274,186 @@ export default function ChatPage() {
       }
     } catch (error) {
       console.error("Chat error:", error);
-      setMessages((prev) => [
-        ...prev,
-        {
+      setMessages((prev) => {
+        const updated = [...prev];
+        const lastIdx = updated.length - 1;
+        updated[lastIdx] = {
           role: "assistant",
           content: "Sorry, I encountered an error. Please try again.",
-        },
-      ]);
+          isLoading: false,
+        };
+        return updated;
+      });
     } finally {
       setIsLoading(false);
     }
   };
 
+  const suggestedQueries = [
+    "What is the groundwater status in Gujarat?",
+    "Which states have the highest extraction rate?",
+    "Compare Maharashtra and Karnataka groundwater",
+    "Show category distribution for all states",
+  ];
+
   return (
-    <div className="flex flex-col h-screen bg-gray-50 dark:bg-gray-900">
-      {/* Header */}
-      <header className="bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 px-4 py-3">
-        <div className="max-w-4xl mx-auto flex items-center gap-3">
-          <div className="w-10 h-10 rounded-full bg-blue-600 flex items-center justify-center">
-            <span className="text-white font-bold text-lg">💧</span>
-          </div>
-          <div>
-            <h1 className="font-semibold text-gray-900 dark:text-white">INGRES AI Assistant</h1>
-            <p className="text-sm text-gray-500 dark:text-gray-400">India&apos;s Groundwater Resource Information System</p>
-          </div>
-        </div>
-      </header>
-
-      {/* Messages */}
-      <main className="flex-1 overflow-y-auto p-4">
-        <div className="max-w-4xl mx-auto space-y-4">
-          {messages.length === 0 && (
-            <div className="text-center py-12">
-              <div className="w-16 h-16 rounded-full bg-blue-100 dark:bg-blue-900 flex items-center justify-center mx-auto mb-4">
-                <span className="text-3xl">💧</span>
+    <div className="flex h-screen bg-gray-50 dark:bg-gray-900">
+      {/* Main Chat Area */}
+      <div
+        className={`flex flex-col flex-1 transition-all duration-300 ${
+          showMap ? "w-1/2" : "w-full"
+        }`}
+      >
+        {/* Header */}
+        <header className="bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 px-4 py-3">
+          <div className="max-w-4xl mx-auto flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-full bg-blue-600 flex items-center justify-center">
+                <span className="text-white text-xl">💧</span>
               </div>
-              <h2 className="text-xl font-semibold text-gray-900 dark:text-white mb-2">Welcome to INGRES AI</h2>
-              <p className="text-gray-500 dark:text-gray-400 mb-6 max-w-md mx-auto">
-                Ask me anything about India&apos;s groundwater resources, state-wise reports, extraction levels, and sustainability status.
-              </p>
-              <div className="flex flex-wrap justify-center gap-2">
-                {[
-                  "What is the groundwater status in Maharashtra?",
-                  "Which states have critical groundwater levels?",
-                  "Compare rainfall in Punjab vs Rajasthan",
-                  "Show over-exploited blocks in Tamil Nadu",
-                ].map((q) => (
-                  <button
-                    key={q}
-                    onClick={() => handleSubmit(q)}
-                    className="px-4 py-2 text-sm bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-full hover:bg-gray-50 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300 transition-colors">
-                    {q}
-                  </button>
-                ))}
-              </div>
-            </div>
-          )}
-
-          {messages.map((message, idx) => (
-            <div key={idx} className={`flex ${message.role === "user" ? "justify-end" : "justify-start"}`}>
-              <div
-                className={`max-w-[85%] rounded-2xl px-4 py-3 ${
-                  message.role === "user" ? "bg-blue-600 text-white" : "bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700"
-                }`}>
-                {/* Sources badge */}
-                {message.sources && message.sources.length > 0 && (
-                  <div className="flex flex-wrap gap-1 mb-2">
-                    {message.sources.slice(0, 3).map((src) => (
-                      <span key={src.id} className="text-xs px-2 py-1 bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 rounded-full">
-                        {src.metadata.state || "Unknown"} {src.metadata.year && `(${src.metadata.year})`}
-                      </span>
-                    ))}
-                  </div>
-                )}
-
-                <p className={`whitespace-pre-wrap ${message.role === "assistant" ? "text-gray-800 dark:text-gray-200" : ""}`}>
-                  {message.content}
-                  {isLoading && idx === messages.length - 1 && message.role === "assistant" && !message.content && (
-                    <span className="inline-flex gap-1">
-                      <span className="animate-bounce">●</span>
-                      <span className="animate-bounce delay-100">●</span>
-                      <span className="animate-bounce delay-200">●</span>
-                    </span>
-                  )}
+              <div>
+                <h1 className="font-semibold text-gray-900 dark:text-white">
+                  INGRES AI Assistant
+                </h1>
+                <p className="text-sm text-gray-500 dark:text-gray-400">
+                  Groundwater Resource Information
                 </p>
               </div>
             </div>
-          ))}
+            <button
+              onClick={() => setShowMap(!showMap)}
+              className={`flex items-center gap-2 px-4 py-2 rounded-lg transition-colors ${
+                showMap
+                  ? "bg-blue-600 text-white"
+                  : "bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600"
+              }`}
+            >
+              {showMap ? <MessageSquare size={18} /> : <Map size={18} />}
+              <span className="text-sm font-medium">
+                {showMap ? "Hide Map" : "Show Map"}
+              </span>
+            </button>
+          </div>
+        </header>
 
-          {/* Suggestions */}
-          {suggestions.length > 0 && !isLoading && (
-            <div className="flex flex-wrap gap-2 justify-center mt-4">
-              {suggestions.map((s, i) => (
-                <button
-                  key={i}
-                  onClick={() => handleSubmit(s)}
-                  className="px-3 py-1.5 text-sm bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 rounded-full hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors">
-                  {s}
-                </button>
-              ))}
-            </div>
-          )}
+        {/* Messages */}
+        <main className="flex-1 overflow-y-auto p-4">
+          <div className="max-w-4xl mx-auto space-y-4">
+            {messages.length === 0 && (
+              <div className="text-center py-12">
+                <div className="w-16 h-16 rounded-full bg-blue-100 dark:bg-blue-900 flex items-center justify-center mx-auto mb-4">
+                  <span className="text-3xl">💧</span>
+                </div>
+                <h2 className="text-xl font-semibold text-gray-900 dark:text-white mb-2">
+                  Welcome to INGRES AI
+                </h2>
+                <p className="text-gray-500 dark:text-gray-400 mb-6 max-w-md mx-auto">
+                  Ask me anything about India&apos;s groundwater resources -
+                  state data, district comparisons, extraction levels, and more.
+                </p>
+                <div className="flex flex-wrap justify-center gap-2">
+                  {suggestedQueries.map((q) => (
+                    <button
+                      key={q}
+                      onClick={() => handleSubmit(q)}
+                      className="px-4 py-2 text-sm bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-full hover:bg-gray-50 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300 transition-colors"
+                    >
+                      {q}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
 
-          <div ref={messagesEndRef} />
+            {messages.map((message, idx) => (
+              <div
+                key={idx}
+                className={`flex ${
+                  message.role === "user" ? "justify-end" : "justify-start"
+                }`}
+              >
+                <div
+                  className={`max-w-[90%] rounded-2xl px-4 py-3 ${
+                    message.role === "user"
+                      ? "bg-blue-600 text-white"
+                      : "bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700"
+                  }`}
+                >
+                  {message.isLoading && !message.content ? (
+                    <div className="flex items-center gap-2 text-gray-500 dark:text-gray-400">
+                      <Loader2 className="animate-spin" size={16} />
+                      <span>Thinking...</span>
+                    </div>
+                  ) : (
+                    <>
+                      <p
+                        className={`whitespace-pre-wrap ${
+                          message.role === "assistant"
+                            ? "text-gray-800 dark:text-gray-200"
+                            : ""
+                        }`}
+                      >
+                        {message.content}
+                      </p>
+                      {message.charts && message.charts.length > 0 && (
+                        <div className="mt-3 space-y-3">
+                          {message.charts.map((chart, i) => (
+                            <ChartRenderer key={i} chart={chart} />
+                          ))}
+                        </div>
+                      )}
+                    </>
+                  )}
+                </div>
+              </div>
+            ))}
+
+            <div ref={messagesEndRef} />
+          </div>
+        </main>
+
+        {/* Input */}
+        <footer className="bg-white dark:bg-gray-800 border-t border-gray-200 dark:border-gray-700 p-4">
+          <form
+            onSubmit={(e) => {
+              e.preventDefault();
+              handleSubmit(input);
+            }}
+            className="max-w-4xl mx-auto flex gap-2"
+          >
+            <input
+              type="text"
+              value={input}
+              onChange={(e) => setInput(e.target.value)}
+              placeholder="Ask about groundwater data..."
+              disabled={isLoading}
+              className="flex-1 px-4 py-3 rounded-full border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900 text-gray-900 dark:text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:opacity-50"
+            />
+            <button
+              type="submit"
+              disabled={isLoading || !input.trim()}
+              className="px-6 py-3 bg-blue-600 text-white rounded-full font-medium hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors flex items-center gap-2"
+            >
+              {isLoading ? (
+                <Loader2 className="animate-spin" size={18} />
+              ) : (
+                <Send size={18} />
+              )}
+            </button>
+          </form>
+        </footer>
+      </div>
+
+      {/* Map Panel */}
+      {showMap && (
+        <div className="w-1/2 border-l border-gray-200 dark:border-gray-700 bg-gray-100 dark:bg-gray-900 flex items-center justify-center">
+          <div className="text-center text-gray-500 dark:text-gray-400">
+            <Map size={48} className="mx-auto mb-4 opacity-50" />
+            <p className="font-medium">Map View</p>
+            <p className="text-sm">Map integration coming soon</p>
+          </div>
         </div>
-      </main>
-
-      {/* Input */}
-      <footer className="bg-white dark:bg-gray-800 border-t border-gray-200 dark:border-gray-700 p-4">
-        <form
-          onSubmit={(e) => {
-            e.preventDefault();
-            handleSubmit(input);
-          }}
-          className="max-w-4xl mx-auto flex gap-2">
-          <input
-            type="text"
-            value={input}
-            onChange={(e) => setInput(e.target.value)}
-            placeholder="Ask about groundwater data..."
-            disabled={isLoading}
-            className="flex-1 px-4 py-3 rounded-full border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900 text-gray-900 dark:text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:opacity-50"
-          />
-          <button
-            type="submit"
-            disabled={isLoading || !input.trim()}
-            className="px-6 py-3 bg-blue-600 text-white rounded-full font-medium hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors">
-            {isLoading ? "..." : "Send"}
-          </button>
-        </form>
-      </footer>
+      )}
     </div>
   );
 }

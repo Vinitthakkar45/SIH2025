@@ -4,7 +4,11 @@ import * as path from "path";
 import dotenv from "dotenv";
 
 import { initEmbedder, embedBatch } from "../services/embeddings.js";
-import { initVectorStore, addDocuments, resetCollection, ChunkDocument } from "../services/vectorStore.js";
+import {
+  addDocuments,
+  resetCollection,
+  ChunkDocument,
+} from "../services/vectorStore.js";
 
 dotenv.config();
 
