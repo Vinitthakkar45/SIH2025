@@ -2,17 +2,12 @@ import { tool } from "@langchain/core/tools";
 import { z } from "zod";
 import {
   searchLocation,
-  searchState,
-  searchDistrict,
-  searchTaluk,
   getAllStates,
   getDistrictsOfState,
   getTaluksOfDistrict,
 } from "./locationSearch";
 import {
   searchAndGetGroundwaterData,
-  getGroundwaterDataByLocationId,
-  compareLocations,
   getTopLocationsByField,
   getCategorySummary,
   getAggregateStats,
@@ -22,92 +17,33 @@ import {
   generateComparisonChartData,
 } from "./groundwaterService";
 
-export const findLocationTool = tool(
-  async ({ query, type }) => {
-    let results;
-    if (type === "state") {
-      results = searchState(query);
-    } else if (type === "district") {
-      results = searchDistrict(query);
-    } else if (type === "taluk") {
-      results = searchTaluk(query);
-    } else {
-      results = searchLocation(query);
-    }
-
-    if (results.length === 0) {
-      return JSON.stringify({
-        found: false,
-        message: `No location found matching "${query}"`,
-      });
-    }
-
-    return JSON.stringify({
-      found: true,
-      matches: results.map((r) => ({
-        id: r.location.id,
-        name: r.location.name,
-        type: r.location.type,
-        score: r.score,
-      })),
-    });
-  },
-  {
-    name: "find_location",
-    description:
-      "Search for a location (state, district, or taluk) by name using fuzzy matching. Use this to find the correct location ID before fetching groundwater data.",
-    schema: z.object({
-      query: z.string().describe("The location name to search for"),
-      type: z
-        .enum(["state", "district", "taluk", "any"])
-        .optional()
-        .describe("Type of location to search for. Use 'any' if unsure."),
-    }),
-  }
-);
-
-export const getGroundwaterDataTool = tool(
-  async ({ locationId }) => {
-    const record = await getGroundwaterDataByLocationId(locationId);
-    if (!record) {
-      return JSON.stringify({
-        found: false,
-        message: "No groundwater data found for this location",
-      });
-    }
-
-    return JSON.stringify({
-      found: true,
-      textSummary: formatGroundwaterDataForLLM(record),
-      charts: generateChartData(record),
-      rawData: record,
-    });
-  },
-  {
-    name: "get_groundwater_data",
-    description:
-      "Get detailed groundwater data for a specific location by its ID. Use find_location first to get the location ID.",
-    schema: z.object({
-      locationId: z
-        .string()
-        .describe("The location ID (UUID) obtained from find_location"),
-    }),
-  }
-);
-
 export const searchGroundwaterDataTool = tool(
-  async ({ locationName, locationType }) => {
+  async ({ locationName, locationType, stateName, districtName }) => {
     const type = locationType?.toUpperCase() as
       | "STATE"
       | "DISTRICT"
       | "TALUK"
       | undefined;
-    const record = await searchAndGetGroundwaterData(locationName, type);
+
+    const parentName =
+      type === "DISTRICT"
+        ? stateName
+        : type === "TALUK"
+        ? districtName
+        : undefined;
+
+    const record = await searchAndGetGroundwaterData(
+      locationName,
+      type,
+      parentName
+    );
 
     if (!record) {
       return JSON.stringify({
         found: false,
-        message: `No groundwater data found for "${locationName}"`,
+        message: `No groundwater data found for "${locationName}"${
+          parentName ? ` in ${parentName}` : ""
+        }`,
       });
     }
 
@@ -120,23 +56,63 @@ export const searchGroundwaterDataTool = tool(
   },
   {
     name: "search_groundwater_data",
-    description:
-      "Search for a location by name and get its groundwater data directly. Combines location search and data retrieval in one step.",
+    description: `Search for a location and get its AGGREGATED groundwater data. This tool handles fuzzy matching (e.g., "uttar pradesh" or "uttar_pradesh" both work).
+
+DATA AVAILABLE:
+- For STATES: Aggregated data for the entire state (sum of all districts)
+- For DISTRICTS: Aggregated data for the entire district (sum of all taluks)
+- For TALUKS: Individual taluk-level data (lowest granularity)
+
+WHEN TO USE:
+- User asks about groundwater in a specific location
+- User wants recharge, extraction, rainfall, or category data for a place
+- User asks about water availability, stage of extraction, or resource status
+
+TIPS FOR BETTER RESULTS:
+- If searching for a district, provide the state name for disambiguation
+- If searching for a taluk, provide the district name for disambiguation
+- Many locations share names across states (e.g., "Lucknow" district - specify "Uttar Pradesh")`,
     schema: z.object({
       locationName: z
         .string()
-        .describe("The name of the location (state, district, or taluk)"),
+        .describe(
+          "Name of the location (state, district, or taluk). Handles underscores, hyphens, and spacing variations."
+        ),
       locationType: z
         .enum(["state", "district", "taluk"])
         .optional()
-        .describe("Type of location if known"),
+        .describe(
+          "Type of location. Use 'state' for state-level aggregated data, 'district' for district-level aggregated data, 'taluk' for taluk-level data."
+        ),
+      stateName: z
+        .string()
+        .optional()
+        .describe(
+          "Parent state name when searching for a district. Helps disambiguate districts with same name in different states."
+        ),
+      districtName: z
+        .string()
+        .optional()
+        .describe(
+          "Parent district name when searching for a taluk. Helps disambiguate taluks with same name in different districts."
+        ),
     }),
   }
 );
 
 export const compareLocationsTool = tool(
-  async ({ locationIds }) => {
-    const records = await compareLocations(locationIds);
+  async ({ locationNames, locationType }) => {
+    const type = locationType?.toUpperCase() as
+      | "STATE"
+      | "DISTRICT"
+      | "TALUK"
+      | undefined;
+    const records = [];
+
+    for (const name of locationNames) {
+      const record = await searchAndGetGroundwaterData(name, type);
+      if (record) records.push(record);
+    }
 
     if (records.length === 0) {
       return JSON.stringify({
@@ -163,12 +139,29 @@ export const compareLocationsTool = tool(
   },
   {
     name: "compare_locations",
-    description:
-      "Compare groundwater data across multiple locations. Provide location IDs obtained from find_location.",
+    description: `Compare groundwater data across multiple locations side-by-side.
+
+WHEN TO USE:
+- User wants to compare two or more states, districts, or taluks
+- User asks which location has better/worse groundwater status
+- User wants to see differences in recharge, extraction, or rainfall between places
+
+DATA RETURNED:
+- Side-by-side metrics for each location
+- Comparison charts showing recharge, extraction, extractable resources, and rainfall
+- Stage of extraction comparison`,
     schema: z.object({
-      locationIds: z
+      locationNames: z
         .array(z.string())
-        .describe("Array of location IDs to compare"),
+        .describe(
+          "Array of location names to compare. All should ideally be same type (all states, all districts, or all taluks)."
+        ),
+      locationType: z
+        .enum(["state", "district", "taluk"])
+        .optional()
+        .describe(
+          "Type of locations being compared. If all are states, use 'state'. If mixed, leave empty."
+        ),
     }),
   }
 );
@@ -213,8 +206,23 @@ export const getTopLocationsTool = tool(
   },
   {
     name: "get_top_locations",
-    description:
-      "Get top locations ranked by a specific metric like rainfall, extraction rate, recharge, etc.",
+    description: `Get ranked list of locations by a specific groundwater metric.
+
+METRICS AVAILABLE:
+- rainfall: Annual rainfall in mm
+- recharge: Total groundwater recharge (ham)
+- extraction: Total groundwater extraction/draft (ham)
+- extractable: Annual extractable groundwater resources (ham)
+- stage_of_extraction: Extraction as % of extractable resources (critical indicator)
+- loss: Natural discharge/loss (ham)
+
+WHEN TO USE:
+- User asks "which states have highest extraction"
+- User wants to find "most water-stressed districts"
+- User asks for "top 5 taluks with best recharge"
+- User wants rankings or leaderboards
+
+NOTE: For state-level, data is aggregated sum of all districts. For district-level, aggregated sum of all taluks.`,
     schema: z.object({
       metric: z
         .enum([
@@ -225,20 +233,24 @@ export const getTopLocationsTool = tool(
           "stage_of_extraction",
           "loss",
         ])
-        .describe("The metric to rank by"),
+        .describe("The metric to rank locations by"),
       locationType: z
         .enum(["state", "district", "taluk"])
-        .describe("Type of locations to rank"),
+        .describe(
+          "Type of locations to rank. 'state' gives aggregated state data, 'district' gives aggregated district data."
+        ),
       order: z
         .enum(["asc", "desc"])
         .default("desc")
-        .describe("Sort order - desc for highest first, asc for lowest first"),
+        .describe(
+          "Sort order - 'desc' for highest first (e.g., most extraction), 'asc' for lowest first (e.g., least rainfall)"
+        ),
       limit: z
         .number()
         .min(1)
         .max(20)
         .default(10)
-        .describe("Number of results to return"),
+        .describe("Number of results to return (1-20)"),
     }),
   }
 );
@@ -272,31 +284,70 @@ export const getCategorySummaryTool = tool(
   },
   {
     name: "get_category_summary",
-    description:
-      "Get a summary of how many locations fall into each category (safe, semi-critical, critical, over-exploited, etc.) and aggregate statistics.",
+    description: `Get national-level summary of groundwater categories and aggregate statistics.
+
+CATEGORIES:
+- Safe: Stage of extraction < 70%
+- Semi-Critical: 70-90%
+- Critical: 90-100%
+- Over-Exploited: > 100%
+- Saline: Saline groundwater
+
+WHEN TO USE:
+- User asks "how many states are over-exploited"
+- User wants overall groundwater health status
+- User asks for national statistics or summary
+- User wants to understand the distribution of water stress
+
+AGGREGATE STATS RETURNED:
+- Total recharge, draft, extractable resources
+- Average rainfall and stage of extraction
+- Count of locations in each category`,
     schema: z.object({
       locationType: z
         .enum(["state", "district", "taluk"])
-        .describe("Type of locations to summarize"),
+        .describe(
+          "Level of aggregation. 'state' counts states by category, 'district' counts districts, 'taluk' counts taluks."
+        ),
     }),
   }
 );
 
 export const listLocationsTool = tool(
-  async ({ locationType, parentId }) => {
+  async ({ locationType, parentName }) => {
     let locations;
 
     if (locationType === "state") {
       locations = getAllStates();
-    } else if (locationType === "district" && parentId) {
-      locations = getDistrictsOfState(parentId);
-    } else if (locationType === "taluk" && parentId) {
-      locations = getTaluksOfDistrict(parentId);
+    } else if (locationType === "district" && parentName) {
+      const stateResults = searchLocation(
+        parentName.replace(/[_-]/g, " "),
+        "STATE"
+      );
+      if (stateResults.length === 0) {
+        return JSON.stringify({
+          found: false,
+          message: `State "${parentName}" not found`,
+        });
+      }
+      locations = getDistrictsOfState(stateResults[0].location.id);
+    } else if (locationType === "taluk" && parentName) {
+      const districtResults = searchLocation(
+        parentName.replace(/[_-]/g, " "),
+        "DISTRICT"
+      );
+      if (districtResults.length === 0) {
+        return JSON.stringify({
+          found: false,
+          message: `District "${parentName}" not found`,
+        });
+      }
+      locations = getTaluksOfDistrict(districtResults[0].location.id);
     } else {
       return JSON.stringify({
         found: false,
         message:
-          "For districts, provide a state ID. For taluks, provide a district ID.",
+          "For districts, provide the state name. For taluks, provide the district name.",
       });
     }
 
@@ -312,24 +363,53 @@ export const listLocationsTool = tool(
   },
   {
     name: "list_locations",
-    description:
-      "List all locations of a specific type. For districts, provide the parent state ID. For taluks, provide the parent district ID.",
+    description: `List all child locations under a parent. Handles fuzzy name matching.
+
+WHEN TO USE:
+- User asks "list all states" or "show me all states"
+- User asks "what districts are in Maharashtra"
+- User asks "show taluks in Lucknow district"
+- User wants to explore the location hierarchy
+
+HIERARCHY:
+India → States → Districts → Taluks`,
     schema: z.object({
       locationType: z
         .enum(["state", "district", "taluk"])
         .describe("Type of locations to list"),
-      parentId: z
+      parentName: z
         .string()
         .optional()
-        .describe("Parent location ID (required for districts and taluks)"),
+        .describe(
+          "Parent location name. Required for districts (state name) and taluks (district name). Not needed for states."
+        ),
     }),
   }
 );
 
 export const getLocationDetailsTool = tool(
-  async ({ locationId, includeChildren }) => {
+  async ({ locationName, locationType, includeChildren }) => {
+    const type = locationType?.toUpperCase() as
+      | "STATE"
+      | "DISTRICT"
+      | "TALUK"
+      | undefined;
+    const record = await searchAndGetGroundwaterData(
+      locationName.replace(/[_-]/g, " "),
+      type
+    );
+
+    if (!record) {
+      return JSON.stringify({
+        found: false,
+        message: `Location "${locationName}" not found`,
+      });
+    }
+
     if (includeChildren) {
-      const { parent, children } = await getLocationWithChildren(locationId);
+      const { parent, children } = await getLocationWithChildren(
+        record.location.id
+      );
       if (!parent) {
         return JSON.stringify({ found: false, message: "Location not found" });
       }
@@ -352,11 +432,6 @@ export const getLocationDetailsTool = tool(
       });
     }
 
-    const record = await getGroundwaterDataByLocationId(locationId);
-    if (!record) {
-      return JSON.stringify({ found: false, message: "Location not found" });
-    }
-
     return JSON.stringify({
       found: true,
       textSummary: formatGroundwaterDataForLLM(record),
@@ -365,15 +440,29 @@ export const getLocationDetailsTool = tool(
   },
   {
     name: "get_location_details",
-    description:
-      "Get detailed groundwater information for a location, optionally including its child locations (districts for a state, taluks for a district).",
+    description: `Get detailed groundwater data for a location with optional breakdown by children.
+
+WHEN TO USE:
+- User asks for detailed groundwater info about a specific place
+- User wants to see a state's data with all its districts listed
+- User wants district data with all taluks listed
+- User asks "show me Maharashtra with all its districts"
+
+PARENT DATA: Aggregated data for the location
+CHILDREN DATA: Summary of each child location (districts for state, taluks for district)`,
     schema: z.object({
-      locationId: z.string().describe("The location ID"),
+      locationName: z
+        .string()
+        .describe("Name of the location. Handles fuzzy matching."),
+      locationType: z
+        .enum(["state", "district", "taluk"])
+        .optional()
+        .describe("Type of location for disambiguation"),
       includeChildren: z
         .boolean()
         .default(false)
         .describe(
-          "Whether to include child locations (districts for state, taluks for district)"
+          "Include child locations (districts for state, taluks for district)"
         ),
     }),
   }
@@ -392,8 +481,6 @@ function metricToField(metric: string): string {
 }
 
 export const allTools = [
-  findLocationTool,
-  getGroundwaterDataTool,
   searchGroundwaterDataTool,
   compareLocationsTool,
   getTopLocationsTool,

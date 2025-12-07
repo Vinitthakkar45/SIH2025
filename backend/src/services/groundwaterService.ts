@@ -49,14 +49,23 @@ export async function getGroundwaterDataByLocationId(
 
 export async function searchAndGetGroundwaterData(
   query: string,
-  locationType?: "STATE" | "DISTRICT" | "TALUK"
+  locationType?: "STATE" | "DISTRICT" | "TALUK",
+  parentName?: string
 ): Promise<GroundwaterRecord | null> {
-  let searchFn = searchLocation;
-  if (locationType === "STATE") searchFn = searchState;
-  else if (locationType === "DISTRICT") searchFn = searchDistrict;
-  else if (locationType === "TALUK") searchFn = searchTaluk;
+  const normalizedQuery = query.replace(/[_-]/g, " ").trim();
+  const normalizedParent = parentName?.replace(/[_-]/g, " ").trim();
 
-  const results = searchFn(query, locationType);
+  let results: { location: { id: string }; score: number }[];
+  if (locationType === "STATE") {
+    results = searchState(normalizedQuery);
+  } else if (locationType === "DISTRICT") {
+    results = searchDistrict(normalizedQuery, normalizedParent);
+  } else if (locationType === "TALUK") {
+    results = searchTaluk(normalizedQuery, normalizedParent);
+  } else {
+    results = searchLocation(normalizedQuery, locationType);
+  }
+
   if (results.length === 0) return null;
 
   const bestMatch = results[0];
@@ -212,187 +221,493 @@ export function formatGroundwaterDataForLLM(record: GroundwaterRecord): string {
   ];
 
   if (data.rainfallTotal) {
-    lines.push(`Rainfall: ${Number(data.rainfallTotal).toFixed(2)} mm`);
+    lines.push(`Rainfall: ${formatNumber(data.rainfallTotal)} mm`);
   }
 
   if (data.categoryTotal) {
     lines.push(`Category: ${data.categoryTotal}`);
   }
 
-  lines.push("");
-  lines.push("Ground Water Recharge (ham):");
-  if (data.rechargeRainfallTotal)
-    lines.push(
-      `  - Rainfall: ${Number(data.rechargeRainfallTotal).toFixed(2)}`
-    );
-  if (data.rechargeCanalTotal)
-    lines.push(`  - Canal: ${Number(data.rechargeCanalTotal).toFixed(2)}`);
-  if (data.rechargeSurfaceIrrigationTotal)
-    lines.push(
-      `  - Surface Irrigation: ${Number(
-        data.rechargeSurfaceIrrigationTotal
-      ).toFixed(2)}`
-    );
-  if (data.rechargeGwIrrigationTotal)
-    lines.push(
-      `  - GW Irrigation: ${Number(data.rechargeGwIrrigationTotal).toFixed(2)}`
-    );
-  if (data.rechargeWaterBodyTotal)
-    lines.push(
-      `  - Tanks & Ponds: ${Number(data.rechargeWaterBodyTotal).toFixed(2)}`
-    );
-  if (data.rechargeArtificialStructureTotal)
-    lines.push(
-      `  - Artificial Structures: ${Number(
-        data.rechargeArtificialStructureTotal
-      ).toFixed(2)}`
-    );
-  if (data.rechargeTotalTotal)
-    lines.push(
-      `  Total Recharge: ${Number(data.rechargeTotalTotal).toFixed(2)}`
-    );
-
-  lines.push("");
-  lines.push("Natural Discharges (ham):");
-  if (data.lossTotal)
-    lines.push(`  Total Loss: ${Number(data.lossTotal).toFixed(2)}`);
-  if (data.baseflowLateralTotal)
-    lines.push(
-      `  - Lateral Flows: ${Number(data.baseflowLateralTotal).toFixed(2)}`
-    );
-  if (data.baseflowVerticalTotal)
-    lines.push(
-      `  - Vertical Flows: ${Number(data.baseflowVerticalTotal).toFixed(2)}`
-    );
-
-  lines.push("");
   if (data.extractableTotal) {
     lines.push(
-      `Annual Extractable GW Resources: ${Number(data.extractableTotal).toFixed(
-        2
+      `Annual Extractable Ground Water Resources: ${formatNumber(
+        data.extractableTotal
       )} ham`
     );
   }
 
+  if (data.draftTotalTotal) {
+    lines.push(
+      `Ground Water Extraction: ${formatNumber(data.draftTotalTotal)} ham`
+    );
+  }
+
+  lines.push("");
+  lines.push("Ground Water Recharge (ham):");
+  const rechargeRows = [
+    {
+      name: "Rainfall Recharge",
+      cmd: data.rechargeRainfallCommand,
+      nonCmd: data.rechargeRainfallNonCommand,
+      total: data.rechargeRainfallTotal,
+    },
+    {
+      name: "Canal Recharge",
+      cmd: data.rechargeCanalCommand,
+      nonCmd: data.rechargeCanalNonCommand,
+      total: data.rechargeCanalTotal,
+    },
+    {
+      name: "Surface Water Irrigation",
+      cmd: data.rechargeSurfaceIrrigationCommand,
+      nonCmd: data.rechargeSurfaceIrrigationNonCommand,
+      total: data.rechargeSurfaceIrrigationTotal,
+    },
+    {
+      name: "Ground Water Irrigation",
+      cmd: data.rechargeGwIrrigationCommand,
+      nonCmd: data.rechargeGwIrrigationNonCommand,
+      total: data.rechargeGwIrrigationTotal,
+    },
+    {
+      name: "Water Conservation Structures",
+      cmd: data.rechargeArtificialStructureCommand,
+      nonCmd: data.rechargeArtificialStructureNonCommand,
+      total: data.rechargeArtificialStructureTotal,
+    },
+    {
+      name: "Tanks And Ponds",
+      cmd: data.rechargeWaterBodyCommand,
+      nonCmd: data.rechargeWaterBodyNonCommand,
+      total: data.rechargeWaterBodyTotal,
+    },
+  ].filter((r) => r.total);
+
+  for (const row of rechargeRows) {
+    lines.push(
+      `  - ${row.name}: ${formatNumber(row.total)} (Cmd: ${formatNumber(
+        row.cmd
+      )}, Non-Cmd: ${formatNumber(row.nonCmd)})`
+    );
+  }
+  if (data.rechargeTotalTotal) {
+    lines.push(
+      `  Total: ${formatNumber(data.rechargeTotalTotal)} (Cmd: ${formatNumber(
+        data.rechargeTotalCommand
+      )}, Non-Cmd: ${formatNumber(data.rechargeTotalNonCommand)})`
+    );
+  }
+
+  lines.push("");
+  lines.push("Natural Discharges (ham):");
+  const dischargeRows = [
+    {
+      name: "Baseflow",
+      cmd: data.baseflowLateralCommand,
+      nonCmd: data.baseflowLateralNonCommand,
+      total: data.baseflowLateralTotal,
+    },
+    {
+      name: "Evaporation",
+      cmd: data.evaporationCommand,
+      nonCmd: data.evaporationNonCommand,
+      total: data.evaporationTotal,
+    },
+    {
+      name: "Transpiration",
+      cmd: data.transpirationCommand,
+      nonCmd: data.transpirationNonCommand,
+      total: data.transpirationTotal,
+    },
+    {
+      name: "Vertical Flows",
+      cmd: data.baseflowVerticalCommand,
+      nonCmd: data.baseflowVerticalNonCommand,
+      total: data.baseflowVerticalTotal,
+    },
+  ].filter((r) => r.total);
+
+  for (const row of dischargeRows) {
+    lines.push(
+      `  - ${row.name}: ${formatNumber(row.total)} (Cmd: ${formatNumber(
+        row.cmd
+      )}, Non-Cmd: ${formatNumber(row.nonCmd)})`
+    );
+  }
+  if (data.lossTotal) {
+    lines.push(
+      `  Total: ${formatNumber(data.lossTotal)} (Cmd: ${formatNumber(
+        data.lossCommand
+      )}, Non-Cmd: ${formatNumber(data.lossNonCommand)})`
+    );
+  }
+
+  lines.push("");
+  lines.push("Annual Extractable Ground Water Resources (ham):");
+  lines.push(
+    `  Command: ${formatNumber(
+      data.extractableCommand
+    )}, Non-Command: ${formatNumber(
+      data.extractableNonCommand
+    )}, Total: ${formatNumber(data.extractableTotal)}`
+  );
+
   lines.push("");
   lines.push("Ground Water Extraction (ham):");
-  if (data.draftAgricultureTotal)
+  const extractionRows = [
+    {
+      name: "Irrigation",
+      cmd: data.draftAgricultureCommand,
+      nonCmd: data.draftAgricultureNonCommand,
+      total: data.draftAgricultureTotal,
+    },
+    {
+      name: "Domestic",
+      cmd: data.draftDomesticCommand,
+      nonCmd: data.draftDomesticNonCommand,
+      total: data.draftDomesticTotal,
+    },
+    {
+      name: "Industry",
+      cmd: data.draftIndustryCommand,
+      nonCmd: data.draftIndustryNonCommand,
+      total: data.draftIndustryTotal,
+    },
+  ].filter((r) => r.total);
+
+  for (const row of extractionRows) {
     lines.push(
-      `  - Irrigation: ${Number(data.draftAgricultureTotal).toFixed(2)}`
+      `  - ${row.name}: ${formatNumber(row.total)} (Cmd: ${formatNumber(
+        row.cmd
+      )}, Non-Cmd: ${formatNumber(row.nonCmd)})`
     );
-  if (data.draftDomesticTotal)
-    lines.push(`  - Domestic: ${Number(data.draftDomesticTotal).toFixed(2)}`);
-  if (data.draftIndustryTotal)
-    lines.push(`  - Industry: ${Number(data.draftIndustryTotal).toFixed(2)}`);
-  if (data.draftTotalTotal)
+  }
+  if (data.draftTotalTotal) {
     lines.push(
-      `  Total Extraction: ${Number(data.draftTotalTotal).toFixed(2)}`
+      `  Total: ${formatNumber(data.draftTotalTotal)} (Cmd: ${formatNumber(
+        data.draftTotalCommand
+      )}, Non-Cmd: ${formatNumber(data.draftTotalNonCommand)})`
     );
+  }
 
   if (data.stageOfExtractionTotal) {
     lines.push("");
     lines.push(
-      `Stage of Extraction: ${Number(data.stageOfExtractionTotal).toFixed(2)}%`
+      `Stage of Extraction: ${formatNumber(data.stageOfExtractionTotal)}%`
     );
   }
 
   return lines.join("\n");
 }
 
+function formatNumber(value: unknown): string {
+  if (value === null || value === undefined) return "-";
+  const num = Number(value);
+  if (isNaN(num)) return "-";
+  return num.toLocaleString("en-IN", { maximumFractionDigits: 2 });
+}
+
 export function generateChartData(record: GroundwaterRecord): object[] {
   const data = record.data as Record<string, unknown>;
-  const charts: object[] = [];
+  const locationName = record.location.name;
+  const visualizations: object[] = [];
 
-  // Recharge breakdown chart
-  const rechargeData = [
-    {
-      source: "Rainfall",
-      command: data.rechargeRainfallCommand,
-      nonCommand: data.rechargeRainfallNonCommand,
-      total: data.rechargeRainfallTotal,
-    },
-    {
-      source: "Canal",
-      command: data.rechargeCanalCommand,
-      nonCommand: data.rechargeCanalNonCommand,
-      total: data.rechargeCanalTotal,
-    },
-    {
-      source: "Surface Irrigation",
-      command: data.rechargeSurfaceIrrigationCommand,
-      nonCommand: data.rechargeSurfaceIrrigationNonCommand,
-      total: data.rechargeSurfaceIrrigationTotal,
-    },
-    {
-      source: "GW Irrigation",
-      command: data.rechargeGwIrrigationCommand,
-      nonCommand: data.rechargeGwIrrigationNonCommand,
-      total: data.rechargeGwIrrigationTotal,
-    },
-    {
-      source: "Tanks & Ponds",
-      command: data.rechargeWaterBodyCommand,
-      nonCommand: data.rechargeWaterBodyNonCommand,
-      total: data.rechargeWaterBodyTotal,
-    },
-    {
-      source: "Artificial Structures",
-      command: data.rechargeArtificialStructureCommand,
-      nonCommand: data.rechargeArtificialStructureNonCommand,
-      total: data.rechargeArtificialStructureTotal,
-    },
-  ].filter((r) => r.total);
-
-  if (rechargeData.length > 0) {
-    charts.push({
-      type: "chart",
-      chartType: "bar",
-      title: `Ground Water Recharge - ${record.location.name}`,
-      description: "Breakdown of ground water recharge by source (ham)",
-      data: rechargeData,
-    });
-  }
-
-  // Extraction breakdown pie chart
-  const extractionData = [
-    { name: "Irrigation", value: data.draftAgricultureTotal },
-    { name: "Domestic", value: data.draftDomesticTotal },
-    { name: "Industry", value: data.draftIndustryTotal },
-  ].filter((e) => e.value);
-
-  if (extractionData.length > 0) {
-    charts.push({
-      type: "chart",
-      chartType: "pie",
-      title: `Ground Water Extraction - ${record.location.name}`,
-      description: "Distribution of ground water extraction by use (ham)",
-      data: extractionData,
-    });
-  }
-
-  // Summary stats card
-  charts.push({
-    type: "stats",
-    title: `Key Metrics - ${record.location.name}`,
+  // 1. Summary Stats Card (Key Metrics)
+  visualizations.push({
+    type: "summary",
+    title: `Area of Focus: ${locationName} (${record.location.type})`,
+    year: record.location.year,
     data: {
+      extractableTotal: data.extractableTotal,
+      extractionTotal: data.draftTotalTotal,
       rainfall: data.rainfallTotal,
-      totalRecharge: data.rechargeTotalTotal,
-      totalExtraction: data.draftTotalTotal,
-      extractableResources: data.extractableTotal,
+      rechargeTotal: data.rechargeTotalTotal,
+      naturalDischarges: data.lossTotal,
       stageOfExtraction: data.stageOfExtractionTotal,
       category: data.categoryTotal,
     },
   });
 
-  return charts;
+  // 2. Ground Water Recharge Table
+  const rechargeTableData = [
+    {
+      source: "Rainfall Recharge",
+      command: data.rechargeRainfallCommand,
+      nonCommand: data.rechargeRainfallNonCommand,
+      total: data.rechargeRainfallTotal,
+    },
+    { source: "Stream Channel Recharge", command: 0, nonCommand: 0, total: 0 },
+    {
+      source: "Canal Recharge",
+      command: data.rechargeCanalCommand,
+      nonCommand: data.rechargeCanalNonCommand,
+      total: data.rechargeCanalTotal,
+    },
+    {
+      source: "Surface Water Irrigation",
+      command: data.rechargeSurfaceIrrigationCommand,
+      nonCommand: data.rechargeSurfaceIrrigationNonCommand,
+      total: data.rechargeSurfaceIrrigationTotal,
+    },
+    {
+      source: "Ground Water Irrigation",
+      command: data.rechargeGwIrrigationCommand,
+      nonCommand: data.rechargeGwIrrigationNonCommand,
+      total: data.rechargeGwIrrigationTotal,
+    },
+    {
+      source: "Water Conservation Structures",
+      command: data.rechargeArtificialStructureCommand,
+      nonCommand: data.rechargeArtificialStructureNonCommand,
+      total: data.rechargeArtificialStructureTotal,
+    },
+    {
+      source: "Tanks And Ponds",
+      command: data.rechargeWaterBodyCommand,
+      nonCommand: data.rechargeWaterBodyNonCommand,
+      total: data.rechargeWaterBodyTotal,
+    },
+  ].filter((r) => r.total);
+
+  rechargeTableData.push({
+    source: "Total",
+    command: data.rechargeTotalCommand,
+    nonCommand: data.rechargeTotalNonCommand,
+    total: data.rechargeTotalTotal,
+  });
+
+  visualizations.push({
+    type: "table",
+    tableType: "recharge",
+    title: `Ground Water Recharge (ham)`,
+    headerValue: data.rechargeTotalTotal,
+    columns: ["Source", "Command", "Non Command", "Total"],
+    data: rechargeTableData,
+  });
+
+  // 3. Natural Discharges Table
+  const dischargesTableData = [
+    {
+      source: "Baseflow",
+      command: data.baseflowLateralCommand,
+      nonCommand: data.baseflowLateralNonCommand,
+      total: data.baseflowLateralTotal,
+    },
+    { source: "Evapo-Transpiration", command: 0, nonCommand: 0, total: 0 },
+    {
+      source: "Evaporation",
+      command: data.evaporationCommand,
+      nonCommand: data.evaporationNonCommand,
+      total: data.evaporationTotal,
+    },
+    { source: "Lateral Flows", command: 0, nonCommand: 0, total: 0 },
+    { source: "Stream Recharges", command: 0, nonCommand: 0, total: 0 },
+    {
+      source: "Transpiration",
+      command: data.transpirationCommand,
+      nonCommand: data.transpirationNonCommand,
+      total: data.transpirationTotal,
+    },
+    {
+      source: "Vertical Flows",
+      command: data.baseflowVerticalCommand,
+      nonCommand: data.baseflowVerticalNonCommand,
+      total: data.baseflowVerticalTotal,
+    },
+  ].filter((r) => r.total || r.source === "Total");
+
+  dischargesTableData.push({
+    source: "Total",
+    command: data.lossCommand,
+    nonCommand: data.lossNonCommand,
+    total: data.lossTotal,
+  });
+
+  visualizations.push({
+    type: "table",
+    tableType: "discharges",
+    title: `Natural Discharges (ham)`,
+    headerValue: data.lossTotal,
+    columns: ["Source", "Command", "Non Command", "Total"],
+    data: dischargesTableData,
+  });
+
+  // 4. Annual Extractable Ground Water Resources Table
+  visualizations.push({
+    type: "table",
+    tableType: "extractable",
+    title: `Annual Extractable Ground Water Resources (ham)`,
+    headerValue: data.extractableTotal,
+    columns: ["Command", "Non Command", "Total"],
+    data: [
+      {
+        command: data.extractableCommand,
+        nonCommand: data.extractableNonCommand,
+        total: data.extractableTotal,
+      },
+    ],
+  });
+
+  // 5. Ground Water Extraction Table
+  const extractionTableData = [
+    {
+      source: "Irrigation",
+      command: data.draftAgricultureCommand,
+      nonCommand: data.draftAgricultureNonCommand,
+      total: data.draftAgricultureTotal,
+    },
+    {
+      source: "Domestic",
+      command: data.draftDomesticCommand,
+      nonCommand: data.draftDomesticNonCommand,
+      total: data.draftDomesticTotal,
+    },
+    {
+      source: "Industry",
+      command: data.draftIndustryCommand,
+      nonCommand: data.draftIndustryNonCommand,
+      total: data.draftIndustryTotal,
+    },
+  ].filter((r) => r.total);
+
+  extractionTableData.push({
+    source: "Total",
+    command: data.draftTotalCommand,
+    nonCommand: data.draftTotalNonCommand,
+    total: data.draftTotalTotal,
+  });
+
+  visualizations.push({
+    type: "table",
+    tableType: "extraction",
+    title: `Ground Water Extraction (ham)`,
+    headerValue: data.draftTotalTotal,
+    columns: ["Source", "Command", "Non Command", "Total"],
+    data: extractionTableData,
+  });
+
+  // 6. Recharge Sources Bar Chart
+  const rechargeChartData = [
+    { name: "Rainfall", value: data.rechargeRainfallTotal },
+    { name: "Canal", value: data.rechargeCanalTotal },
+    { name: "Surface Irrigation", value: data.rechargeSurfaceIrrigationTotal },
+    { name: "GW Irrigation", value: data.rechargeGwIrrigationTotal },
+    {
+      name: "Conservation Structures",
+      value: data.rechargeArtificialStructureTotal,
+    },
+    { name: "Tanks & Ponds", value: data.rechargeWaterBodyTotal },
+  ].filter((r) => r.value);
+
+  if (rechargeChartData.length > 0) {
+    visualizations.push({
+      type: "chart",
+      chartType: "bar",
+      title: `Ground Water Recharge Sources - ${locationName}`,
+      description: "Breakdown of ground water recharge by source (ham)",
+      data: rechargeChartData,
+    });
+  }
+
+  // 7. Extraction by Use Pie Chart
+  const extractionPieData = [
+    { name: "Irrigation", value: data.draftAgricultureTotal },
+    { name: "Domestic", value: data.draftDomesticTotal },
+    { name: "Industry", value: data.draftIndustryTotal },
+  ].filter((e) => e.value);
+
+  if (extractionPieData.length > 0) {
+    visualizations.push({
+      type: "chart",
+      chartType: "pie",
+      title: `Ground Water Extraction by Use - ${locationName}`,
+      description: "Distribution of ground water extraction (ham)",
+      data: extractionPieData,
+    });
+  }
+
+  // 8. Command vs Non-Command Comparison
+  const commandComparisonData = [
+    {
+      name: "Recharge",
+      command: data.rechargeTotalCommand,
+      nonCommand: data.rechargeTotalNonCommand,
+    },
+    {
+      name: "Extraction",
+      command: data.draftTotalCommand,
+      nonCommand: data.draftTotalNonCommand,
+    },
+    {
+      name: "Extractable",
+      command: data.extractableCommand,
+      nonCommand: data.extractableNonCommand,
+    },
+  ].filter((r) => r.command || r.nonCommand);
+
+  if (commandComparisonData.length > 0) {
+    visualizations.push({
+      type: "chart",
+      chartType: "grouped_bar",
+      title: `Command vs Non-Command Areas - ${locationName}`,
+      description: "Comparison between command and non-command areas (ham)",
+      data: commandComparisonData,
+    });
+  }
+
+  // 9. Water Balance Overview (Stacked/Comparison)
+  visualizations.push({
+    type: "chart",
+    chartType: "waterBalance",
+    title: `Water Balance Overview - ${locationName}`,
+    description: "Overall groundwater balance",
+    data: {
+      recharge: data.rechargeTotalTotal,
+      naturalDischarge: data.lossTotal,
+      extractable: data.extractableTotal,
+      extraction: data.draftTotalTotal,
+      availabilityForFuture: data.availabilityFutureTotal,
+    },
+  });
+
+  return visualizations;
 }
 
 export function generateComparisonChartData(
   records: GroundwaterRecord[]
 ): object[] {
-  const charts: object[] = [];
+  const visualizations: object[] = [];
 
-  // Comparison bar chart
+  // 1. Locations Table (like the state-wise table in screenshot)
+  const locationsTableData = records.map((r) => {
+    const data = r.data as Record<string, unknown>;
+    return {
+      name: r.location.name,
+      type: r.location.type,
+      rainfall: data.rainfallTotal,
+      extractable: data.extractableTotal,
+      extraction: data.draftTotalTotal,
+      recharge: data.rechargeTotalTotal,
+      stageOfExtraction: data.stageOfExtractionTotal,
+      category: data.categoryTotal,
+    };
+  });
+
+  visualizations.push({
+    type: "table",
+    tableType: "locations",
+    title: "Location Comparison",
+    columns: [
+      "Name",
+      "Rainfall (mm)",
+      "Extractable (ham)",
+      "Extraction (ham)",
+      "Stage (%)",
+    ],
+    data: locationsTableData,
+  });
+
+  // 2. Key Metrics Comparison Bar Chart
   const comparisonData = records.map((r) => {
     const data = r.data as Record<string, unknown>;
     return {
@@ -400,19 +715,33 @@ export function generateComparisonChartData(
       recharge: data.rechargeTotalTotal,
       extraction: data.draftTotalTotal,
       extractable: data.extractableTotal,
-      rainfall: data.rainfallTotal,
     };
   });
 
-  charts.push({
+  visualizations.push({
     type: "chart",
-    chartType: "bar",
-    title: "Location Comparison",
-    description: "Comparison of key groundwater metrics",
+    chartType: "grouped_bar",
+    title: "Groundwater Metrics Comparison",
+    description:
+      "Comparison of recharge, extraction, and extractable resources (ham)",
     data: comparisonData,
   });
 
-  // Stage of extraction comparison
+  // 3. Rainfall Comparison
+  const rainfallData = records.map((r) => ({
+    name: r.location.name,
+    value: (r.data as Record<string, unknown>).rainfallTotal,
+  }));
+
+  visualizations.push({
+    type: "chart",
+    chartType: "bar",
+    title: "Rainfall Comparison",
+    description: "Annual rainfall across locations (mm)",
+    data: rainfallData,
+  });
+
+  // 4. Stage of Extraction Comparison
   const stageData = records.map((r) => {
     const data = r.data as Record<string, unknown>;
     return {
@@ -422,13 +751,34 @@ export function generateComparisonChartData(
     };
   });
 
-  charts.push({
+  visualizations.push({
     type: "chart",
     chartType: "bar",
     title: "Stage of Extraction Comparison",
-    description: "Comparison of extraction rates (%)",
+    description: "Extraction as percentage of extractable resources (%)",
     data: stageData,
+    threshold: { safe: 70, critical: 90, overExploited: 100 },
   });
 
-  return charts;
+  // 5. Category Distribution
+  const categoryCount: Record<string, number> = {};
+  for (const r of records) {
+    const cat = String(
+      (r.data as Record<string, unknown>).categoryTotal || "Unknown"
+    );
+    categoryCount[cat] = (categoryCount[cat] || 0) + 1;
+  }
+
+  visualizations.push({
+    type: "chart",
+    chartType: "pie",
+    title: "Category Distribution",
+    description: "Distribution of locations by groundwater category",
+    data: Object.entries(categoryCount).map(([name, value]) => ({
+      name,
+      value,
+    })),
+  });
+
+  return visualizations;
 }

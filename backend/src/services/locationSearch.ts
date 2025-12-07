@@ -33,7 +33,8 @@ export interface SearchResult {
 
 export function searchLocation(
   query: string,
-  type?: "COUNTRY" | "STATE" | "DISTRICT" | "TALUK"
+  type?: "COUNTRY" | "STATE" | "DISTRICT" | "TALUK",
+  parentName?: string
 ): SearchResult[] {
   if (!fuse) {
     throw new Error(
@@ -41,11 +42,54 @@ export function searchLocation(
     );
   }
 
-  const results = fuse.search(query);
+  const normalizedQuery = query.replace(/[_-]/g, " ").trim();
+  const results = fuse.search(normalizedQuery);
 
   let filtered = results;
   if (type) {
     filtered = results.filter((r) => r.item.type === type);
+  }
+
+  if (parentName && type === "DISTRICT") {
+    const normalizedParent = parentName
+      .replace(/[_-]/g, " ")
+      .trim()
+      .toLowerCase();
+    const stateResults = fuse.search(normalizedParent);
+    const matchingStateIds = stateResults
+      .filter((r) => r.item.type === "STATE")
+      .slice(0, 3)
+      .map((r) => r.item.id);
+
+    if (matchingStateIds.length > 0) {
+      const parentFiltered = filtered.filter((r) =>
+        matchingStateIds.includes(r.item.parentId ?? "")
+      );
+      if (parentFiltered.length > 0) {
+        filtered = parentFiltered;
+      }
+    }
+  }
+
+  if (parentName && type === "TALUK") {
+    const normalizedParent = parentName
+      .replace(/[_-]/g, " ")
+      .trim()
+      .toLowerCase();
+    const districtResults = fuse.search(normalizedParent);
+    const matchingDistrictIds = districtResults
+      .filter((r) => r.item.type === "DISTRICT")
+      .slice(0, 3)
+      .map((r) => r.item.id);
+
+    if (matchingDistrictIds.length > 0) {
+      const parentFiltered = filtered.filter((r) =>
+        matchingDistrictIds.includes(r.item.parentId ?? "")
+      );
+      if (parentFiltered.length > 0) {
+        filtered = parentFiltered;
+      }
+    }
   }
 
   return filtered.slice(0, 5).map((r) => ({
@@ -58,12 +102,18 @@ export function searchState(query: string): SearchResult[] {
   return searchLocation(query, "STATE");
 }
 
-export function searchDistrict(query: string): SearchResult[] {
-  return searchLocation(query, "DISTRICT");
+export function searchDistrict(
+  query: string,
+  stateName?: string
+): SearchResult[] {
+  return searchLocation(query, "DISTRICT", stateName);
 }
 
-export function searchTaluk(query: string): SearchResult[] {
-  return searchLocation(query, "TALUK");
+export function searchTaluk(
+  query: string,
+  districtName?: string
+): SearchResult[] {
+  return searchLocation(query, "TALUK", districtName);
 }
 
 export async function getLocationById(

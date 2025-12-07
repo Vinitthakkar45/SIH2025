@@ -1,7 +1,14 @@
 "use client";
 
 import { useState, useRef, useEffect } from "react";
-import { Map, MessageSquare, Send, Loader2 } from "lucide-react";
+import {
+  Map,
+  MessageSquare,
+  Send,
+  Loader2,
+  ChevronDown,
+  ChevronUp,
+} from "lucide-react";
 import {
   BarChart,
   Bar,
@@ -18,18 +25,63 @@ import {
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001";
 
-interface ChartData {
-  type: "chart" | "stats";
-  chartType?: "bar" | "pie";
+interface TableRow {
+  source?: string;
+  name?: string;
+  command?: number | null;
+  nonCommand?: number | null;
+  total?: number | null;
+  [key: string]: unknown;
+}
+
+interface ChartDataItem {
+  name: string;
+  value?: number;
+  command?: number;
+  nonCommand?: number;
+  [key: string]: unknown;
+}
+
+interface SummaryData {
+  extractableTotal?: number;
+  extractionTotal?: number;
+  rainfall?: number;
+  rechargeTotal?: number;
+  naturalDischarges?: number;
+  stageOfExtraction?: number;
+  category?: string;
+}
+
+interface WaterBalanceData {
+  recharge?: number;
+  naturalDischarge?: number;
+  extractable?: number;
+  extraction?: number;
+  availabilityForFuture?: number;
+}
+
+interface Visualization {
+  type: "chart" | "stats" | "table" | "summary";
+  chartType?: "bar" | "pie" | "grouped_bar" | "waterBalance";
+  tableType?:
+    | "recharge"
+    | "discharges"
+    | "extractable"
+    | "extraction"
+    | "locations";
   title: string;
   description?: string;
-  data: Record<string, unknown>[] | Record<string, unknown>;
+  headerValue?: number;
+  year?: string;
+  columns?: string[];
+  data: TableRow[] | ChartDataItem[] | SummaryData | WaterBalanceData;
+  threshold?: { safe: number; critical: number; overExploited: number };
 }
 
 interface Message {
   role: "user" | "assistant";
   content: string;
-  charts?: ChartData[];
+  charts?: Visualization[];
   isLoading?: boolean;
 }
 
@@ -44,120 +96,409 @@ const COLORS = [
 
 const CATEGORY_COLORS: Record<string, string> = {
   safe: "#10b981",
-  semi_critical: "#3b82f6",
-  critical: "#f59e0b",
+  semi_critical: "#f59e0b",
+  critical: "#f97316",
   over_exploited: "#ef4444",
   salinity: "#8b5cf6",
   hilly_area: "#6b7280",
   no_data: "#9ca3af",
+  Safe: "#10b981",
+  "Semi-Critical": "#f59e0b",
+  Critical: "#f97316",
+  "Over-Exploited": "#ef4444",
 };
 
-function ChartRenderer({ chart }: { chart: ChartData }) {
-  if (chart.type === "stats") {
-    const stats = chart.data as Record<string, unknown>;
-    return (
-      <div className="bg-gray-50 dark:bg-gray-900 rounded-lg p-4 my-2">
-        <h4 className="font-semibold text-gray-900 dark:text-white mb-3">
-          {chart.title}
-        </h4>
-        <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
-          {Object.entries(stats).map(([key, value]) => (
-            <div key={key} className="bg-white dark:bg-gray-800 p-3 rounded-lg">
-              <p className="text-xs text-gray-500 dark:text-gray-400 capitalize">
-                {key.replace(/([A-Z])/g, " $1").trim()}
-              </p>
-              <p className="text-lg font-semibold text-gray-900 dark:text-white">
-                {typeof value === "number"
-                  ? value.toLocaleString(undefined, {
-                      maximumFractionDigits: 2,
-                    })
-                  : String(value)}
-              </p>
-            </div>
-          ))}
+function formatNumber(value: unknown): string {
+  if (value === null || value === undefined) return "-";
+  const num = Number(value);
+  if (isNaN(num)) return "-";
+  return num.toLocaleString("en-IN", { maximumFractionDigits: 2 });
+}
+
+function SummaryCard({ viz }: { viz: Visualization }) {
+  const data = viz.data as SummaryData;
+  return (
+    <div className="bg-gradient-to-br from-blue-900 to-blue-950 rounded-lg p-4 my-2 text-white">
+      <div className="flex justify-between items-start mb-4">
+        <div>
+          <h4 className="font-semibold text-lg">{viz.title}</h4>
+          {viz.year && (
+            <p className="text-blue-300 text-sm">YEAR: {viz.year}</p>
+          )}
+        </div>
+        {data.category && (
+          <span
+            className="px-3 py-1 rounded-full text-xs font-medium"
+            style={{
+              backgroundColor: CATEGORY_COLORS[data.category] || "#6b7280",
+            }}
+          >
+            {data.category}
+          </span>
+        )}
+      </div>
+
+      <div className="grid grid-cols-2 gap-4">
+        <div className="bg-blue-800/50 rounded-lg p-3">
+          <p className="text-blue-300 text-xs">
+            Annual Extractable Ground Water Resources (ham)
+          </p>
+          <p className="text-2xl font-bold text-cyan-400">
+            {formatNumber(data.extractableTotal)}
+          </p>
+        </div>
+        <div className="bg-blue-800/50 rounded-lg p-3">
+          <p className="text-blue-300 text-xs">
+            Ground Water Extraction for all uses (ham)
+          </p>
+          <p className="text-2xl font-bold text-cyan-400">
+            {formatNumber(data.extractionTotal)}
+          </p>
         </div>
       </div>
-    );
-  }
 
-  if (chart.chartType === "bar") {
-    const data = chart.data as Record<string, unknown>[];
-    return (
-      <div className="bg-gray-50 dark:bg-gray-900 rounded-lg p-4 my-2">
-        <h4 className="font-semibold text-gray-900 dark:text-white mb-1">
-          {chart.title}
-        </h4>
-        {chart.description && (
-          <p className="text-sm text-gray-500 dark:text-gray-400 mb-3">
-            {chart.description}
-          </p>
-        )}
-        <ResponsiveContainer width="100%" height={250}>
-          <BarChart
-            data={data}
-            margin={{ top: 5, right: 20, left: 10, bottom: 5 }}
-          >
-            <CartesianGrid strokeDasharray="3 3" className="opacity-30" />
-            <XAxis dataKey="name" tick={{ fontSize: 12 }} />
-            <YAxis tick={{ fontSize: 12 }} />
-            <Tooltip />
-            <Legend />
-            {data[0] &&
-              Object.keys(data[0])
-                .filter((k) => k !== "name" && k !== "category")
-                .map((key, i) => (
-                  <Bar
-                    key={key}
-                    dataKey={key}
-                    fill={COLORS[i % COLORS.length]}
-                  />
-                ))}
-          </BarChart>
-        </ResponsiveContainer>
-      </div>
-    );
-  }
-
-  if (chart.chartType === "pie") {
-    const data = chart.data as { name: string; value: number }[];
-    return (
-      <div className="bg-gray-50 dark:bg-gray-900 rounded-lg p-4 my-2">
-        <h4 className="font-semibold text-gray-900 dark:text-white mb-1">
-          {chart.title}
-        </h4>
-        {chart.description && (
-          <p className="text-sm text-gray-500 dark:text-gray-400 mb-3">
-            {chart.description}
-          </p>
-        )}
-        <ResponsiveContainer width="100%" height={250}>
-          <PieChart>
-            <Pie
-              data={data}
-              dataKey="value"
-              nameKey="name"
-              cx="50%"
-              cy="50%"
-              outerRadius={80}
-              label={({ name, percent }) =>
-                `${name} (${(percent * 100).toFixed(0)}%)`
-              }
+      <div className="mt-4 space-y-2 text-sm">
+        <div className="flex justify-between">
+          <span className="text-blue-300">Rainfall (mm)</span>
+          <span className="text-cyan-400">{formatNumber(data.rainfall)}</span>
+        </div>
+        <div className="flex justify-between">
+          <span className="text-blue-300">Ground Water Recharge (ham)</span>
+          <span className="text-cyan-400">
+            {formatNumber(data.rechargeTotal)}
+          </span>
+        </div>
+        <div className="flex justify-between">
+          <span className="text-blue-300">Natural Discharges (ham)</span>
+          <span className="text-cyan-400">
+            {formatNumber(data.naturalDischarges)}
+          </span>
+        </div>
+        {data.stageOfExtraction !== undefined && (
+          <div className="flex justify-between">
+            <span className="text-blue-300">Stage of Extraction</span>
+            <span
+              className={`font-medium ${
+                (data.stageOfExtraction ?? 0) > 100
+                  ? "text-red-400"
+                  : (data.stageOfExtraction ?? 0) > 90
+                  ? "text-orange-400"
+                  : (data.stageOfExtraction ?? 0) > 70
+                  ? "text-yellow-400"
+                  : "text-green-400"
+              }`}
             >
-              {data.map((entry, index) => (
-                <Cell
-                  key={entry.name}
-                  fill={
-                    CATEGORY_COLORS[entry.name] || COLORS[index % COLORS.length]
-                  }
-                />
-              ))}
-            </Pie>
-            <Tooltip />
-            <Legend />
-          </PieChart>
-        </ResponsiveContainer>
+              {formatNumber(data.stageOfExtraction)}%
+            </span>
+          </div>
+        )}
       </div>
-    );
+    </div>
+  );
+}
+
+function CollapsibleTable({ viz }: { viz: Visualization }) {
+  const [isOpen, setIsOpen] = useState(false);
+  const data = viz.data as TableRow[];
+
+  return (
+    <div className="bg-gray-900 rounded-lg my-2 overflow-hidden border border-gray-700">
+      <button
+        onClick={() => setIsOpen(!isOpen)}
+        className="w-full px-4 py-3 flex items-center justify-between hover:bg-gray-800 transition-colors"
+      >
+        <div className="flex items-center gap-2">
+          <span className="text-gray-300 text-sm">{viz.title}</span>
+          {viz.headerValue !== undefined && (
+            <span className="text-cyan-400 font-medium">
+              : {formatNumber(viz.headerValue)}
+            </span>
+          )}
+        </div>
+        {isOpen ? (
+          <ChevronUp size={18} className="text-gray-400" />
+        ) : (
+          <ChevronDown size={18} className="text-gray-400" />
+        )}
+      </button>
+
+      {isOpen && (
+        <div className="overflow-x-auto">
+          <table className="w-full text-sm">
+            <thead className="bg-gray-800">
+              <tr>
+                {viz.columns?.map((col) => (
+                  <th
+                    key={col}
+                    className="px-4 py-2 text-left text-gray-400 font-medium"
+                  >
+                    {col}
+                  </th>
+                ))}
+              </tr>
+            </thead>
+            <tbody>
+              {data.map((row, idx) => (
+                <tr
+                  key={idx}
+                  className={`border-t border-gray-700 ${
+                    row.source === "Total" ? "bg-gray-800 font-medium" : ""
+                  }`}
+                >
+                  {viz.tableType === "extractable" ? (
+                    <>
+                      <td className="px-4 py-2 text-gray-300">
+                        {formatNumber(row.command)}
+                      </td>
+                      <td className="px-4 py-2 text-gray-300">
+                        {formatNumber(row.nonCommand)}
+                      </td>
+                      <td className="px-4 py-2 text-cyan-400">
+                        {formatNumber(row.total)}
+                      </td>
+                    </>
+                  ) : viz.tableType === "locations" ? (
+                    <>
+                      <td className="px-4 py-2 text-gray-300">{row.name}</td>
+                      <td className="px-4 py-2 text-gray-300">
+                        {formatNumber(row.rainfall)}
+                      </td>
+                      <td className="px-4 py-2 text-gray-300">
+                        {formatNumber(row.extractable)}
+                      </td>
+                      <td className="px-4 py-2 text-gray-300">
+                        {formatNumber(row.extraction)}
+                      </td>
+                      <td className="px-4 py-2 text-gray-300">
+                        {formatNumber(row.stageOfExtraction)}
+                      </td>
+                    </>
+                  ) : (
+                    <>
+                      <td className="px-4 py-2 text-gray-300">{row.source}</td>
+                      <td className="px-4 py-2 text-gray-300">
+                        {formatNumber(row.command)}
+                      </td>
+                      <td className="px-4 py-2 text-gray-300">
+                        {formatNumber(row.nonCommand)}
+                      </td>
+                      <td className="px-4 py-2 text-cyan-400">
+                        {formatNumber(row.total)}
+                      </td>
+                    </>
+                  )}
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
+    </div>
+  );
+}
+
+function WaterBalanceChart({ viz }: { viz: Visualization }) {
+  const data = viz.data as WaterBalanceData;
+  const chartData = [
+    { name: "Recharge", value: data.recharge || 0 },
+    { name: "Natural Discharge", value: data.naturalDischarge || 0 },
+    { name: "Extractable", value: data.extractable || 0 },
+    { name: "Extraction", value: data.extraction || 0 },
+  ];
+
+  return (
+    <div className="bg-gray-50 dark:bg-gray-900 rounded-lg p-4 my-2">
+      <h4 className="font-semibold text-gray-900 dark:text-white mb-1">
+        {viz.title}
+      </h4>
+      {viz.description && (
+        <p className="text-sm text-gray-500 dark:text-gray-400 mb-3">
+          {viz.description}
+        </p>
+      )}
+      <ResponsiveContainer width="100%" height={200}>
+        <BarChart
+          data={chartData}
+          layout="vertical"
+          margin={{ top: 5, right: 20, left: 80, bottom: 5 }}
+        >
+          <CartesianGrid strokeDasharray="3 3" className="opacity-30" />
+          <XAxis type="number" tick={{ fontSize: 12 }} />
+          <YAxis type="category" dataKey="name" tick={{ fontSize: 12 }} />
+          <Tooltip formatter={(value) => formatNumber(value)} />
+          <Bar dataKey="value" fill="#3b82f6" />
+        </BarChart>
+      </ResponsiveContainer>
+    </div>
+  );
+}
+
+function GroupedBarChart({ viz }: { viz: Visualization }) {
+  const data = viz.data as ChartDataItem[];
+  const keys = data[0]
+    ? Object.keys(data[0]).filter((k) => k !== "name" && k !== "category")
+    : [];
+
+  return (
+    <div className="bg-gray-50 dark:bg-gray-900 rounded-lg p-4 my-2">
+      <h4 className="font-semibold text-gray-900 dark:text-white mb-1">
+        {viz.title}
+      </h4>
+      {viz.description && (
+        <p className="text-sm text-gray-500 dark:text-gray-400 mb-3">
+          {viz.description}
+        </p>
+      )}
+      <ResponsiveContainer width="100%" height={280}>
+        <BarChart
+          data={data}
+          margin={{ top: 5, right: 20, left: 10, bottom: 5 }}
+        >
+          <CartesianGrid strokeDasharray="3 3" className="opacity-30" />
+          <XAxis dataKey="name" tick={{ fontSize: 11 }} angle={-20} />
+          <YAxis tick={{ fontSize: 12 }} />
+          <Tooltip formatter={(value) => formatNumber(value)} />
+          <Legend />
+          {keys.map((key, i) => (
+            <Bar key={key} dataKey={key} fill={COLORS[i % COLORS.length]} />
+          ))}
+        </BarChart>
+      </ResponsiveContainer>
+    </div>
+  );
+}
+
+function SimpleBarChart({ viz }: { viz: Visualization }) {
+  const data = viz.data as ChartDataItem[];
+  return (
+    <div className="bg-gray-50 dark:bg-gray-900 rounded-lg p-4 my-2">
+      <h4 className="font-semibold text-gray-900 dark:text-white mb-1">
+        {viz.title}
+      </h4>
+      {viz.description && (
+        <p className="text-sm text-gray-500 dark:text-gray-400 mb-3">
+          {viz.description}
+        </p>
+      )}
+      <ResponsiveContainer width="100%" height={250}>
+        <BarChart
+          data={data}
+          margin={{ top: 5, right: 20, left: 10, bottom: 5 }}
+        >
+          <CartesianGrid strokeDasharray="3 3" className="opacity-30" />
+          <XAxis dataKey="name" tick={{ fontSize: 11 }} angle={-15} />
+          <YAxis tick={{ fontSize: 12 }} />
+          <Tooltip formatter={(value) => formatNumber(value)} />
+          <Bar dataKey="value" fill="#3b82f6">
+            {data.map((entry, index) => (
+              <Cell
+                key={index}
+                fill={
+                  entry.category
+                    ? CATEGORY_COLORS[String(entry.category)] ||
+                      COLORS[index % COLORS.length]
+                    : COLORS[index % COLORS.length]
+                }
+              />
+            ))}
+          </Bar>
+        </BarChart>
+      </ResponsiveContainer>
+    </div>
+  );
+}
+
+function SimplePieChart({ viz }: { viz: Visualization }) {
+  const data = viz.data as ChartDataItem[];
+  return (
+    <div className="bg-gray-50 dark:bg-gray-900 rounded-lg p-4 my-2">
+      <h4 className="font-semibold text-gray-900 dark:text-white mb-1">
+        {viz.title}
+      </h4>
+      {viz.description && (
+        <p className="text-sm text-gray-500 dark:text-gray-400 mb-3">
+          {viz.description}
+        </p>
+      )}
+      <ResponsiveContainer width="100%" height={250}>
+        <PieChart>
+          <Pie
+            data={data}
+            dataKey="value"
+            nameKey="name"
+            cx="50%"
+            cy="50%"
+            outerRadius={80}
+            label={({ name, percent }) =>
+              `${name} (${((percent ?? 0) * 100).toFixed(0)}%)`
+            }
+          >
+            {data.map((entry, index) => (
+              <Cell
+                key={entry.name}
+                fill={
+                  CATEGORY_COLORS[entry.name] || COLORS[index % COLORS.length]
+                }
+              />
+            ))}
+          </Pie>
+          <Tooltip formatter={(value) => formatNumber(value)} />
+          <Legend />
+        </PieChart>
+      </ResponsiveContainer>
+    </div>
+  );
+}
+
+function StatsCard({ viz }: { viz: Visualization }) {
+  const stats = viz.data as Record<string, unknown>;
+  return (
+    <div className="bg-gray-50 dark:bg-gray-900 rounded-lg p-4 my-2">
+      <h4 className="font-semibold text-gray-900 dark:text-white mb-3">
+        {viz.title}
+      </h4>
+      <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+        {Object.entries(stats).map(([key, value]) => (
+          <div key={key} className="bg-white dark:bg-gray-800 p-3 rounded-lg">
+            <p className="text-xs text-gray-500 dark:text-gray-400 capitalize">
+              {key.replace(/([A-Z])/g, " $1").trim()}
+            </p>
+            <p className="text-lg font-semibold text-gray-900 dark:text-white">
+              {typeof value === "number" ? formatNumber(value) : String(value)}
+            </p>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function VisualizationRenderer({ viz }: { viz: Visualization }) {
+  if (viz.type === "summary") {
+    return <SummaryCard viz={viz} />;
+  }
+
+  if (viz.type === "table") {
+    return <CollapsibleTable viz={viz} />;
+  }
+
+  if (viz.type === "stats") {
+    return <StatsCard viz={viz} />;
+  }
+
+  if (viz.type === "chart") {
+    if (viz.chartType === "waterBalance") {
+      return <WaterBalanceChart viz={viz} />;
+    }
+    if (viz.chartType === "grouped_bar") {
+      return <GroupedBarChart viz={viz} />;
+    }
+    if (viz.chartType === "pie") {
+      return <SimplePieChart viz={viz} />;
+    }
+    if (viz.chartType === "bar") {
+      return <SimpleBarChart viz={viz} />;
+    }
   }
 
   return null;
@@ -210,7 +551,7 @@ export default function ChatPage() {
       const decoder = new TextDecoder();
 
       let assistantContent = "";
-      const charts: ChartData[] = [];
+      const charts: Visualization[] = [];
 
       while (reader) {
         const { done, value } = await reader.read();
@@ -236,7 +577,12 @@ export default function ChatPage() {
                   };
                   return updated;
                 });
-              } else if (data.type === "chart" || data.type === "stats") {
+              } else if (
+                data.type === "chart" ||
+                data.type === "stats" ||
+                data.type === "table" ||
+                data.type === "summary"
+              ) {
                 charts.push(data);
                 setMessages((prev) => {
                   const updated = [...prev];
@@ -397,8 +743,8 @@ export default function ChatPage() {
                       </p>
                       {message.charts && message.charts.length > 0 && (
                         <div className="mt-3 space-y-3">
-                          {message.charts.map((chart, i) => (
-                            <ChartRenderer key={i} chart={chart} />
+                          {message.charts.map((viz, i) => (
+                            <VisualizationRenderer key={i} viz={viz} />
                           ))}
                         </div>
                       )}
