@@ -2,11 +2,13 @@
 
 import ChartRenderer from "@/components/ChartRenderer";
 import MarkdownRenderer from "@/components/MarkdownRenderer";
+import ChatComposer from "@/components/ChatComposer";
 import { Button } from "@heroui/button";
-import { Input, Skeleton } from "@heroui/react";
-import { Loader2, Map, MessageSquare, Send, ArrowDown } from "lucide-react";
+import { Skeleton } from "@heroui/react";
+import { ArrowDownIcon, DropletIcon } from "@/components/icons";
 import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
+import { MapsIcon, MessageIcon } from "@/components/icons";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001";
 
@@ -194,7 +196,7 @@ export default function ChatPage() {
           <div className="max-w-4xl mx-auto flex items-center justify-between">
             <Link className="flex items-center gap-3" href={"/"}>
               <div className="w-10 h-10 rounded-xl bg-primary flex items-center justify-center">
-                <span className="text-white text-xl">💧</span>
+                <DropletIcon size={24} className="text-white" />
               </div>
               <div>
                 <h1 className="font-semibold text-zinc-100">
@@ -209,7 +211,7 @@ export default function ChatPage() {
               onPress={() => setShowMap(!showMap)}
               color={showMap ? "default" : "primary"}
               startContent={
-                showMap ? <MessageSquare size={18} /> : <Map size={18} />
+                showMap ? <MessageIcon size={18} /> : <MapsIcon size={18} />
               }
             >
               <span className="text-sm font-medium">
@@ -229,7 +231,7 @@ export default function ChatPage() {
             {messages.length === 0 && (
               <div className="text-center py-12">
                 <div className="w-16 h-16 rounded-lg bg-zinc-800 flex items-center justify-center mx-auto mb-4">
-                  <span className="text-3xl">💧</span>
+                  <DropletIcon size={32} className="text-blue-500" />
                 </div>
                 <h2 className="text-xl font-semibold text-zinc-100 mb-2">
                   Welcome to INGRES AI
@@ -244,6 +246,7 @@ export default function ChatPage() {
                       key={q}
                       onPress={() => handleSubmit(q)}
                       variant="flat"
+                      radius="full"
                     >
                       {q}
                     </Button>
@@ -312,45 +315,18 @@ export default function ChatPage() {
                   setShowScrollButton(false);
                 }}
               >
-                <ArrowDown size={18} />
+                <ArrowDownIcon size={18} />
               </Button>
             </div>
           )}
 
-          <form
-            onSubmit={(e) => {
-              e.preventDefault();
-              handleSubmit(input);
-            }}
-            className="max-w-2xl mx-auto flex gap-2"
-          >
-            <Input
-              type="text"
-              size="lg"
-              value={input}
-              radius="full"
-              onChange={(e) => setInput(e.target.value)}
-              placeholder="Ask about groundwater data..."
-              disabled={isLoading}
-              variant="flat"
-              classNames={{ inputWrapper: "pr-1" }}
-              endContent={
-                <Button
-                  type="submit"
-                  disabled={isLoading || !input.trim()}
-                  radius="full"
-                  isIconOnly
-                  color="primary"
-                >
-                  {isLoading ? (
-                    <Loader2 className="animate-spin" size={18} />
-                  ) : (
-                    <Send size={18} />
-                  )}
-                </Button>
-              }
-            />
-          </form>
+          <ChatComposer
+            value={input}
+            onChange={setInput}
+            onSubmit={handleSubmit}
+            isLoading={isLoading}
+            className="max-w-2xl mx-auto"
+          />
         </footer>
       </div>
 
@@ -361,7 +337,7 @@ export default function ChatPage() {
         } transition-all duration-300 bg-zinc-800 flex items-center justify-center`}
       >
         <div className="text-center text-zinc-400">
-          <Map size={48} className="mx-auto mb-4 opacity-50" />
+          <MapsIcon size={48} className="mx-auto mb-4 opacity-50" />
           <p className="font-medium">Map View</p>
         </div>
       </div>

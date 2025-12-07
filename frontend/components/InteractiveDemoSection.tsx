@@ -1,0 +1,187 @@
+"use client";
+
+import ChartRenderer from "@/components/ChartRenderer";
+import ChatComposer from "@/components/ChatComposer";
+import { SparklesIcon } from "@/components/icons";
+import MarkdownRenderer from "@/components/MarkdownRenderer";
+import { useState } from "react";
+
+const EXAMPLES = [
+  {
+    query: "What is the groundwater status in Gujarat?",
+    response:
+      "Based on the 2022-2023 assessment, Gujarat has a diverse groundwater profile with varying extraction levels across its 248 assessment blocks.",
+    charts: [
+      {
+        type: "stats" as const,
+        title: "Gujarat Groundwater Summary",
+        data: {
+          totalBlocks: 248,
+          safeBlocks: 180,
+          semiCritical: 20,
+          critical: 24,
+          overExploited: 24,
+        },
+      },
+      {
+        type: "chart" as const,
+        chartType: "pie" as const,
+        title: "Category Distribution in Gujarat",
+        description: "Breakdown of groundwater assessment categories",
+        data: [
+          { name: "safe", value: 180 },
+          { name: "semi_critical", value: 20 },
+          { name: "critical", value: 24 },
+          { name: "over_exploited", value: 24 },
+        ],
+      },
+    ],
+  },
+  {
+    query: "Compare Punjab vs Haryana",
+    response:
+      "Punjab and Haryana show contrasting groundwater extraction patterns. Punjab has higher over-exploitation rates, while Haryana maintains better balance.",
+    charts: [
+      {
+        type: "chart" as const,
+        chartType: "bar" as const,
+        title: "State Comparison: Punjab vs Haryana",
+        description: "Total extraction and recharge comparison",
+        data: [
+          { name: "Punjab", extraction: 3542, recharge: 2156 },
+          { name: "Haryana", extraction: 1876, recharge: 1654 },
+        ],
+      },
+    ],
+  },
+  {
+    query: "List Critical blocks in Rajasthan",
+    response:
+      "Rajasthan has several blocks classified as Critical based on the latest assessment. Here's the category distribution:",
+    charts: [
+      {
+        type: "chart" as const,
+        chartType: "pie" as const,
+        title: "Rajasthan Block Categories",
+        description: "Distribution across assessment categories",
+        data: [
+          { name: "safe", value: 195 },
+          { name: "semi_critical", value: 34 },
+          { name: "critical", value: 28 },
+          { name: "over_exploited", value: 38 },
+        ],
+      },
+    ],
+  },
+  {
+    query: "Lowest extraction rates in TN?",
+    response:
+      "Tamil Nadu shows varied extraction patterns. Here are some districts with lower extraction rates compared to their recharge capacity.",
+    charts: [
+      {
+        type: "chart" as const,
+        chartType: "bar" as const,
+        title: "Low Extraction Districts in Tamil Nadu",
+        description: "Districts with sustainable extraction levels",
+        data: [
+          { name: "Nilgiris", extraction: 45, recharge: 156 },
+          { name: "Kanyakumari", extraction: 78, recharge: 234 },
+          { name: "Dharmapuri", extraction: 123, recharge: 298 },
+        ],
+      },
+    ],
+  },
+];
+
+export default function InteractiveDemoSection() {
+  const [selectedExample, setSelectedExample] = useState(0);
+  const [input, setInput] = useState("");
+
+  const currentExample = EXAMPLES[selectedExample];
+
+  const handleQueryClick = (query: string, index: number) => {
+    setSelectedExample(index);
+    setInput("");
+  };
+
+  const handleComposerSubmit = (value: string) => {
+    // Find matching example or default to first
+    const matchingIndex = EXAMPLES.findIndex((ex) =>
+      ex.query.toLowerCase().includes(value.toLowerCase())
+    );
+    if (matchingIndex !== -1) {
+      setSelectedExample(matchingIndex);
+    }
+    setInput("");
+  };
+
+  return (
+    <section className="py-24 bg-zinc-950">
+      <div className="max-w-4xl mx-auto px-6">
+        <div className="text-center mb-12">
+          <h2 className="text-sm font-medium text-blue-500 mb-2 uppercase tracking-widest">
+            Try Asking
+          </h2>
+          <h3 className="text-3xl font-medium text-white tracking-tight">
+            Conversational Intelligence
+          </h3>
+        </div>
+
+        <div className="bg-linear-to-br from-zinc-900/40 to-zinc-800/40 backdrop-filter backdrop-blur-xl border border-zinc-800/50 rounded-xl p-1 md:p-2">
+          <div className="bg-zinc-950 rounded-lg p-6 min-h-[400px] flex flex-col">
+            {/* Chat History */}
+            <div className="flex-1 space-y-6 mb-8">
+              {/* User Message */}
+              <div className="flex justify-end">
+                <div className="bg-blue-600 text-white px-4 py-2 rounded-2xl rounded-br-none text-sm max-w-[80%]">
+                  {currentExample.query}
+                </div>
+              </div>
+
+              {/* AI Response */}
+              <div className="flex items-start gap-3">
+                <div className="w-8 h-8 rounded-full bg-blue-600/20 flex items-center justify-center shrink-0">
+                  <SparklesIcon size={14} className="text-blue-500" />
+                </div>
+                <div className="space-y-3 max-w-[90%] flex-1">
+                  <MarkdownRenderer
+                    content={currentExample.response}
+                    className="text-zinc-300"
+                  />
+                  {currentExample.charts.map((chart, i) => (
+                    <ChartRenderer key={i} chart={chart} />
+                  ))}
+                </div>
+              </div>
+            </div>
+
+            {/* Input Composer */}
+            <ChatComposer
+              value={input}
+              onChange={setInput}
+              onSubmit={handleComposerSubmit}
+              placeholder="Ask about specific districts, extraction rates, or trends..."
+            />
+          </div>
+        </div>
+
+        {/* Quick Prompts */}
+        <div className="flex flex-wrap justify-center gap-3 mt-8">
+          {EXAMPLES.map((example, index) => (
+            <button
+              key={index}
+              onClick={() => handleQueryClick(example.query, index)}
+              className={`text-xs px-4 py-2 rounded-full transition-colors ${
+                selectedExample === index
+                  ? "bg-blue-600 text-white border border-blue-600"
+                  : "text-zinc-400 bg-zinc-900 hover:bg-zinc-800 border border-zinc-800"
+              }`}
+            >
+              &quot;{example.query}&quot;
+            </button>
+          ))}
+        </div>
+      </div>
+    </section>
+  );
+}
