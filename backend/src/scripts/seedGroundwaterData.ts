@@ -1,5 +1,6 @@
 import { db } from "../db/gw-db";
 import { groundwaterData, locations } from "../db/gw-schema";
+import { eq } from "drizzle-orm";
 
 const BASE_URL = "https://ingres.iith.ac.in/api";
 const INDIA_UUID = "ffce954d-24e1-494b-ba7e-0931d8ad6085";
@@ -12,6 +13,8 @@ const AVAILABLE_YEARS = [
   "2023-2024",
   "2024-2025",
 ];
+
+const LATEST_YEAR = "2024-2025";
 
 const YEAR_TO_API_PARAM: Record<string, string> = {
   "2016-2017": "2016",
@@ -550,10 +553,58 @@ async function clearDatabase() {
   console.log("Database cleared.");
 }
 
-async function seedYearData(year: string, indiaId: string): Promise<void> {
+// Cache for location DB IDs by external UUID
+const locationDbIdCache = new Map<string, string>();
+
+async function getOrCreateLocation(
+  externalId: string,
+  name: string,
+  type: "COUNTRY" | "STATE" | "DISTRICT" | "TALUK",
+  parentDbId: string | null
+): Promise<string> {
+  // Check cache first
+  const cached = locationDbIdCache.get(externalId);
+  if (cached) return cached;
+
+  // Check if exists in DB
+  const existing = await db
+    .select()
+    .from(locations)
+    .where(eq(locations.externalId, externalId))
+    .limit(1);
+
+  if (existing.length > 0) {
+    locationDbIdCache.set(externalId, existing[0].id);
+    return existing[0].id;
+  }
+
+  // Create new location
+  const [newLocation] = await db
+    .insert(locations)
+    .values({
+      externalId,
+      name,
+      type,
+      parentId: parentDbId,
+    })
+    .returning();
+
+  locationDbIdCache.set(externalId, newLocation.id);
+  return newLocation.id;
+}
+
+async function seedYearData(year: string): Promise<void> {
   console.log(`\n========== Seeding data for ${year} ==========\n`);
 
   try {
+    // Get or create India
+    const indiaDbId = await getOrCreateLocation(
+      INDIA_UUID,
+      "INDIA",
+      "COUNTRY",
+      null
+    );
+
     const availableStates = await fetchAvailableStates(year);
     const stateUuids = availableStates.map((s) => s.id);
     console.log(`Found ${availableStates.length} states for ${year}`);
@@ -565,7 +616,9 @@ async function seedYearData(year: string, indiaId: string): Promise<void> {
       stateNameToUuid.set(state.state_name.toUpperCase(), state.id);
     }
 
-    const stateIdMap = new Map<string, string>();
+    // Map to track state external IDs to their DB IDs for this year's data
+    const stateExternalToDbId = new Map<string, string>();
+
     for (const stateData of statesData) {
       if (stateData.locationName === "total") continue;
 
@@ -577,22 +630,20 @@ async function seedYearData(year: string, indiaId: string): Promise<void> {
         continue;
       }
 
-      console.log(`Inserting state: ${stateData.locationName} (${year})`);
-      const [stateRecord] = await db
-        .insert(locations)
-        .values({
-          externalId: `${externalId}_${year}`,
-          name: stateData.locationName,
-          type: "STATE",
-          year: year,
-          parentId: indiaId,
-        })
-        .returning();
+      const stateDbId = await getOrCreateLocation(
+        externalId,
+        stateData.locationName,
+        "STATE",
+        indiaDbId
+      );
+      stateExternalToDbId.set(externalId, stateDbId);
 
-      stateIdMap.set(externalId, stateRecord.id);
-
+      console.log(
+        `Adding GW data for state: ${stateData.locationName} (${year})`
+      );
       await db.insert(groundwaterData).values({
-        locationId: stateRecord.id,
+        locationId: stateDbId,
+        year,
         ...extractGroundwaterData(stateData),
       });
     }
@@ -612,7 +663,7 @@ async function seedYearData(year: string, indiaId: string): Promise<void> {
       console.error(`Error fetching block data for ${year}:`, error);
     }
 
-    for (const [stateExternalId, stateDbId] of stateIdMap) {
+    for (const [stateExternalId, stateDbId] of stateExternalToDbId) {
       const stateName = statesData.find(
         (s) => s.locationUUID === stateExternalId
       )?.locationName;
@@ -628,27 +679,24 @@ async function seedYearData(year: string, indiaId: string): Promise<void> {
         for (const districtData of districtsData) {
           if (districtData.locationName === "total") continue;
 
-          console.log(
-            `  Inserting district: ${districtData.locationName} (${year})`
+          const districtDbId = await getOrCreateLocation(
+            districtData.locationUUID,
+            districtData.locationName,
+            "DISTRICT",
+            stateDbId
           );
-          const [districtRecord] = await db
-            .insert(locations)
-            .values({
-              externalId: `${districtData.locationUUID}_${year}`,
-              name: districtData.locationName,
-              type: "DISTRICT",
-              year: year,
-              parentId: stateDbId,
-            })
-            .returning();
 
+          console.log(
+            `  Adding GW data for district: ${districtData.locationName} (${year})`
+          );
           await db.insert(groundwaterData).values({
-            locationId: districtRecord.id,
+            locationId: districtDbId,
+            year,
             ...extractGroundwaterData(districtData),
           });
 
           if (districtData.reportSummary) {
-            for (const [talukUuid, talukSummary] of Object.entries(
+            for (const [talukUuid] of Object.entries(
               districtData.reportSummary
             )) {
               if (talukUuid === "total") continue;
@@ -656,22 +704,19 @@ async function seedYearData(year: string, indiaId: string): Promise<void> {
               const talukBlockData = blockNameMap.get(talukUuid);
               if (!talukBlockData) continue;
 
-              console.log(
-                `    Inserting taluk: ${talukBlockData.locationName} (${year})`
+              const talukDbId = await getOrCreateLocation(
+                talukUuid,
+                talukBlockData.locationName,
+                "TALUK",
+                districtDbId
               );
-              const [talukRecord] = await db
-                .insert(locations)
-                .values({
-                  externalId: `${talukUuid}_${year}`,
-                  name: talukBlockData.locationName,
-                  type: "TALUK",
-                  year: year,
-                  parentId: districtRecord.id,
-                })
-                .returning();
 
+              console.log(
+                `    Adding GW data for taluk: ${talukBlockData.locationName} (${year})`
+              );
               await db.insert(groundwaterData).values({
-                locationId: talukRecord.id,
+                locationId: talukDbId,
+                year,
                 ...extractBlockGroundwaterData(talukBlockData),
               });
             }
@@ -697,30 +742,14 @@ async function seedDatabase() {
   try {
     await clearDatabase();
 
-    console.log("Creating India entries for all years...");
-    const indiaIds = new Map<string, string>();
-
+    // Seed data for each year - locations are created once and reused
     for (const year of AVAILABLE_YEARS) {
-      const [india] = await db
-        .insert(locations)
-        .values({
-          externalId: `${INDIA_UUID}_${year}`,
-          name: "INDIA",
-          type: "COUNTRY",
-          year: year,
-          parentId: null,
-        })
-        .returning();
-      indiaIds.set(year, india.id);
-    }
-
-    for (const year of AVAILABLE_YEARS) {
-      const indiaId = indiaIds.get(year)!;
-      await seedYearData(year, indiaId);
+      await seedYearData(year);
       await new Promise((resolve) => setTimeout(resolve, 2000));
     }
 
     console.log("\nDatabase seeding completed for all years!");
+    console.log(`Total locations created: ${locationDbIdCache.size}`);
   } catch (error) {
     console.error("Error seeding database:", error);
     throw error;

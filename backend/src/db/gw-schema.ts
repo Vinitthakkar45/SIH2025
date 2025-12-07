@@ -35,12 +35,10 @@ export const locations = pgTable(
     name: text("name").notNull(),
     type: locationTypeEnum("type").notNull(),
     parentId: uuid("parent_id").references((): AnyPgColumn => locations.id),
-    year: text("year").notNull(),
   },
   (table) => [
     index("locations_parent_id_idx").on(table.parentId),
     index("locations_type_idx").on(table.type),
-    index("locations_year_idx").on(table.year),
     index("locations_external_id_idx").on(table.externalId),
   ]
 );
@@ -52,7 +50,7 @@ export const locationsRelations = relations(locations, ({ one, many }) => ({
     relationName: "parent_child",
   }),
   children: many(locations, { relationName: "parent_child" }),
-  groundwaterData: one(groundwaterData),
+  groundwaterData: many(groundwaterData),
 }));
 
 export const groundwaterData = pgTable(
@@ -61,8 +59,8 @@ export const groundwaterData = pgTable(
     id: uuid("id").primaryKey().defaultRandom(),
     locationId: uuid("location_id")
       .notNull()
-      .references(() => locations.id, { onDelete: "cascade" })
-      .unique(),
+      .references(() => locations.id, { onDelete: "cascade" }),
+    year: text("year").notNull(),
 
     // Rainfall (mm)
     rainfallCommand: doublePrecision("rainfall_command"),
@@ -281,7 +279,11 @@ export const groundwaterData = pgTable(
     // Report Summary (for aggregated counts at state/district level)
     reportSummary: jsonb("report_summary"),
   },
-  (table) => [index("groundwater_data_location_id_idx").on(table.locationId)]
+  (table) => [
+    index("groundwater_data_location_id_idx").on(table.locationId),
+    index("groundwater_data_year_idx").on(table.year),
+    index("groundwater_data_location_year_idx").on(table.locationId, table.year),
+  ]
 );
 
 export const groundwaterDataRelations = relations(

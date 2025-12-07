@@ -1,4 +1,4 @@
-import { ChatGroq } from "@langchain/groq";
+import { ChatGoogleGenerativeAI } from "@langchain/google-genai";
 import {
   HumanMessage,
   AIMessage,
@@ -14,6 +14,7 @@ import {
 } from "@langchain/langgraph";
 import { ToolNode } from "@langchain/langgraph/prebuilt";
 import { allTools } from "./gwTools";
+import logger from "../utils/logger";
 
 const SYSTEM_PROMPT = `You are an expert assistant for India's Groundwater Resources Information System (INGRES). You help users understand groundwater data across India at country, state, district, and taluk levels.
 
@@ -47,8 +48,8 @@ Always use the appropriate tools to get accurate, up-to-date data rather than ma
 For questions about trends, changes over time, or historical data, use the historical data tools.`;
 
 export function createGroundwaterAgent() {
-  const model = new ChatGroq({
-    model: "llama-3.3-70b-versatile",
+  const model = new ChatGoogleGenerativeAI({
+    model: "gemini-2.5-flash",
     temperature: 0,
   }).bindTools(allTools);
 
@@ -121,6 +122,7 @@ export async function streamGroundwaterChat(
   let fullResponse = "";
 
   try {
+    logger.debug("Starting agent stream");
     const stream = await agent.stream({ messages }, { streamMode: "messages" });
 
     for await (const chunk of stream) {
@@ -165,8 +167,13 @@ export async function streamGroundwaterChat(
       }
     }
 
+    logger.debug(
+      { chartsCount: collectedCharts.length },
+      "Agent stream completed"
+    );
     callbacks.onComplete(fullResponse);
   } catch (error) {
+    logger.error({ err: error }, "Agent stream failed");
     callbacks.onError(error as Error);
   }
 }
@@ -183,6 +190,7 @@ export async function invokeGroundwaterChat(
     new HumanMessage(query),
   ];
 
+  logger.debug("Invoking agent");
   const result = await agent.invoke({ messages });
 
   const lastMessage = result.messages[result.messages.length - 1] as AIMessage;
@@ -204,5 +212,6 @@ export async function invokeGroundwaterChat(
     }
   }
 
+  logger.debug({ chartsCount: charts.length }, "Agent invocation completed");
   return { response, charts };
 }

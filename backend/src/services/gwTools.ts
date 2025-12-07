@@ -492,10 +492,11 @@ export const getHistoricalDataTool = tool(
     const records = await searchAndGetHistoricalData(locationName, type);
 
     if (records.length === 0) {
+      const availableYears = await getAvailableYears();
       return JSON.stringify({
         found: false,
         message: `No historical data found for "${locationName}"`,
-        availableYears: getAvailableYears(),
+        availableYears,
       });
     }
 
@@ -547,16 +548,17 @@ export const getDataForYearTool = tool(
     const record = await getGroundwaterDataForYear(locationName, year, type);
 
     if (!record) {
+      const availableYears = await getAvailableYears();
       return JSON.stringify({
         found: false,
         message: `No data found for "${locationName}" in year ${year}`,
-        availableYears: getAvailableYears(),
+        availableYears,
       });
     }
 
     return JSON.stringify({
       found: true,
-      year: record.location.year,
+      year: record.year,
       textSummary: formatGroundwaterDataForLLM(record),
       charts: generateChartData(record),
     });
@@ -589,10 +591,11 @@ export const compareYearsTool = tool(
     const records = await compareYears(locationName, type, years || []);
 
     if (records.length === 0) {
+      const availableYears = await getAvailableYears();
       return JSON.stringify({
         found: false,
         message: `No data found for "${locationName}"`,
-        availableYears: getAvailableYears(),
+        availableYears,
       });
     }
 
@@ -637,7 +640,7 @@ If years are not specified, returns all available years.`,
 
 export const getAvailableYearsTool = tool(
   async () => {
-    const years = getAvailableYears();
+    const years = await getAvailableYears();
     return JSON.stringify({
       found: true,
       years,

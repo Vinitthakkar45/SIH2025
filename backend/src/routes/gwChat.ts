@@ -4,6 +4,7 @@ import {
   invokeGroundwaterChat,
   ChatMessage,
 } from "../services/gwAgent";
+import logger from "../utils/logger";
 
 const router: IRouter = Router();
 
@@ -20,17 +21,24 @@ router.post("/", async (req: Request, res: Response) => {
       return;
     }
 
+    logger.info(
+      { query, historyLength: chatHistory.length },
+      "Chat request received"
+    );
+
     const { response, charts } = await invokeGroundwaterChat(
       query,
       chatHistory as ChatMessage[]
     );
+
+    logger.info({ chartsCount: charts.length }, "Chat response generated");
 
     res.json({
       response,
       charts,
     });
   } catch (error) {
-    console.error("GW Chat error:", error);
+    logger.error({ err: error, query: req.body.query }, "Chat request failed");
     res.status(500).json({ error: "Failed to generate response" });
   }
 });
@@ -48,6 +56,11 @@ router.post("/stream", async (req: Request, res: Response) => {
       return;
     }
 
+    logger.info(
+      { query, historyLength: chatHistory.length },
+      "Stream request received"
+    );
+
     // Set up SSE headers
     res.setHeader("Content-Type", "text/event-stream");
     res.setHeader("Cache-Control", "no-cache");
@@ -63,6 +76,7 @@ router.post("/stream", async (req: Request, res: Response) => {
         res.write(`data: ${JSON.stringify({ type: "chart", ...chart })}\n\n`);
       },
       onToolCall: (toolName, args) => {
+        logger.debug({ tool: toolName, args }, "Tool invoked");
         res.write(
           `data: ${JSON.stringify({
             type: "tool_call",
@@ -93,10 +107,15 @@ router.post("/stream", async (req: Request, res: Response) => {
         }
       },
       onComplete: (fullResponse) => {
+        logger.info(
+          { responseLength: fullResponse.length },
+          "Stream completed"
+        );
         res.write(`data: ${JSON.stringify({ type: "done" })}\n\n`);
         res.end();
       },
       onError: (error) => {
+        logger.error({ err: error, query: req.body.query }, "Stream error");
         res.write(
           `data: ${JSON.stringify({ type: "error", error: error.message })}\n\n`
         );
@@ -104,7 +123,10 @@ router.post("/stream", async (req: Request, res: Response) => {
       },
     });
   } catch (error) {
-    console.error("GW Stream error:", error);
+    logger.error(
+      { err: error, query: req.body.query },
+      "Stream request failed"
+    );
     res.status(500).json({ error: "Failed to start streaming" });
   }
 });

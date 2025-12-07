@@ -5,6 +5,7 @@ import { eq, and } from "drizzle-orm";
 import { searchLocation } from "../services/locationSearch";
 
 const router: IRouter = Router();
+const LATEST_YEAR = "2024-2025";
 
 interface MapLocationData {
   id: string;
@@ -18,14 +19,17 @@ interface MapLocationData {
 }
 
 // Get all states with their groundwater status
-router.get("/states", async (_req, res) => {
+router.get("/states", async (req, res) => {
   try {
+    const year = (req.query.year as string) || LATEST_YEAR;
+
     const result = await db
       .select({
         id: locations.id,
         externalId: locations.externalId,
         name: locations.name,
         type: locations.type,
+        year: groundwaterData.year,
         category: groundwaterData.categoryTotal,
         stageOfExtraction: groundwaterData.stageOfExtractionTotal,
         extractable: groundwaterData.extractableTotal,
@@ -33,7 +37,13 @@ router.get("/states", async (_req, res) => {
         rainfall: groundwaterData.rainfallTotal,
       })
       .from(locations)
-      .leftJoin(groundwaterData, eq(locations.id, groundwaterData.locationId))
+      .leftJoin(
+        groundwaterData,
+        and(
+          eq(locations.id, groundwaterData.locationId),
+          eq(groundwaterData.year, year)
+        )
+      )
       .where(eq(locations.type, "STATE"));
 
     res.json(result);
@@ -47,6 +57,7 @@ router.get("/states", async (_req, res) => {
 router.get("/states/:stateId/districts", async (req, res) => {
   try {
     const { stateId } = req.params;
+    const year = (req.query.year as string) || LATEST_YEAR;
 
     const result = await db
       .select({
@@ -54,6 +65,7 @@ router.get("/states/:stateId/districts", async (req, res) => {
         externalId: locations.externalId,
         name: locations.name,
         type: locations.type,
+        year: groundwaterData.year,
         category: groundwaterData.categoryTotal,
         stageOfExtraction: groundwaterData.stageOfExtractionTotal,
         extractable: groundwaterData.extractableTotal,
@@ -61,7 +73,13 @@ router.get("/states/:stateId/districts", async (req, res) => {
         rainfall: groundwaterData.rainfallTotal,
       })
       .from(locations)
-      .leftJoin(groundwaterData, eq(locations.id, groundwaterData.locationId))
+      .leftJoin(
+        groundwaterData,
+        and(
+          eq(locations.id, groundwaterData.locationId),
+          eq(groundwaterData.year, year)
+        )
+      )
       .where(
         and(eq(locations.type, "DISTRICT"), eq(locations.parentId, stateId))
       );
@@ -77,6 +95,7 @@ router.get("/states/:stateId/districts", async (req, res) => {
 router.get("/districts/:districtId/taluks", async (req, res) => {
   try {
     const { districtId } = req.params;
+    const year = (req.query.year as string) || LATEST_YEAR;
 
     const result = await db
       .select({
@@ -84,6 +103,7 @@ router.get("/districts/:districtId/taluks", async (req, res) => {
         externalId: locations.externalId,
         name: locations.name,
         type: locations.type,
+        year: groundwaterData.year,
         category: groundwaterData.categoryTotal,
         stageOfExtraction: groundwaterData.stageOfExtractionTotal,
         extractable: groundwaterData.extractableTotal,
@@ -91,7 +111,13 @@ router.get("/districts/:districtId/taluks", async (req, res) => {
         rainfall: groundwaterData.rainfallTotal,
       })
       .from(locations)
-      .leftJoin(groundwaterData, eq(locations.id, groundwaterData.locationId))
+      .leftJoin(
+        groundwaterData,
+        and(
+          eq(locations.id, groundwaterData.locationId),
+          eq(groundwaterData.year, year)
+        )
+      )
       .where(
         and(eq(locations.type, "TALUK"), eq(locations.parentId, districtId))
       );
@@ -106,7 +132,11 @@ router.get("/districts/:districtId/taluks", async (req, res) => {
 // Get detailed data for multiple locations (for comparison)
 router.post("/locations/details", async (req, res) => {
   try {
-    const { locationIds } = req.body as { locationIds: string[] };
+    const { locationIds, year } = req.body as {
+      locationIds: string[];
+      year?: string;
+    };
+    const targetYear = year || LATEST_YEAR;
 
     if (!locationIds || !Array.isArray(locationIds)) {
       return res.status(400).json({ error: "locationIds array required" });
@@ -118,7 +148,7 @@ router.post("/locations/details", async (req, res) => {
         .select()
         .from(groundwaterData)
         .innerJoin(locations, eq(groundwaterData.locationId, locations.id))
-        .where(eq(locations.id, id))
+        .where(and(eq(locations.id, id), eq(groundwaterData.year, targetYear)))
         .limit(1);
 
       if (result.length > 0) {
@@ -128,6 +158,7 @@ router.post("/locations/details", async (req, res) => {
             name: result[0].locations.name,
             type: result[0].locations.type,
           },
+          year: result[0].groundwater_data.year,
           data: result[0].groundwater_data,
         });
       }

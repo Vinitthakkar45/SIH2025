@@ -1,6 +1,6 @@
 import Fuse from "fuse.js";
 import { db } from "../db/gw-db";
-import { locations } from "../db/gw-schema";
+import { locations, groundwaterData } from "../db/gw-schema";
 import { eq } from "drizzle-orm";
 
 interface LocationRecord {
@@ -9,7 +9,6 @@ interface LocationRecord {
   name: string;
   type: "COUNTRY" | "STATE" | "DISTRICT" | "TALUK";
   parentId: string | null;
-  year: string;
 }
 
 let locationCache: LocationRecord[] = [];
@@ -178,12 +177,11 @@ export function getTaluksOfDistrict(districtId: string): LocationRecord[] {
   );
 }
 
-export function getAvailableYears(): string[] {
-  const years = new Set<string>();
-  for (const l of locationCache) {
-    years.add(l.year);
-  }
-  return Array.from(years).sort();
+export async function getAvailableYears(): Promise<string[]> {
+  const result = await db
+    .selectDistinct({ year: groundwaterData.year })
+    .from(groundwaterData);
+  return result.map((r) => r.year).sort();
 }
 
 export function getLocationsByNameAndType(
@@ -196,29 +194,4 @@ export function getLocationsByNameAndType(
       l.type === type &&
       l.name.replace(/[_-]/g, " ").trim().toLowerCase() === normalizedName
   );
-}
-
-export function searchLocationForYear(
-  query: string,
-  year: string,
-  type?: "COUNTRY" | "STATE" | "DISTRICT" | "TALUK"
-): SearchResult[] {
-  if (!fuse) {
-    throw new Error(
-      "Location search not initialized. Call initLocationSearch first."
-    );
-  }
-
-  const normalizedQuery = query.replace(/[_-]/g, " ").trim();
-  const results = fuse.search(normalizedQuery);
-
-  let filtered = results.filter((r) => r.item.year === year);
-  if (type) {
-    filtered = filtered.filter((r) => r.item.type === type);
-  }
-
-  return filtered.slice(0, 5).map((r) => ({
-    location: r.item,
-    score: 1 - (r.score ?? 0),
-  }));
 }

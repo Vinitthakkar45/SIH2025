@@ -1,19 +1,21 @@
+import { and, asc, desc, eq, inArray, isNotNull, sql } from "drizzle-orm";
 import { db } from "../db/gw-db";
 import { groundwaterData, locations } from "../db/gw-schema";
-import { eq, desc, asc, sql, and, isNotNull, inArray } from "drizzle-orm";
 import {
+  aggregateGroundwaterRecords,
+  aggregateHistoricalRecords,
+  groupRecordsByYear,
+} from "../utils/aggregation";
+import {
+  getAvailableYears,
+  getDistrictsOfState,
+  getLocationById,
+  getLocationsByNameAndType,
+  getTaluksOfDistrict,
+  searchDistrict,
   searchLocation,
   searchState,
-  searchDistrict,
   searchTaluk,
-  getLocationById,
-  getLocationHierarchy,
-  getDistrictsOfState,
-  getTaluksOfDistrict,
-  getAllStates,
-  getAvailableYears,
-  getLocationsByNameAndType,
-  searchLocationForYear,
 } from "./locationSearch";
 
 export interface GroundwaterRecord {
@@ -21,39 +23,43 @@ export interface GroundwaterRecord {
     id: string;
     name: string;
     type: string;
-    year: string;
   };
+  year: string;
   data: Record<string, unknown>;
 }
 
+const LATEST_YEAR = "2024-2025";
+
 export async function getGroundwaterDataByLocationId(
-  locationId: string
+  locationId: string,
+  year: string = LATEST_YEAR
 ): Promise<GroundwaterRecord | null> {
   const result = await db
     .select()
     .from(groundwaterData)
     .innerJoin(locations, eq(groundwaterData.locationId, locations.id))
-    .where(eq(locations.id, locationId))
-    .limit(1);
+    .where(and(eq(locations.id, locationId), eq(groundwaterData.year, year)));
 
   if (result.length === 0) return null;
 
-  const row = result[0];
-  return {
+  const records = result.map((row) => ({
     location: {
       id: row.locations.id,
       name: row.locations.name,
       type: row.locations.type,
-      year: row.locations.year,
     },
+    year: row.groundwater_data.year,
     data: row.groundwater_data,
-  };
+  }));
+
+  return aggregateGroundwaterRecords(records);
 }
 
 export async function searchAndGetGroundwaterData(
   query: string,
   locationType?: "STATE" | "DISTRICT" | "TALUK",
-  parentName?: string
+  parentName?: string,
+  year: string = LATEST_YEAR
 ): Promise<GroundwaterRecord | null> {
   const normalizedQuery = query.replace(/[_-]/g, " ").trim();
   const normalizedParent = parentName?.replace(/[_-]/g, " ").trim();
@@ -72,16 +78,17 @@ export async function searchAndGetGroundwaterData(
   if (results.length === 0) return null;
 
   const bestMatch = results[0];
-  return getGroundwaterDataByLocationId(bestMatch.location.id);
+  return getGroundwaterDataByLocationId(bestMatch.location.id, year);
 }
 
 export async function compareLocations(
-  locationIds: string[]
+  locationIds: string[],
+  year: string = LATEST_YEAR
 ): Promise<GroundwaterRecord[]> {
   const results: GroundwaterRecord[] = [];
 
   for (const id of locationIds) {
-    const data = await getGroundwaterDataByLocationId(id);
+    const data = await getGroundwaterDataByLocationId(id, year);
     if (data) results.push(data);
   }
 
@@ -92,7 +99,8 @@ export async function getTopLocationsByField(
   field: string,
   locationType: "STATE" | "DISTRICT" | "TALUK",
   order: "asc" | "desc" = "desc",
-  limit: number = 10
+  limit: number = 10,
+  year: string = LATEST_YEAR
 ): Promise<GroundwaterRecord[]> {
   const columnName = fieldToColumn(field);
   if (!columnName) return [];
@@ -106,6 +114,7 @@ export async function getTopLocationsByField(
     .where(
       and(
         eq(locations.type, locationType),
+        eq(groundwaterData.year, year),
         isNotNull(sql.raw(`groundwater_data.${columnName}`))
       )
     )
@@ -117,19 +126,20 @@ export async function getTopLocationsByField(
       id: row.locations.id,
       name: row.locations.name,
       type: row.locations.type,
-      year: row.locations.year,
     },
+    year: row.groundwater_data.year,
     data: row.groundwater_data,
   }));
 }
 
 export async function getLocationWithChildren(
-  locationId: string
+  locationId: string,
+  year: string = LATEST_YEAR
 ): Promise<{
   parent: GroundwaterRecord | null;
   children: GroundwaterRecord[];
 }> {
-  const parent = await getGroundwaterDataByLocationId(locationId);
+  const parent = await getGroundwaterDataByLocationId(locationId, year);
   if (!parent) return { parent: null, children: [] };
 
   const location = await getLocationById(locationId);
@@ -144,7 +154,7 @@ export async function getLocationWithChildren(
 
   const children: GroundwaterRecord[] = [];
   for (const child of childLocations.slice(0, 20)) {
-    const data = await getGroundwaterDataByLocationId(child.id);
+    const data = await getGroundwaterDataByLocationId(child.id, year);
     if (data) children.push(data);
   }
 
@@ -152,7 +162,8 @@ export async function getLocationWithChildren(
 }
 
 export async function getCategorySummary(
-  locationType: "STATE" | "DISTRICT" | "TALUK"
+  locationType: "STATE" | "DISTRICT" | "TALUK",
+  year: string = LATEST_YEAR
 ): Promise<Record<string, number>> {
   const result = await db
     .select({
@@ -161,7 +172,9 @@ export async function getCategorySummary(
     })
     .from(groundwaterData)
     .innerJoin(locations, eq(groundwaterData.locationId, locations.id))
-    .where(eq(locations.type, locationType))
+    .where(
+      and(eq(locations.type, locationType), eq(groundwaterData.year, year))
+    )
     .groupBy(groundwaterData.categoryTotal);
 
   const summary: Record<string, number> = {};
@@ -174,7 +187,8 @@ export async function getCategorySummary(
 }
 
 export async function getAggregateStats(
-  locationType: "STATE" | "DISTRICT" | "TALUK"
+  locationType: "STATE" | "DISTRICT" | "TALUK",
+  year: string = LATEST_YEAR
 ): Promise<Record<string, number>> {
   const result = await db
     .select({
@@ -187,7 +201,9 @@ export async function getAggregateStats(
     })
     .from(groundwaterData)
     .innerJoin(locations, eq(groundwaterData.locationId, locations.id))
-    .where(eq(locations.type, locationType));
+    .where(
+      and(eq(locations.type, locationType), eq(groundwaterData.year, year))
+    );
 
   const row = result[0];
   return {
@@ -241,14 +257,15 @@ export async function getHistoricalDataByLocationName(
     .innerJoin(locations, eq(groundwaterData.locationId, locations.id))
     .where(inArray(locations.id, locationIds));
 
-  return result
-    .map((row) => ({
-      year: row.locations.year,
-      locationId: row.locations.id,
-      locationName: row.locations.name,
-      data: row.groundwater_data,
-    }))
-    .sort((a, b) => a.year.localeCompare(b.year));
+  const records = result.map((row) => ({
+    year: row.groundwater_data.year,
+    locationId: row.locations.id,
+    locationName: row.locations.name,
+    data: row.groundwater_data,
+  }));
+
+  const recordsByYear = groupRecordsByYear(records);
+  return aggregateHistoricalRecords(recordsByYear);
 }
 
 export async function searchAndGetHistoricalData(
@@ -268,8 +285,8 @@ export async function searchAndGetHistoricalData(
 
   if (results.length === 0) return [];
 
-  const bestMatchName = results[0].location.name;
-  return getHistoricalDataByLocationName(bestMatchName, locationType);
+  const bestMatch = results[0];
+  return getHistoricalDataByLocationName(bestMatch.location.name, locationType);
 }
 
 export async function getGroundwaterDataForYear(
@@ -277,12 +294,7 @@ export async function getGroundwaterDataForYear(
   year: string,
   locationType?: "STATE" | "DISTRICT" | "TALUK"
 ): Promise<GroundwaterRecord | null> {
-  const results = searchLocationForYear(query, year, locationType);
-
-  if (results.length === 0) return null;
-
-  const bestMatch = results[0];
-  return getGroundwaterDataByLocationId(bestMatch.location.id);
+  return searchAndGetGroundwaterData(query, locationType, undefined, year);
 }
 
 export async function compareYears(
@@ -300,13 +312,11 @@ export async function compareYears(
   return historicalData.filter((h) => years.includes(h.year));
 }
 
-export { getAvailableYears };
-
 export function formatGroundwaterDataForLLM(record: GroundwaterRecord): string {
   const data = record.data as Record<string, unknown>;
   const lines: string[] = [
     `Location: ${record.location.name} (${record.location.type})`,
-    `Year: ${record.location.year}`,
+    `Year: ${record.year}`,
     "",
   ];
 
@@ -506,7 +516,7 @@ export function generateChartData(record: GroundwaterRecord): object[] {
   visualizations.push({
     type: "summary",
     title: `Area of Focus: ${locationName} (${record.location.type})`,
-    year: record.location.year,
+    year: record.year,
     data: {
       extractableTotal: data.extractableTotal,
       extractionTotal: data.draftTotalTotal,

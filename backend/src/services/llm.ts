@@ -1,12 +1,15 @@
-import Groq from "groq-sdk";
+import { GoogleGenerativeAI } from "@google/generative-ai";
 import dotenv from "dotenv";
+import logger from "../utils/logger";
 
 dotenv.config();
 
-const groq = new Groq({
-  apiKey: process.env.GROQ_API_KEY,
-});
+if (!process.env.GEMINI_API_KEY) {
+  logger.error("GEMINI_API_KEY is required");
+  throw new Error("GEMINI_API_KEY environment variable is required");
+}
 
+const gemini = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
 
 // System prompt for the RAG assistant
 const SYSTEM_PROMPT = `You are INGRES AI Assistant, an expert on India's groundwater resources. You help users understand groundwater data from the INGRES (India-WRIS National Groundwater Resource Estimation System) database.
@@ -43,7 +46,7 @@ export interface StreamCallbacks {
 }
 
 /**
- * Generate a response using Groq LLM with context from RAG
+ * Generate a response using Gemini
  */
 export async function generateResponse(
   query: string,
@@ -57,29 +60,34 @@ ${context}
 ---
 User Question: ${query}`;
 
-  const messages: Array<{
-    role: "system" | "user" | "assistant";
-    content: string;
-  }> = [
-    { role: "system", content: SYSTEM_PROMPT },
-    ...chatHistory.map((m) => ({ role: m.role, content: m.content })),
-    { role: "user", content: contextMessage },
-  ];
+  const model = gemini.getGenerativeModel({ model: "gemini-2.5-flash" });
+  const history = chatHistory.map((m) => ({
+    role: m.role === "assistant" ? "model" : "user",
+    parts: [{ text: m.content }],
+  }));
 
-  const completion = await groq.chat.completions.create({
-    model: "openai/gpt-oss-120b", // Fast and capable model on Groq
-    messages,
-    temperature: 0.3, // Lower temperature for more factual responses
-    max_tokens: 2048,
+  const chat = model.startChat({
+    history: [
+      { role: "user", parts: [{ text: SYSTEM_PROMPT }] },
+      {
+        role: "model",
+        parts: [
+          {
+            text: "Understood. I am INGRES AI Assistant, ready to help with India's groundwater data.",
+          },
+        ],
+      },
+      ...history,
+    ],
+    generationConfig: { temperature: 0.3, maxOutputTokens: 2048 },
   });
 
-  return (
-    completion.choices[0]?.message?.content || "I couldn't generate a response."
-  );
+  const result = await chat.sendMessage(contextMessage);
+  return result.response.text() || "I couldn't generate a response.";
 }
 
 /**
- * Generate a streaming response using Groq LLM
+ * Generate a streaming response using Gemini
  */
 export async function generateStreamingResponse(
   query: string,
@@ -94,28 +102,34 @@ ${context}
 ---
 User Question: ${query}`;
 
-  const messages: Array<{
-    role: "system" | "user" | "assistant";
-    content: string;
-  }> = [
-    { role: "system", content: SYSTEM_PROMPT },
-    ...chatHistory.map((m) => ({ role: m.role, content: m.content })),
-    { role: "user", content: contextMessage },
-  ];
-
   try {
-    const stream = await groq.chat.completions.create({
-      model: "openai/gpt-oss-120b",
-      messages,
-      temperature: 0.3,
-      max_tokens: 2048,
-      stream: true,
+    const model = gemini.getGenerativeModel({ model: "gemini-2.5-flash" });
+    const history = chatHistory.map((m) => ({
+      role: m.role === "assistant" ? "model" : "user",
+      parts: [{ text: m.content }],
+    }));
+
+    const chat = model.startChat({
+      history: [
+        { role: "user", parts: [{ text: SYSTEM_PROMPT }] },
+        {
+          role: "model",
+          parts: [
+            {
+              text: "Understood. I am INGRES AI Assistant, ready to help with India's groundwater data.",
+            },
+          ],
+        },
+        ...history,
+      ],
+      generationConfig: { temperature: 0.3, maxOutputTokens: 2048 },
     });
 
+    const result = await chat.sendMessageStream(contextMessage);
     let fullResponse = "";
 
-    for await (const chunk of stream) {
-      const token = chunk.choices[0]?.delta?.content || "";
+    for await (const chunk of result.stream) {
+      const token = chunk.text();
       if (token) {
         fullResponse += token;
         callbacks.onToken(token);
@@ -124,6 +138,7 @@ User Question: ${query}`;
 
     callbacks.onComplete(fullResponse);
   } catch (error) {
+    logger.error({ err: error }, "Streaming response failed");
     callbacks.onError(
       error instanceof Error ? error : new Error(String(error))
     );
@@ -142,14 +157,9 @@ export async function generateSuggestions(
 Query: ${query}
 Context summary: ${context.substring(0, 500)}...`;
 
-  const completion = await groq.chat.completions.create({
-    model: "llama-3.1-8b-instant", // Faster model for suggestions
-    messages: [{ role: "user", content: prompt }],
-    temperature: 0.7,
-    max_tokens: 200,
-  });
-
-  const response = completion.choices[0]?.message?.content || "";
+  const model = gemini.getGenerativeModel({ model: "gemini-2.5-flash" });
+  const result = await model.generateContent(prompt);
+  const response = result.response.text() || "";
   return response
     .split("\n")
     .map((q) => q.replace(/^\d+\.\s*/, "").trim())
