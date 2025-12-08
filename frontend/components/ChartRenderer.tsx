@@ -1,4 +1,5 @@
 "use client";
+"use i18n";
 
 import BarChartComponent from "./charts/BarChartComponent";
 import PieChartComponent from "./charts/PieChartComponent";
@@ -7,8 +8,8 @@ import StatsChart from "./charts/StatsChart";
 interface ChartData {
   type: "chart" | "stats";
   chartType?: "bar" | "pie";
-  title: string;
-  description?: string;
+  title: string | React.ReactElement;
+  description?: string | React.ReactElement;
   data: Record<string, unknown>[] | Record<string, unknown>;
 }
 

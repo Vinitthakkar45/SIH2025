@@ -51,7 +51,10 @@ export interface StreamCallbacks {
 /**
  * Generate a response using Gemini
  */
-export async function generateResponse(query: string, context: string): Promise<string> {
+export async function generateResponse(
+  query: string,
+  context: string
+): Promise<string> {
   const contextMessage = `Context (use ONLY this data):
 ${context}
 
@@ -81,7 +84,11 @@ Question: ${query}`;
 /**
  * Generate a streaming response using Gemini
  */
-export async function generateStreamingResponse(query: string, context: string, callbacks: StreamCallbacks): Promise<void> {
+export async function generateStreamingResponse(
+  query: string,
+  context: string,
+  callbacks: StreamCallbacks
+): Promise<void> {
   const contextMessage = `Context (use ONLY this data):
 ${context}
 
@@ -119,15 +126,37 @@ Question: ${query}`;
     callbacks.onComplete(fullResponse);
   } catch (error) {
     logger.error({ err: error }, "Streaming response failed");
-    callbacks.onError(error instanceof Error ? error : new Error(String(error)));
+    callbacks.onError(
+      error instanceof Error ? error : new Error(String(error))
+    );
   }
 }
 
 /**
  * Generate suggested follow-up questions
  */
-export async function generateSuggestions(query: string, context: string): Promise<string[]> {
-  const prompt = `Based on this groundwater data query and context, suggest 3 relevant follow-up questions the user might want to ask. Return only the questions, one per line.
+export async function generateSuggestions(
+  query: string,
+  context: string,
+  language: string = "en"
+): Promise<string[]> {
+  const languageMap: Record<string, string> = {
+    en: "English",
+    hi: "Hindi (हिन्दी)",
+    bn: "Bengali (বাংলা)",
+    te: "Telugu (తెలుగు)",
+    ta: "Tamil (தமிழ்)",
+    ml: "Malayalam (മലയാളം)",
+    pa: "Punjabi (ਪੰਜਾਬੀ)",
+    ur: "Urdu (اردو)",
+  };
+
+  const languageInstruction =
+    language !== "en"
+      ? `Generate the suggestions in ${languageMap[language] || language}. `
+      : "";
+
+  const prompt = `Based on this groundwater data query and context, suggest 3 relevant follow-up questions the user might want to ask. ${languageInstruction}Return only the questions, one per line.
 
 Query: ${query}
 Context summary: ${context.substring(0, 500)}...`;
@@ -140,4 +169,39 @@ Context summary: ${context.substring(0, 500)}...`;
     .map((q) => q.replace(/^\d+\.\s*/, "").trim())
     .filter((q) => q.length > 0)
     .slice(0, 3);
+}
+
+/**
+ * Translate text to the target language
+ */
+export async function translateText(
+  text: string,
+  language: string = "en"
+): Promise<string> {
+  if (language === "en") return text;
+
+  const languageMap: Record<string, string> = {
+    hi: "Hindi (हिन्दी)",
+    bn: "Bengali (বাংলা)",
+    te: "Telugu (తెలుగు)",
+    ta: "Tamil (தமிழ்)",
+    ml: "Malayalam (മലയാളം)",
+    pa: "Punjabi (ਪੰਜਾਬੀ)",
+    ur: "Urdu (اردو)",
+  };
+
+  const targetLanguage = languageMap[language] || language;
+
+  const prompt = `Translate the following text to ${targetLanguage}. Keep technical terms and numbers in English. Return ONLY the translated text, nothing else.
+
+Text: ${text}`;
+
+  try {
+    const model = gemini.getGenerativeModel({ model: "gemini-2.5-flash" });
+    const result = await model.generateContent(prompt);
+    return result.response.text()?.trim() || text;
+  } catch (error) {
+    logger.error({ err: error, text, language }, "Translation failed");
+    return text; // Fallback to original text
+  }
 }

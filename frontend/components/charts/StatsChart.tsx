@@ -1,5 +1,5 @@
 interface StatsChartProps {
-  title?: string;
+  title?: string | React.ReactElement;
   data: Record<string, unknown>;
   explanation?: string;
 }

@@ -5,6 +5,7 @@ import ChatComposer from "@/components/ChatComposer";
 import { Location01Icon } from "@/components/icons";
 import MessageList, { type Message } from "@/components/MessageList";
 import type { Visualization } from "@/types/visualizations";
+import Cookies from "js-cookie";
 import { useEffect, useRef, useState } from "react";
 import ChatHeader from "./ChatHeader";
 import MapWrapper from "./MapWrapper";
@@ -113,16 +114,21 @@ export default function ChatPage() {
     abortControllerRef.current = new AbortController();
 
     try {
+      // Get language from cookie
+      const language = Cookies.get("lingo-locale") || "en";
+
       const response = await fetch(`${API_URL}/api/gw-chat/stream`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           query,
+          language,
           chatHistory: messages.map((m) => ({
             role: m.role,
             content: m.content,
           })),
         }),
+        signal: abortControllerRef.current.signal,
       });
 
       if (!response.ok) throw new Error("Failed to get response");

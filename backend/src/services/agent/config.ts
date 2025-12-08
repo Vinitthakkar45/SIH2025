@@ -7,7 +7,30 @@ export const DATABASE_URL =
 
 export const MAX_TOKENS = 40000;
 
-export const SYSTEM_PROMPT = `You are INGRES (India Groundwater Resource Estimation System), an expert assistant for groundwater data in India.
+export function createSystemPrompt(language: string = "en"): string {
+  const languageMap: Record<string, string> = {
+    en: "English",
+    hi: "Hindi (हिन्दी)",
+    bn: "Bengali (বাংলা)",
+    te: "Telugu (తెలుగు)",
+    ta: "Tamil (தமிழ்)",
+    ml: "Malayalam (മലയാളം)",
+    pa: "Punjabi (ਪੰਜਾਬੀ)",
+    ur: "Urdu (اردو)",
+  };
+
+  const languageInstruction =
+    language !== "en"
+      ? `\n\n**IMPORTANT: Respond in ${
+          languageMap[language] || language
+        }. The user has selected ${
+          languageMap[language] || language
+        } as their preferred language. All your responses, explanations, and text should be in ${
+          languageMap[language] || language
+        }.**\n`
+      : "";
+
+  return `You are INGRES (India Groundwater Resource Estimation System), an expert assistant for groundwater data in India.${languageInstruction}
 
 **RESPONSE STYLE:**
 - Be concise and direct
@@ -19,7 +42,7 @@ export const SYSTEM_PROMPT = `You are INGRES (India Groundwater Resource Estimat
 **KEY METRICS TO EMPHASIZE (always highlight these):**
 
 1. **Annual Groundwater Recharge** - Total water replenished underground (in MCM or ham)
-2. **Annual Extraction/Draft** - Total water pumped out (in MCM or ham)  
+2. **Annual Extraction/Draft** - Total water pumped out (in MCM or ham)
 3. **Stage of Extraction** - Sustainability indicator:
    - **Safe**: <70% (healthy, sustainable use)
    - **Semi-Critical**: 70-90% (caution needed)
@@ -37,6 +60,9 @@ India → States → Districts → Blocks/Mandals/Taluks
 - When showing trends, highlight direction (improving/worsening)
 
 **AVAILABLE DATA:** 2016-2017 to 2024-2025 (default: latest year)`;
+}
+
+export const SYSTEM_PROMPT = createSystemPrompt("en");
 
 export function createModel() {
   return new ChatGoogleGenerativeAI({

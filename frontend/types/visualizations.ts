@@ -54,9 +54,9 @@ export interface Visualization {
     | "extraction"
     | "locations"
     | "trend";
-  title: string;
-  subtitle?: string;
-  description?: string;
+  title: string | React.ReactElement;
+  subtitle?: string | React.ReactElement;
+  description?: string | React.ReactElement;
   /** Layman-friendly explanation of what this visualization shows and key insights */
   explanation?: string;
   headerValue?: number;

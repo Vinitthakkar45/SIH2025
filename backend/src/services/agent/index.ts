@@ -15,9 +15,13 @@ import { ToolNode } from "@langchain/langgraph/prebuilt";
 import { allTools } from "../gwTools";
 import logger from "../../utils/logger";
 import { processToolResult } from "../toolResultHandlers";
-import { SYSTEM_PROMPT, createModel } from "./config";
+import { createSystemPrompt, createModel } from "./config";
 import { trimMessagesToFit } from "./trimmer";
-import { ChatMessage, convertChatHistory, filterSystemMessages } from "./messages";
+import {
+  ChatMessage,
+  convertChatHistory,
+  filterSystemMessages,
+} from "./messages";
 
 export { ChatMessage };
 
@@ -65,14 +69,16 @@ export function createGroundwaterAgent() {
 export async function streamGroundwaterChat(
   query: string,
   chatHistory: ChatMessage[] = [],
-  callbacks: StreamCallbacks
+  callbacks: StreamCallbacks,
+  language: string = "en"
 ): Promise<void> {
   const agent = createGroundwaterAgent();
 
   // Filter out system messages from history, always add fresh system prompt
   const filteredHistory = filterSystemMessages(chatHistory);
+  const systemPrompt = createSystemPrompt(language);
   const messages: BaseMessage[] = [
-    new SystemMessage(SYSTEM_PROMPT),
+    new SystemMessage(systemPrompt),
     ...convertChatHistory(filteredHistory),
     new HumanMessage(query),
   ];
@@ -81,10 +87,7 @@ export async function streamGroundwaterChat(
 
   try {
     logger.debug("Starting agent stream");
-    const stream = await agent.stream(
-      { messages },
-      { streamMode: "messages" }
-    );
+    const stream = await agent.stream({ messages }, { streamMode: "messages" });
 
     for await (const chunk of stream) {
       const [message] = chunk;
@@ -127,14 +130,16 @@ export async function streamGroundwaterChat(
 
 export async function invokeGroundwaterChat(
   query: string,
-  chatHistory: ChatMessage[] = []
+  chatHistory: ChatMessage[] = [],
+  language: string = "en"
 ): Promise<{ response: string; charts: object[] }> {
   const agent = createGroundwaterAgent();
 
   // Filter out system messages from history, always add fresh system prompt
   const filteredHistory = filterSystemMessages(chatHistory);
+  const systemPrompt = createSystemPrompt(language);
   const messages: BaseMessage[] = [
-    new SystemMessage(SYSTEM_PROMPT),
+    new SystemMessage(systemPrompt),
     ...convertChatHistory(filteredHistory),
     new HumanMessage(query),
   ];

@@ -4,19 +4,23 @@
 import ChartRenderer from "@/components/ChartRenderer";
 import ChatComposer from "@/components/ChatComposer";
 import { SparklesIcon } from "@/components/icons";
-import MarkdownRenderer from "@/components/MarkdownRenderer";
 import { Button } from "@heroui/react";
 import { useState } from "react";
 
 const EXAMPLES = [
   {
-    query: "What is the groundwater status in Gujarat?",
-    response:
-      "Based on the 2022-2023 assessment, Gujarat has a diverse groundwater profile with varying extraction levels across its 248 assessment blocks.",
+    queryText: "What is the groundwater status in Gujarat?",
+    query: <>What is the groundwater status in Gujarat?</>,
+    response: (
+      <>
+        Based on the 2022-2023 assessment, Gujarat has a diverse groundwater
+        profile with varying extraction levels across its 248 assessment blocks.
+      </>
+    ),
     charts: [
       {
         type: "stats" as const,
-        title: "Gujarat Groundwater Summary",
+        title: <>Gujarat Groundwater Summary</>,
         data: {
           totalBlocks: 248,
           safeBlocks: 180,
@@ -28,8 +32,8 @@ const EXAMPLES = [
       {
         type: "chart" as const,
         chartType: "pie" as const,
-        title: "Category Distribution in Gujarat",
-        description: "Breakdown of groundwater assessment categories",
+        title: <>Category Distribution in Gujarat</>,
+        description: <>Breakdown of groundwater assessment categories</>,
         data: [
           { name: "safe", value: 180 },
           { name: "semi_critical", value: 20 },
@@ -40,15 +44,21 @@ const EXAMPLES = [
     ],
   },
   {
-    query: "Compare Punjab vs Haryana",
-    response:
-      "Punjab and Haryana show contrasting groundwater extraction patterns. Punjab has higher over-exploitation rates, while Haryana maintains better balance.",
+    queryText: "Compare Punjab vs Haryana",
+    query: <>Compare Punjab vs Haryana</>,
+    response: (
+      <>
+        Punjab and Haryana show contrasting groundwater extraction patterns.
+        Punjab has higher over-exploitation rates, while Haryana maintains
+        better balance.
+      </>
+    ),
     charts: [
       {
         type: "chart" as const,
         chartType: "bar" as const,
-        title: "State Comparison: Punjab vs Haryana",
-        description: "Total extraction and recharge comparison",
+        title: <>State Comparison: Punjab vs Haryana</>,
+        description: <>Total extraction and recharge comparison</>,
         data: [
           { name: "Punjab", extraction: 3542, recharge: 2156 },
           { name: "Haryana", extraction: 1876, recharge: 1654 },
@@ -57,15 +67,20 @@ const EXAMPLES = [
     ],
   },
   {
-    query: "List Critical blocks in Rajasthan",
-    response:
-      "Rajasthan has several blocks classified as Critical based on the latest assessment. Here's the category distribution:",
+    queryText: "List Critical blocks in Rajasthan",
+    query: <>List Critical blocks in Rajasthan</>,
+    response: (
+      <>
+        Rajasthan has several blocks classified as Critical based on the latest
+        assessment. Here's the category distribution:
+      </>
+    ),
     charts: [
       {
         type: "chart" as const,
         chartType: "pie" as const,
-        title: "Rajasthan Block Categories",
-        description: "Distribution across assessment categories",
+        title: <>Rajasthan Block Categories</>,
+        description: <>Distribution across assessment categories</>,
         data: [
           { name: "safe", value: 195 },
           { name: "semi_critical", value: 34 },
@@ -76,15 +91,20 @@ const EXAMPLES = [
     ],
   },
   {
-    query: "Lowest extraction rates in TN?",
-    response:
-      "Tamil Nadu shows varied extraction patterns. Here are some districts with lower extraction rates compared to their recharge capacity.",
+    queryText: "Lowest extraction rates in TN?",
+    query: <>Lowest extraction rates in TN?</>,
+    response: (
+      <>
+        Tamil Nadu shows varied extraction patterns. Here are some districts
+        with lower extraction rates compared to their recharge capacity.
+      </>
+    ),
     charts: [
       {
         type: "chart" as const,
         chartType: "bar" as const,
-        title: "Low Extraction Districts in Tamil Nadu",
-        description: "Districts with sustainable extraction levels",
+        title: <>Low Extraction Districts in Tamil Nadu</>,
+        description: <>Districts with sustainable extraction levels</>,
         data: [
           { name: "Nilgiris", extraction: 45, recharge: 156 },
           { name: "Kanyakumari", extraction: 78, recharge: 234 },
@@ -101,7 +121,7 @@ export default function InteractiveDemoSection() {
 
   const currentExample = EXAMPLES[selectedExample];
 
-  const handleQueryClick = (query: string, index: number) => {
+  const handleQueryClick = (queryText: string, index: number) => {
     setSelectedExample(index);
     setInput("");
   };
@@ -109,7 +129,7 @@ export default function InteractiveDemoSection() {
   const handleComposerSubmit = (value: string) => {
     // Find matching example or default to first
     const matchingIndex = EXAMPLES.findIndex((ex) =>
-      ex.query.toLowerCase().includes(value.toLowerCase())
+      ex.queryText.toLowerCase().includes(value.toLowerCase())
     );
     if (matchingIndex !== -1) {
       setSelectedExample(matchingIndex);
@@ -143,7 +163,7 @@ export default function InteractiveDemoSection() {
                   ? "bg-primary text-white"
                   : "bg-zinc-800 text-zinc-300 hover:bg-zinc-700"
               }`}
-              onPress={() => handleQueryClick(example.query, index)}
+              onPress={() => handleQueryClick(example.queryText, index)}
             >
               {example.query}
             </Button>
@@ -162,10 +182,9 @@ export default function InteractiveDemoSection() {
                   />
                 </div>
                 <div className="space-y-4 flex-1">
-                  <MarkdownRenderer
-                    content={currentExample.response}
-                    className="text-zinc-300 leading-relaxed"
-                  />
+                  <div className="text-zinc-300 leading-relaxed">
+                    {currentExample.response}
+                  </div>
                   {currentExample.charts.map((chart, i) => (
                     <ChartRenderer key={i} chart={chart} />
                   ))}

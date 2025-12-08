@@ -17,8 +17,8 @@ import {
 } from "@/components/ui/chart";
 
 interface BarChartComponentProps {
-  title: string;
-  description?: string;
+  title: string | React.ReactElement;
+  description?: string | React.ReactElement;
   data: Record<string, unknown>[];
   color?: string;
   colorByValue?: boolean;

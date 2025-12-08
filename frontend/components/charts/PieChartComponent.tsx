@@ -9,8 +9,8 @@ import {
 } from "@/components/ui/chart";
 
 interface PieChartComponentProps {
-  title: string;
-  description?: string;
+  title: string | React.ReactElement;
+  description?: string | React.ReactElement;
   data: { name: string; value: number }[];
 }
 
