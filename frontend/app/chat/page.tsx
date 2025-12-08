@@ -1,13 +1,13 @@
 "use client";
 
 import ChatComposer from "@/components/ChatComposer";
+import ChatSidebar from "@/components/ChatSidebar";
 import MessageList, { type Message } from "@/components/MessageList";
 import WelcomeScreen from "@/components/WelcomeScreen";
 import type { Visualization } from "@/types/visualizations";
-import { ArrowDown02Icon, DropletIcon, MapsIcon, MessageIcon } from "@/components/icons";
+import { ArrowDown02Icon } from "@/components/icons";
 import { Button } from "@heroui/button";
-import Link from "next/link";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, useCallback } from "react";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001";
 
@@ -20,12 +20,13 @@ export default function ChatPage() {
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState("");
   const [isLoading, setIsLoading] = useState(false);
-  const [showMap, setShowMap] = useState(false);
   const [showScrollButton, setShowScrollButton] = useState(false);
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [userLocation, setUserLocation] = useState<LocationInfo>({
     state: "India",
     district: "India",
   });
+  const [currentConversationId, setCurrentConversationId] = useState<string | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const messagesContainerRef = useRef<HTMLDivElement>(null);
 
@@ -42,8 +43,8 @@ export default function ChatPage() {
 
         const data = await response.json();
 
-        const state = data.principalSubdivision ;
-        const district = data.city || data.locality || data.localityInfo?.administrative?.[2]?.name ;
+        const state = data.principalSubdivision;
+        const district = data.city || data.locality || data.localityInfo?.administrative?.[2]?.name;
 
         setUserLocation({ state, district });
       } catch (error) {
@@ -63,6 +64,47 @@ export default function ChatPage() {
         }
       );
     }
+  }, []);
+
+  // Load conversation messages when switching conversations
+  const loadConversation = useCallback(async (conversationId: string) => {
+    try {
+      const response = await fetch(`${API_URL}/api/conversations/${conversationId}`);
+      if (response.ok) {
+        const data = await response.json();
+        // Convert stored messages to the format expected by MessageList
+        const loadedMessages: Message[] = data.messages.map(
+          (msg: { role: "user" | "assistant"; content: string; visualizations?: Visualization[]; suggestions?: string[] }) => ({
+            role: msg.role,
+            content: msg.content,
+            charts: msg.visualizations || [],
+            suggestions: msg.suggestions || [],
+            isLoading: false,
+          })
+        );
+        setMessages(loadedMessages);
+        setCurrentConversationId(conversationId);
+      }
+    } catch (error) {
+      console.error("Failed to load conversation:", error);
+    }
+  }, []);
+
+  // Handle selecting a conversation from sidebar
+  const handleSelectConversation = useCallback(
+    (conversationId: string) => {
+      if (conversationId !== currentConversationId) {
+        loadConversation(conversationId);
+      }
+    },
+    [currentConversationId, loadConversation]
+  );
+
+  // Handle starting a new chat
+  const handleNewChat = useCallback(() => {
+    setMessages([]);
+    setCurrentConversationId(null);
+    setInput("");
   }, []);
 
   const scrollToBottom = () => {
@@ -91,7 +133,7 @@ export default function ChatPage() {
     if (!showScrollButton) {
       scrollToBottom();
     }
-  }, [messages]);
+  }, [messages, showScrollButton]);
 
   const handleSubmit = async (query: string) => {
     if (!query.trim() || isLoading) return;
@@ -110,7 +152,7 @@ export default function ChatPage() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           query,
-          chatHistory: messages.slice(-6).map((m) => ({ role: m.role, content: m.content })),
+          conversationId: currentConversationId,
         }),
       });
 
@@ -133,6 +175,12 @@ export default function ChatPage() {
           if (line.startsWith("data: ")) {
             try {
               const data = JSON.parse(line.slice(6));
+
+              // Handle conversation ID from server
+              if (data.type === "conversation_id") {
+                setCurrentConversationId(data.conversationId);
+                continue;
+              }
 
               if (data.type === "token") {
                 assistantContent += data.content;
@@ -175,36 +223,17 @@ export default function ChatPage() {
                   return updated;
                 });
               } else if (data.type === "done") {
+                // Update conversation ID if returned
+                if (data.conversationId) {
+                  setCurrentConversationId(data.conversationId);
+                }
+
                 setMessages((prev) => {
                   const updated = [...prev];
                   const lastIdx = updated.length - 1;
                   updated[lastIdx] = { ...updated[lastIdx], isLoading: false };
                   return updated;
                 });
-
-                // Fetch suggestions after response completes
-                try {
-                  const suggestionsRes = await fetch(`${API_URL}/api/gw-chat/suggestions`, {
-                    method: "POST",
-                    headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify({
-                      query,
-                      context: assistantContent.substring(0, 500),
-                    }),
-                  });
-
-                  if (suggestionsRes.ok) {
-                    const { suggestions } = await suggestionsRes.json();
-                    setMessages((prev) => {
-                      const updated = [...prev];
-                      const lastIdx = updated.length - 1;
-                      updated[lastIdx] = { ...updated[lastIdx], suggestions };
-                      return updated;
-                    });
-                  }
-                } catch (err) {
-                  console.error("Failed to fetch suggestions:", err);
-                }
               } else if (data.type === "error") {
                 setMessages((prev) => {
                   const updated = [...prev];
@@ -246,74 +275,62 @@ export default function ChatPage() {
     `How has groundwater extraction changed in ${userLocation.state} over the years?`,
   ];
 
+  const handleToggleSidebar = useCallback(() => {
+    setSidebarCollapsed((prev) => !prev);
+  }, []);
+
   return (
-    <div className="flex h-screen bg-dark-secondary">
+    <div className="flex h-screen bg-dark-primary overflow-hidden">
+      {/* Chat Sidebar */}
+      <ChatSidebar
+        currentConversationId={currentConversationId}
+        onSelectConversation={handleSelectConversation}
+        onNewChat={handleNewChat}
+        isCollapsed={sidebarCollapsed}
+        onToggleCollapse={handleToggleSidebar}
+      />
+
       {/* Main Chat Area */}
-      <div className={`flex flex-col flex-1 transition duration-300 ${showMap ? "w-1/2" : "w-full"}`}>
-        {/* Header */}
-        <header className="bg-dark-tertiary px-4 py-3">
-          <div className="max-w-4xl mx-auto flex items-center justify-between">
-            <Link className="flex items-center gap-3" href={"/"}>
-              <div className="w-10 h-10 rounded-xl bg-primary flex items-center justify-center">
-                <DropletIcon size={24} className="text-white" />
+      <div className="flex flex-col flex-1 min-w-0">
+        {/* Messages Area */}
+        <main
+          ref={messagesContainerRef}
+          onScroll={handleScroll}
+          className="flex-1 overflow-y-auto scrollbar-thin scrollbar-thumb-zinc-700 scrollbar-track-transparent">
+          <div className="max-w-4xl mx-auto px-4 py-6 min-h-full">
+            {messages.length === 0 ? (
+              <WelcomeScreen suggestedQueries={suggestedQueries} onQueryClick={handleSubmit} />
+            ) : (
+              <div className="space-y-4">
+                <MessageList messages={messages} onSuggestionClick={handleSubmit} />
               </div>
-              <div>
-                <h1 className="font-semibold text-zinc-100">INGRES AI Assistant</h1>
-                <p className="text-sm text-zinc-400">Groundwater Resource Information</p>
-              </div>
-            </Link>
-            <Button
-              onPress={() => setShowMap(!showMap)}
-              color={showMap ? "default" : "primary"}
-              startContent={showMap ? <MessageIcon size={18} /> : <MapsIcon size={18} />}>
-              <span className="text-sm font-medium">{showMap ? "Hide Map" : "Show Map"}</span>
-            </Button>
-          </div>
-        </header>
-
-        {/* Messages */}
-        <main ref={messagesContainerRef} onScroll={handleScroll} className="flex-1 overflow-y-auto p-4 bg-dark-primary">
-          <div className="max-w-4xl mx-auto space-y-4">
-            {messages.length === 0 && <WelcomeScreen suggestedQueries={suggestedQueries} onQueryClick={handleSubmit} />}
-
-            <MessageList messages={messages} onSuggestionClick={handleSubmit} />
-
-            <div ref={messagesEndRef} />
+            )}
+            <div ref={messagesEndRef} className="h-4" />
           </div>
         </main>
 
-        {/* Input */}
-        <footer className="p-4 relative bg-dark-primary">
+        {/* Input Area */}
+        <footer className="p-4 shrink-0">
           {/* Scroll to bottom button */}
           {showScrollButton && (
-            <div className="absolute bottom-20 left-1/2 -translate-x-1/2">
+            <div className="flex justify-center mb-3">
               <Button
                 isIconOnly
                 radius="full"
                 size="sm"
-                color="default"
+                variant="flat"
+                className="bg-zinc-800/90 backdrop-blur-sm border border-zinc-700/50 shadow-lg"
                 onPress={() => {
                   scrollToBottom();
                   setShowScrollButton(false);
                 }}>
-                <ArrowDown02Icon size={18} />
+                <ArrowDown02Icon size={16} />
               </Button>
             </div>
           )}
 
-          <ChatComposer value={input} onChange={setInput} onSubmit={handleSubmit} isLoading={isLoading} className="max-w-2xl mx-auto" />
+          <ChatComposer value={input} onChange={setInput} onSubmit={handleSubmit} isLoading={isLoading} className="max-w-3xl mx-auto" />
         </footer>
-      </div>
-
-      {/* Map Panel */}
-      <div
-        className={`${
-          showMap ? "w-1/2 opacity-100" : "w-0 opacity-0"
-        } transition-all duration-300 bg-dark-tertiary flex items-center justify-center`}>
-        <div className="text-center text-zinc-400">
-          <MapsIcon size={48} className="mx-auto mb-4 opacity-50" />
-          <p className="font-medium">Map View</p>
-        </div>
       </div>
     </div>
   );

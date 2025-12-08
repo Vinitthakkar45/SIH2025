@@ -1,10 +1,7 @@
 import { Router, Request, Response, type IRouter } from "express";
-import {
-  streamGroundwaterChat,
-  invokeGroundwaterChat,
-  ChatMessage,
-} from "../services/gwAgent";
+import { streamGroundwaterChat, invokeGroundwaterChat, ChatMessage } from "../services/gwAgent";
 import { generateSuggestions } from "../services/llm";
+import { createConversation, addMessage, updateMessage, getTrimmedChatHistory, getConversation } from "../services/chatHistory";
 import logger from "../utils/logger";
 
 const router: IRouter = Router();
@@ -15,28 +12,43 @@ const router: IRouter = Router();
  */
 router.post("/", async (req: Request, res: Response) => {
   try {
-    const { query, chatHistory = [] } = req.body;
+    const { query, conversationId, chatHistory = [] } = req.body;
 
     if (!query || typeof query !== "string") {
       res.status(400).json({ error: "Missing or invalid 'query' field" });
       return;
     }
 
-    logger.info(
-      { query, historyLength: chatHistory.length },
-      "Chat request received"
-    );
+    // Use existing conversation or create new one
+    let activeConversationId = conversationId;
+    if (!activeConversationId) {
+      activeConversationId = await createConversation();
+    }
 
-    const { response, charts } = await invokeGroundwaterChat(
-      query,
-      chatHistory as ChatMessage[]
-    );
+    // Get trimmed chat history from database if conversationId provided
+    let effectiveChatHistory: ChatMessage[] = chatHistory;
+    if (conversationId) {
+      effectiveChatHistory = await getTrimmedChatHistory(conversationId);
+    }
+
+    // Store user message
+    await addMessage(activeConversationId, "user", query);
+
+    logger.info({ query, conversationId: activeConversationId, historyLength: effectiveChatHistory.length }, "Chat request received");
+
+    const { response, charts } = await invokeGroundwaterChat(query, effectiveChatHistory);
+
+    // Store assistant response with charts
+    await addMessage(activeConversationId, "assistant", response, {
+      visualizations: charts,
+    });
 
     logger.info({ chartsCount: charts.length }, "Chat response generated");
 
     res.json({
       response,
       charts,
+      conversationId: activeConversationId,
     });
   } catch (error) {
     logger.error({ err: error, query: req.body.query }, "Chat request failed");
@@ -50,34 +62,46 @@ router.post("/", async (req: Request, res: Response) => {
  */
 router.post("/stream", async (req: Request, res: Response) => {
   try {
-    const { query, chatHistory = [] } = req.body;
+    const { query, conversationId } = req.body;
 
     if (!query || typeof query !== "string") {
       res.status(400).json({ error: "Missing or invalid 'query' field" });
       return;
     }
 
-    logger.info(
-      { query, historyLength: chatHistory.length },
-      "Stream request received"
-    );
+    // Use existing conversation or create new one
+    let activeConversationId = conversationId;
+    if (!activeConversationId) {
+      activeConversationId = await createConversation();
+    }
+
+    // Get trimmed chat history from database
+    const chatHistory = await getTrimmedChatHistory(activeConversationId);
+
+    // Store user message
+    await addMessage(activeConversationId, "user", query);
+
+    logger.info({ query, conversationId: activeConversationId, historyLength: chatHistory.length }, "Stream request received");
 
     // Set up SSE headers
     res.setHeader("Content-Type", "text/event-stream");
     res.setHeader("Cache-Control", "no-cache");
     res.setHeader("Connection", "keep-alive");
 
-    await streamGroundwaterChat(query, chatHistory as ChatMessage[], {
-      onToken: (token) => {
-        res.write(
-          `data: ${JSON.stringify({ type: "token", content: token })}\n\n`
-        );
+    // Send the conversationId immediately so frontend can track it
+    res.write(`data: ${JSON.stringify({ type: "conversation_id", conversationId: activeConversationId })}\n\n`);
+
+    // Track accumulated data for storing
+    const charts: object[] = [];
+    let assistantMessageId: string | null = null;
+
+    await streamGroundwaterChat(query, chatHistory, {
+      onToken: async (token) => {
+        res.write(`data: ${JSON.stringify({ type: "token", content: token })}\n\n`);
       },
       onChart: (chart) => {
-        logger.debug(
-          { chartType: chart.type, chart },
-          "Streaming chart to client"
-        );
+        logger.debug({ chartType: (chart as { type?: string }).type, chart }, "Streaming chart to client");
+        charts.push(chart);
         // Don't override the type if it's already set (e.g., data_container)
         res.write(`data: ${JSON.stringify(chart)}\n\n`);
       },
@@ -113,35 +137,40 @@ router.post("/stream", async (req: Request, res: Response) => {
         }
       },
       onComplete: async (fullResponse) => {
-        logger.info(
-          { responseLength: fullResponse.length },
-          "Stream completed"
-        );
+        logger.info({ responseLength: fullResponse.length, conversationId: activeConversationId }, "Stream completed");
+
         // Generate suggestions based on the query and response
+        let suggestions: string[] = [];
         try {
-          const suggestions = await generateSuggestions(query, fullResponse);
-          res.write(
-            `data: ${JSON.stringify({ type: "suggestions", suggestions })}\n\n`
-          );
+          suggestions = await generateSuggestions(query, fullResponse);
+          res.write(`data: ${JSON.stringify({ type: "suggestions", suggestions })}\n\n`);
         } catch (error) {
           console.error("Failed to generate suggestions:", error);
         }
-        res.write(`data: ${JSON.stringify({ type: "done" })}\n\n`);
+
+        // Store assistant message with all accumulated data
+        try {
+          const storedMessage = await addMessage(activeConversationId, "assistant", fullResponse, {
+            visualizations: charts,
+            suggestions,
+          });
+          assistantMessageId = storedMessage.id;
+          logger.debug({ messageId: assistantMessageId }, "Stored assistant message");
+        } catch (error) {
+          logger.error({ err: error }, "Failed to store assistant message");
+        }
+
+        res.write(`data: ${JSON.stringify({ type: "done", conversationId: activeConversationId })}\n\n`);
         res.end();
       },
       onError: (error) => {
         logger.error({ err: error, query: req.body.query }, "Stream error");
-        res.write(
-          `data: ${JSON.stringify({ type: "error", error: error.message })}\n\n`
-        );
+        res.write(`data: ${JSON.stringify({ type: "error", error: error.message })}\n\n`);
         res.end();
       },
     });
   } catch (error) {
-    logger.error(
-      { err: error, query: req.body.query },
-      "Stream request failed"
-    );
+    logger.error({ err: error, query: req.body.query }, "Stream request failed");
     res.status(500).json({ error: "Failed to start streaming" });
   }
 });
@@ -163,17 +192,11 @@ router.post("/suggestions", async (req: Request, res: Response) => {
 
     const suggestions = await generateSuggestions(query, context);
 
-    logger.info(
-      { suggestionsCount: suggestions.length },
-      "Suggestions generated"
-    );
+    logger.info({ suggestionsCount: suggestions.length }, "Suggestions generated");
 
     res.json({ suggestions });
   } catch (error) {
-    logger.error(
-      { err: error, query: req.body.query },
-      "Suggestions request failed"
-    );
+    logger.error({ err: error, query: req.body.query }, "Suggestions request failed");
     res.status(500).json({ error: "Failed to generate suggestions" });
   }
 });
