@@ -12,23 +12,23 @@ import Link from "next/link";
 
 // Sample data for floating charts
 const groundwaterCategoryData = [
-  { name: "Safe", value: 4234, fill: "hsl(142, 71%, 45%)" },
-  { name: "Semi-Critical", value: 856, fill: "hsl(217, 91%, 60%)" },
-  { name: "Critical", value: 534, fill: "hsl(38, 92%, 50%)" },
-  { name: "Over-Exploited", value: 376, fill: "hsl(4, 90%, 58%)" },
+  { name: <>Safe</>, value: 4234, fill: "hsl(142, 71%, 45%)" },
+  { name: <>Semi-Critical</>, value: 856, fill: "hsl(217, 91%, 60%)" },
+  { name: <>Critical</>, value: 534, fill: "hsl(38, 92%, 50%)" },
+  { name: <>Over-Exploited</>, value: 376, fill: "hsl(4, 90%, 58%)" },
 ];
 
 const depthTrendData = [
-  { year: "2020", depth: 12.5 },
-  { year: "2021", depth: 13.2 },
-  { year: "2022", depth: 14.1 },
-  { year: "2023", depth: 15.8 },
-  { year: "2024", depth: 16.3 },
+  { year: <>2020</>, depth: 12.5 },
+  { year: <>2021</>, depth: 13.2 },
+  { year: <>2022</>, depth: 14.1 },
+  { year: <>2023</>, depth: 15.8 },
+  { year: <>2024</>, depth: 16.3 },
 ];
 
 const chartConfig = {
   depth: {
-    label: "Depth (m)",
+    label: <>Depth (m)</>,
     color: "hsl(217, 91%, 60%)",
   },
 };
@@ -42,7 +42,7 @@ export default function Hero() {
         <div className="text-center space-y-8">
           <div className="space-y-6">
             <h1 className="text-5xl md:text-7xl font-bold tracking-tight text-white leading-tight">
-              Unlock India's
+              Unlock India&apos;s
               <br />
               Groundwater <span className="text-primary">Intelligence</span>
             </h1>
@@ -56,12 +56,9 @@ export default function Hero() {
           <div className="max-w-2xl mx-auto">
             <div className="relative">
               <div className="flex items-center gap-3 px-4 py-3.5 bg-zinc-900 rounded-2xl shadow-xl max-w-lg mx-auto">
-                <input
-                  type="text"
-                  placeholder="What's the groundwater status in my region?"
-                  className="flex-1 bg-transparent text-zinc-300 placeholder:text-zinc-500 outline-none text-sm"
-                  readOnly
-                />
+                <span className="flex-1 text-zinc-500 text-sm">
+                  What&apos;s the groundwater status in my region?
+                </span>
                 <div className="flex items-center gap-2">
                   <Button
                     size="sm"

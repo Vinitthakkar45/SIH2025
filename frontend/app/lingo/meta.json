@@ -1,0 +1,1429 @@
+{
+  "version": 0.1,
+  "files": {
+    "../components/ChatComposer.tsx": {
+      "scopes": {
+        "5/declaration/body/3/argument/1/openingElement/13/value/expression/1/expression/alternate": {
+          "type": "element",
+          "hash": "76a8497d7b546628b03bb81d5c1ce995",
+          "context": "",
+          "skip": false,
+          "overrides": {},
+          "content": "Send"
+        },
+        "5/declaration/body/3/argument/1/openingElement/13/value/expression/1/expression/consequent": {
+          "type": "element",
+          "hash": "4c4b4d44708ba05fe8726cbc80122228",
+          "context": "",
+          "skip": false,
+          "overrides": {},
+          "content": "Stop"
+        },
+        "5/declaration/body/3/argument/3": {
+          "type": "element",
+          "hash": "29b70428ec1d7c2372de0ce563a1e944",
+          "context": "",
+          "skip": false,
+          "overrides": {},
+          "content": "Press Enter to send, Shift+Enter for new line"
+        }
+      }
+    },
+    "../components/DataAccordion.tsx": {
+      "scopes": {
+        "2/declaration/body/0/argument/1/1/1/expression/right/3/1": {
+          "type": "element",
+          "hash": "bb4269bc7726f6388b852ea0427a7874",
+          "context": "",
+          "skip": false,
+          "overrides": {},
+          "content": "💡 What this shows: "
+        }
+      }
+    },
+    "../components/InteractiveDemoSection.tsx": {
+      "scopes": {
+        "7/declaration/body/5/argument/1/1/1": {
+          "type": "element",
+          "hash": "0d76195c6937a8b850d0795bfb8e0e2b",
+          "context": "",
+          "skip": false,
+          "overrides": {},
+          "content": "Try It Out"
+        },
+        "7/declaration/body/5/argument/1/1/3": {
+          "type": "element",
+          "hash": "045ba03adb6a77343aeddc78d24eba62",
+          "context": "",
+          "skip": false,
+          "overrides": {},
+          "content": "See INGRES AI in Action"
+        },
+        "7/declaration/body/5/argument/1/1/5": {
+          "type": "element",
+          "hash": "789104813ec11d44c76d422c1075973b",
+          "context": "",
+          "skip": false,
+          "overrides": {},
+          "content": "Ask questions about groundwater data and get instant AI-powered insights"
+        },
+        "7/declaration/body/5/argument/1/5/1/3/1-placeholder": {
+          "type": "attribute",
+          "hash": "8bb79370282749ae26713d0238527eee",
+          "context": "",
+          "skip": false,
+          "overrides": {},
+          "content": "Ask about specific districts, extraction rates, or trends..."
+        }
+      }
+    },
+    "../components/LanguageSelector.tsx": {
+      "scopes": {
+        "5/declaration/body/1/argument-aria-label": {
+          "type": "attribute",
+          "hash": "7fa8806eeb911aa9ba9f013b274a2e47",
+          "context": "",
+          "skip": false,
+          "overrides": {},
+          "content": "Select language"
+        }
+      }
+    },
+    "../components/MessageList.tsx": {
+      "scopes": {
+        "10/declaration/body/0/argument/1/expression/0/body/1/expression/right/1": {
+          "type": "element",
+          "hash": "e0e1d839f9b3efe47169683b60a7266e",
+          "context": "",
+          "skip": false,
+          "overrides": {},
+          "content": "🇮🇳"
+        },
+        "10/declaration/body/0/argument/1/expression/0/body/3/1/expression/alternate/3/expression/right/1-aria-label": {
+          "type": "attribute",
+          "hash": "b536edd8b62696565c8a34fc7b53cf73",
+          "context": "",
+          "skip": false,
+          "overrides": {},
+          "content": "Visualizations"
+        },
+        "10/declaration/body/0/argument/1/expression/0/body/3/1/expression/alternate/3/expression/right/1/openingElement/3/value/expression": {
+          "type": "element",
+          "hash": "09965720d4cf13e739caf2ac79a46b46",
+          "context": "",
+          "skip": false,
+          "overrides": {},
+          "content": "View Charts<element:span><element:ChartAverageIcon></element:ChartAverageIcon></element:span>"
+        },
+        "10/declaration/body/0/argument/1/expression/0/body/3/1/expression/alternate/3/expression/right/1/openingElement/3/value/expression/1": {
+          "type": "element",
+          "hash": "b9f689e694d806a7ae6c479e204a3c99",
+          "context": "",
+          "skip": false,
+          "overrides": {},
+          "content": "View Charts"
+        },
+        "10/declaration/body/0/argument/1/expression/0/body/3/1/expression/alternate/5/expression/right/1": {
+          "type": "element",
+          "hash": "1c4b3dd14e5f096757c22b5c11ebde08",
+          "context": "",
+          "skip": false,
+          "overrides": {},
+          "content": "Suggestions<element:Idea01Icon></element:Idea01Icon>"
+        },
+        "10/declaration/body/0/argument/1/expression/0/body/3/1/expression/alternate/5/expression/right/1/1": {
+          "type": "element",
+          "hash": "d3e2e4d20f64514a3833ed3e8a7de675",
+          "context": "",
+          "skip": false,
+          "overrides": {},
+          "content": "Suggestions"
+        }
+      }
+    },
+    "../components/VisualizationRenderer.tsx": {
+      "scopes": {
+        "8/declaration/body/1/0/init/body/0/consequent/0/argument/1-title": {},
+        "8/declaration/body/1/0/init/body/2/consequent/0/consequent/0/argument/1-title": {},
+        "8/declaration/body/1/0/init/body/2/consequent/1/consequent/0/argument/1-title": {},
+        "8/declaration/body/1/0/init/body/2/consequent/2/consequent/0/argument/1-title": {}
+      }
+    },
+    "../components/charts/BarChartComponent.tsx": {
+      "scopes": {
+        "4/declaration/body/1/consequent/0/argument/5": {
+          "type": "element",
+          "hash": "fe1d34a45e22b5611d255b84b2d67232",
+          "context": "",
+          "skip": false,
+          "overrides": {},
+          "content": "No data available"
+        }
+      }
+    },
+    "../components/charts/LineChartComponent.tsx": {
+      "scopes": {
+        "4/declaration/body/1/consequent/0/argument/5": {
+          "type": "element",
+          "hash": "fe1d34a45e22b5611d255b84b2d67232",
+          "context": "",
+          "skip": false,
+          "overrides": {},
+          "content": "No data available"
+        }
+      }
+    },
+    "../components/landing/DataSources.tsx": {
+      "scopes": {
+        "2/0/init/0/0/value": {
+          "type": "element",
+          "hash": "5520fb77a3155f74738404fca5646fed",
+          "context": "",
+          "skip": false,
+          "overrides": {},
+          "content": "CGWB Reports"
+        },
+        "2/0/init/0/1/value": {
+          "type": "element",
+          "hash": "d64c56e6598c6310b20d681270efbf53",
+          "context": "",
+          "skip": false,
+          "overrides": {},
+          "content": "Central Ground Water Board official documentation."
+        },
+        "2/0/init/1/0/value": {
+          "type": "element",
+          "hash": "e3f2d2e764bc8900aa19b75895968ad3",
+          "context": "",
+          "skip": false,
+          "overrides": {},
+          "content": "State Assessments (2022-23)"
+        },
+        "2/0/init/1/1/value": {
+          "type": "element",
+          "hash": "ce8763cb69d32cea608bc7a8d21a7122",
+          "context": "",
+          "skip": false,
+          "overrides": {},
+          "content": "Latest block-level extraction data."
+        },
+        "2/0/init/2/0/value": {
+          "type": "element",
+          "hash": "821670776739768cb2f550fd0e46a2ba",
+          "context": "",
+          "skip": false,
+          "overrides": {},
+          "content": "Recharge Studies"
+        },
+        "2/0/init/2/1/value": {
+          "type": "element",
+          "hash": "4acaa22798b70dcea9ef531d465047c7",
+          "context": "",
+          "skip": false,
+          "overrides": {},
+          "content": "Scientific estimates of ground replenishment."
+        },
+        "3/0/init/0/0/value": {
+          "type": "element",
+          "hash": "4824a7925ba3b93eed259b70984295ed",
+          "context": "",
+          "skip": false,
+          "overrides": {},
+          "content": "100% Local Processing"
+        },
+        "3/0/init/0/1/value": {
+          "type": "element",
+          "hash": "175b2445cc3212418eb8e15a6c3491b3",
+          "context": "",
+          "skip": false,
+          "overrides": {},
+          "content": "No external API dependencies for embeddings."
+        },
+        "3/0/init/1/0/value": {
+          "type": "element",
+          "hash": "b427ab86b70b052c21581a61fa7016fd",
+          "context": "",
+          "skip": false,
+          "overrides": {},
+          "content": "Context-Aware"
+        },
+        "3/0/init/1/1/value": {
+          "type": "element",
+          "hash": "2b5219322d9828d4501fb37ffe0e21cd",
+          "context": "",
+          "skip": false,
+          "overrides": {},
+          "content": "Maintains conversation history for better flow."
+        },
+        "3/0/init/2/0/value": {
+          "type": "element",
+          "hash": "b6ccff871b5ea23b4e80e3c7f94d5bee",
+          "context": "",
+          "skip": false,
+          "overrides": {},
+          "content": "Privacy-Focused"
+        },
+        "3/0/init/2/1/value": {
+          "type": "element",
+          "hash": "13fb318031e96053c8c1990f4ef4bce3",
+          "context": "",
+          "skip": false,
+          "overrides": {},
+          "content": "No data collection or user tracking."
+        },
+        "3/0/init/3/0/value": {
+          "type": "element",
+          "hash": "67e061f3f229fe18aa71bac518b2cb36",
+          "context": "",
+          "skip": false,
+          "overrides": {},
+          "content": "Open Data"
+        },
+        "3/0/init/3/1/value": {
+          "type": "element",
+          "hash": "5a15d27e2fe1ca8ed765f10042c38ce4",
+          "context": "",
+          "skip": false,
+          "overrides": {},
+          "content": "Built on public government reports."
+        },
+        "3/declaration/body/0/argument/1/1/3/1": {
+          "type": "element",
+          "hash": "0ec3c3f04d611cab13fa1703f6785652",
+          "context": "",
+          "skip": false,
+          "overrides": {},
+          "content": "Data Sources"
+        },
+        "3/declaration/body/0/argument/1/1/7/1": {
+          "type": "element",
+          "hash": "e95e1eaa57acc72b686b8f4e93e7dd5b",
+          "context": "",
+          "skip": false,
+          "overrides": {},
+          "content": "Key Highlights"
+        },
+        "4/declaration/body/0/argument/1/1/3/1": {
+          "type": "element",
+          "hash": "0ec3c3f04d611cab13fa1703f6785652",
+          "context": "",
+          "skip": false,
+          "overrides": {},
+          "content": "Data Sources"
+        },
+        "4/declaration/body/0/argument/1/1/7/1": {
+          "type": "element",
+          "hash": "e95e1eaa57acc72b686b8f4e93e7dd5b",
+          "context": "",
+          "skip": false,
+          "overrides": {},
+          "content": "Key Highlights"
+        }
+      }
+    },
+    "../components/landing/Features.tsx": {
+      "scopes": {
+        "2/0/init/0/2/value": {
+          "type": "element",
+          "hash": "08f7548fe8bcf00a4d23d708bb952cf8",
+          "context": "",
+          "skip": false,
+          "overrides": {},
+          "content": "Conversational AI Assistant"
+        },
+        "2/0/init/0/3/value": {
+          "type": "element",
+          "hash": "8a3f9dd6344359d7ea753a1c42b685ad",
+          "context": "",
+          "skip": false,
+          "overrides": {},
+          "content": "Ask questions in plain English and get context-aware answers about groundwater data with streaming responses."
+        },
+        "2/0/init/1/2/value": {
+          "type": "element",
+          "hash": "5077f8abb5ab4a67119768345f803618",
+          "context": "",
+          "skip": false,
+          "overrides": {},
+          "content": "Comprehensive Data"
+        },
+        "2/0/init/1/3/value": {
+          "type": "element",
+          "hash": "2d4ab259c62a55ecb61d97b2bd00d308",
+          "context": "",
+          "skip": false,
+          "overrides": {},
+          "content": "Access data for all 28 states, 8 UTs, and 6,000+ blocks. Analyze historical trends and recharge vs extraction metrics."
+        },
+        "2/0/init/2/2/value": {
+          "type": "element",
+          "hash": "59fd62da1ffde557d51a4349b65e330c",
+          "context": "",
+          "skip": false,
+          "overrides": {},
+          "content": "Smart Visualization"
+        },
+        "2/0/init/2/3/value": {
+          "type": "element",
+          "hash": "f1c89acb26e6a1eea5e7667799f2b85a",
+          "context": "",
+          "skip": false,
+          "overrides": {},
+          "content": "Auto-generated charts and graphs. Comparative bar charts, distribution pie charts, and statistical summaries."
+        },
+        "2/0/init/3/2/value": {
+          "type": "element",
+          "hash": "7bf5135d75d826138fd1476169d24019",
+          "context": "",
+          "skip": false,
+          "overrides": {},
+          "content": "Advanced Search"
+        },
+        "2/0/init/3/3/value": {
+          "type": "element",
+          "hash": "05aeeffe731003b538413b575385f58c",
+          "context": "",
+          "skip": false,
+          "overrides": {},
+          "content": "Filter by category (Safe, Critical, Over-Exploited). Search by specific regions or extraction levels."
+        },
+        "2/0/init/4/2/value": {
+          "type": "element",
+          "hash": "cbe8d2bec18e41b034cb01d9a8dbf1f5",
+          "context": "",
+          "skip": false,
+          "overrides": {},
+          "content": "Detailed Metrics"
+        },
+        "2/0/init/4/3/value": {
+          "type": "element",
+          "hash": "cf9d2d3e4d922cf123fabece332e892e",
+          "context": "",
+          "skip": false,
+          "overrides": {},
+          "content": "View total extraction (ham), recharge data, net availability, and irrigation breakdown per block."
+        },
+        "2/0/init/5/2/value": {
+          "type": "element",
+          "hash": "77e359758b6f7bc918bbf0e8cc2c3499",
+          "context": "",
+          "skip": false,
+          "overrides": {},
+          "content": "Interactive Map"
+        },
+        "2/0/init/5/3/value": {
+          "type": "element",
+          "hash": "2646ba3c07de9b581b3f923fa27ce6a5",
+          "context": "",
+          "skip": false,
+          "overrides": {},
+          "content": "Visual representation of groundwater status with color-coded regions and pan/zoom capabilities."
+        },
+        "2/declaration/body/0/argument/1/1/1": {
+          "type": "element",
+          "hash": "1800f880985c5876dc511a59346b4f9e",
+          "context": "",
+          "skip": false,
+          "overrides": {},
+          "content": "What You Can Do"
+        },
+        "2/declaration/body/0/argument/1/1/3": {
+          "type": "element",
+          "hash": "a82dec05a4555e449eee9995a4402a9b",
+          "context": "",
+          "skip": false,
+          "overrides": {},
+          "content": "A comprehensive suite of tools designed for researchers, policymakers, and citizens."
+        },
+        "3/declaration/body/0/argument/1/1/1": {
+          "type": "element",
+          "hash": "1800f880985c5876dc511a59346b4f9e",
+          "context": "",
+          "skip": false,
+          "overrides": {},
+          "content": "What You Can Do"
+        },
+        "3/declaration/body/0/argument/1/1/3": {
+          "type": "element",
+          "hash": "a82dec05a4555e449eee9995a4402a9b",
+          "context": "",
+          "skip": false,
+          "overrides": {},
+          "content": "A comprehensive suite of tools designed for researchers, policymakers, and citizens."
+        }
+      }
+    },
+    "../components/landing/Footer.tsx": {
+      "scopes": {
+        "1/declaration/body/0/argument/1/1/1": {
+          "type": "element",
+          "hash": "70fb313c75309dfb04cc893a7ae43a17",
+          "context": "",
+          "skip": false,
+          "overrides": {},
+          "content": "© 2025 INGRES AI. All rights reserved."
+        },
+        "1/declaration/body/0/argument/1/1/3/1": {
+          "type": "element",
+          "hash": "daa64d7fb8b9ff0e8084dcef7bf9fb3f",
+          "context": "",
+          "skip": false,
+          "overrides": {},
+          "content": "Built with"
+        },
+        "1/declaration/body/0/argument/1/1/3/5": {
+          "type": "element",
+          "hash": "19ec47b39ed9c81fb44c3c1b924551de",
+          "context": "",
+          "skip": false,
+          "overrides": {},
+          "content": "for water conservation"
+        }
+      }
+    },
+    "../components/landing/Hero.tsx": {
+      "scopes": {
+        "6/0/init/0/0/value": {
+          "type": "element",
+          "hash": "d6435bb2e52365046ead29dd06232dd2",
+          "context": "",
+          "skip": false,
+          "overrides": {},
+          "content": "Safe"
+        },
+        "6/0/init/1/0/value": {
+          "type": "element",
+          "hash": "7935a93d1dba08d9948ceddafab084de",
+          "context": "",
+          "skip": false,
+          "overrides": {},
+          "content": "Semi-Critical"
+        },
+        "6/0/init/2/0/value": {
+          "type": "element",
+          "hash": "eb327cd411b50aee954f8d1d215d003a",
+          "context": "",
+          "skip": false,
+          "overrides": {},
+          "content": "Critical"
+        },
+        "6/0/init/3/0/value": {
+          "type": "element",
+          "hash": "5a1a6adab77483bdb3b908bfb4e3be24",
+          "context": "",
+          "skip": false,
+          "overrides": {},
+          "content": "Over-Exploited"
+        },
+        "7/0/init/0/0/value": {
+          "type": "element",
+          "hash": "9a28b650d2b143c79fb3d884d60fe1f8",
+          "context": "",
+          "skip": false,
+          "overrides": {},
+          "content": "2020"
+        },
+        "7/0/init/1/0/value": {
+          "type": "element",
+          "hash": "60889f95fcd54df87a91ad6a45dc9cf5",
+          "context": "",
+          "skip": false,
+          "overrides": {},
+          "content": "2021"
+        },
+        "7/0/init/2/0/value": {
+          "type": "element",
+          "hash": "78c5cb95c669552f2f8bac6884f67a52",
+          "context": "",
+          "skip": false,
+          "overrides": {},
+          "content": "2022"
+        },
+        "7/0/init/3/0/value": {
+          "type": "element",
+          "hash": "a6cb0906514090502c363a1c6d8759e0",
+          "context": "",
+          "skip": false,
+          "overrides": {},
+          "content": "2023"
+        },
+        "7/0/init/4/0/value": {
+          "type": "element",
+          "hash": "9a7ec02c4dcc49b7f0b8a1b913477ff6",
+          "context": "",
+          "skip": false,
+          "overrides": {},
+          "content": "2024"
+        },
+        "8/0/init/0/value/0/value": {
+          "type": "element",
+          "hash": "4d1a03d77de187a6bf7abc455afeb4bb",
+          "context": "",
+          "skip": false,
+          "overrides": {},
+          "content": "Depth (m)"
+        },
+        "8/declaration/body/0/argument/13/1/1": {
+          "type": "element",
+          "hash": "b2523a34f30589c12fc77df17c5e41c0",
+          "context": "",
+          "skip": false,
+          "overrides": {},
+          "content": "Water Level Trend"
+        },
+        "8/declaration/body/0/argument/13/1/3": {
+          "type": "element",
+          "hash": "9770868bfe31628c248b3ada37041505",
+          "context": "",
+          "skip": false,
+          "overrides": {},
+          "content": "Depth Below Ground (m)"
+        },
+        "8/declaration/body/0/argument/13/1/7": {
+          "type": "element",
+          "hash": "96e4dfdad649748f410e44a10f83f896",
+          "context": "",
+          "skip": false,
+          "overrides": {},
+          "content": "⚠ Declining trend observed"
+        },
+        "8/declaration/body/0/argument/3/1/1/1": {
+          "type": "element",
+          "hash": "1b6ee42c9ba382f8f1ca32a8ed0a3d19",
+          "context": "",
+          "skip": false,
+          "overrides": {},
+          "content": "Unlock India's<element:br></element:br> Groundwater <element:span>Intelligence</element:span>"
+        },
+        "8/declaration/body/0/argument/3/1/1/3": {
+          "type": "element",
+          "hash": "99352a2cc0a8ff5d8998b59d8aaeb774",
+          "context": "",
+          "skip": false,
+          "overrides": {},
+          "content": "Transform complex hydrogeological data into actionable insights with AI-powered analytics for sustainable water resource management"
+        },
+        "8/declaration/body/0/argument/3/1/11/1/1/1/expression/0/body": {
+          "type": "element",
+          "hash": "86fb685cb3590abf790a7297add8e544",
+          "context": "",
+          "skip": false,
+          "overrides": {},
+          "content": "★"
+        },
+        "8/declaration/body/0/argument/3/1/11/1/3": {
+          "type": "element",
+          "hash": "edb869f43988c8ee5fa1a9491250b2ea",
+          "context": "",
+          "skip": false,
+          "overrides": {},
+          "content": "Trusted by researchers and policymakers"
+        },
+        "8/declaration/body/0/argument/3/1/3/1/1/1-placeholder": {
+          "type": "attribute",
+          "hash": "6063435a7dd223631548bd4487035d35",
+          "context": "",
+          "skip": false,
+          "overrides": {},
+          "content": "What's the groundwater status in my region?"
+        },
+        "8/declaration/body/0/argument/3/1/3/1/1/3/1": {
+          "type": "element",
+          "hash": "157762140a8c492e3ec78896f17d3e1d",
+          "context": "",
+          "skip": false,
+          "overrides": {},
+          "content": "Send"
+        },
+        "8/declaration/body/0/argument/3/1/7/1/1": {
+          "type": "element",
+          "hash": "35fb917a05d6cab633e7607733618cf0",
+          "context": "",
+          "skip": false,
+          "overrides": {},
+          "content": "Get started now"
+        },
+        "8/declaration/body/0/argument/9/1/1": {
+          "type": "element",
+          "hash": "cac00ef9a652479bdef6d57e1fa4987b",
+          "context": "",
+          "skip": false,
+          "overrides": {},
+          "content": "Groundwater Status"
+        },
+        "8/declaration/body/0/argument/9/1/3": {
+          "type": "element",
+          "hash": "bbe900aa7688c9b072bc7baacf6f164a",
+          "context": "",
+          "skip": false,
+          "overrides": {},
+          "content": "Blocks by Category"
+        },
+        "8/declaration/body/0/argument/9/1/7/1/3": {
+          "type": "element",
+          "hash": "d6435bb2e52365046ead29dd06232dd2",
+          "context": "",
+          "skip": false,
+          "overrides": {},
+          "content": "Safe"
+        },
+        "8/declaration/body/0/argument/9/1/7/3/3": {
+          "type": "element",
+          "hash": "7935a93d1dba08d9948ceddafab084de",
+          "context": "",
+          "skip": false,
+          "overrides": {},
+          "content": "Semi-Critical"
+        },
+        "8/declaration/body/0/argument/9/1/7/5/3": {
+          "type": "element",
+          "hash": "eb327cd411b50aee954f8d1d215d003a",
+          "context": "",
+          "skip": false,
+          "overrides": {},
+          "content": "Critical"
+        },
+        "8/declaration/body/0/argument/9/1/7/7/3": {
+          "type": "element",
+          "hash": "5a1a6adab77483bdb3b908bfb4e3be24",
+          "context": "",
+          "skip": false,
+          "overrides": {},
+          "content": "Over-Exploited"
+        },
+        "9/declaration/body/0/argument/13/1/1": {
+          "type": "element",
+          "hash": "b2523a34f30589c12fc77df17c5e41c0",
+          "context": "",
+          "skip": false,
+          "overrides": {},
+          "content": "Water Level Trend"
+        },
+        "9/declaration/body/0/argument/13/1/3": {
+          "type": "element",
+          "hash": "9770868bfe31628c248b3ada37041505",
+          "context": "",
+          "skip": false,
+          "overrides": {},
+          "content": "Depth Below Ground (m)"
+        },
+        "9/declaration/body/0/argument/13/1/7": {
+          "type": "element",
+          "hash": "96e4dfdad649748f410e44a10f83f896",
+          "context": "",
+          "skip": false,
+          "overrides": {},
+          "content": "⚠ Declining trend observed"
+        },
+        "9/declaration/body/0/argument/3/1/1/1": {
+          "type": "element",
+          "hash": "1b6ee42c9ba382f8f1ca32a8ed0a3d19",
+          "context": "",
+          "skip": false,
+          "overrides": {},
+          "content": "Unlock India's<element:br></element:br> Groundwater <element:span>Intelligence</element:span>"
+        },
+        "9/declaration/body/0/argument/3/1/1/3": {
+          "type": "element",
+          "hash": "99352a2cc0a8ff5d8998b59d8aaeb774",
+          "context": "",
+          "skip": false,
+          "overrides": {},
+          "content": "Transform complex hydrogeological data into actionable insights with AI-powered analytics for sustainable water resource management"
+        },
+        "9/declaration/body/0/argument/3/1/11/1/1/1/expression/0/body": {
+          "type": "element",
+          "hash": "86fb685cb3590abf790a7297add8e544",
+          "context": "",
+          "skip": false,
+          "overrides": {},
+          "content": "★"
+        },
+        "9/declaration/body/0/argument/3/1/11/1/3": {
+          "type": "element",
+          "hash": "edb869f43988c8ee5fa1a9491250b2ea",
+          "context": "",
+          "skip": false,
+          "overrides": {},
+          "content": "Trusted by researchers and policymakers"
+        },
+        "9/declaration/body/0/argument/3/1/3/1/1/1": {
+          "type": "element",
+          "hash": "b415b6fd1b6f6f0c1a7c0908d42804f5",
+          "context": "",
+          "skip": false,
+          "overrides": {},
+          "content": "What's the groundwater status in my region?"
+        },
+        "9/declaration/body/0/argument/3/1/3/1/1/1-placeholder": {
+          "type": "attribute",
+          "hash": "6063435a7dd223631548bd4487035d35",
+          "context": "",
+          "skip": false,
+          "overrides": {},
+          "content": "What's the groundwater status in my region?"
+        },
+        "9/declaration/body/0/argument/3/1/3/1/1/3/1": {
+          "type": "element",
+          "hash": "157762140a8c492e3ec78896f17d3e1d",
+          "context": "",
+          "skip": false,
+          "overrides": {},
+          "content": "Send"
+        },
+        "9/declaration/body/0/argument/3/1/7/1/1": {
+          "type": "element",
+          "hash": "35fb917a05d6cab633e7607733618cf0",
+          "context": "",
+          "skip": false,
+          "overrides": {},
+          "content": "Get started now"
+        },
+        "9/declaration/body/0/argument/9/1/1": {
+          "type": "element",
+          "hash": "cac00ef9a652479bdef6d57e1fa4987b",
+          "context": "",
+          "skip": false,
+          "overrides": {},
+          "content": "Groundwater Status"
+        },
+        "9/declaration/body/0/argument/9/1/3": {
+          "type": "element",
+          "hash": "bbe900aa7688c9b072bc7baacf6f164a",
+          "context": "",
+          "skip": false,
+          "overrides": {},
+          "content": "Blocks by Category"
+        },
+        "9/declaration/body/0/argument/9/1/7/1/3": {
+          "type": "element",
+          "hash": "d6435bb2e52365046ead29dd06232dd2",
+          "context": "",
+          "skip": false,
+          "overrides": {},
+          "content": "Safe"
+        },
+        "9/declaration/body/0/argument/9/1/7/3/3": {
+          "type": "element",
+          "hash": "7935a93d1dba08d9948ceddafab084de",
+          "context": "",
+          "skip": false,
+          "overrides": {},
+          "content": "Semi-Critical"
+        },
+        "9/declaration/body/0/argument/9/1/7/5/3": {
+          "type": "element",
+          "hash": "eb327cd411b50aee954f8d1d215d003a",
+          "context": "",
+          "skip": false,
+          "overrides": {},
+          "content": "Critical"
+        },
+        "9/declaration/body/0/argument/9/1/7/7/3": {
+          "type": "element",
+          "hash": "5a1a6adab77483bdb3b908bfb4e3be24",
+          "context": "",
+          "skip": false,
+          "overrides": {},
+          "content": "Over-Exploited"
+        }
+      }
+    },
+    "../components/landing/Navigation.tsx": {
+      "scopes": {
+        "4/declaration/body/0/argument/1/1/3": {
+          "type": "element",
+          "hash": "8e8bec4351cf86166336058bdf0f77e6",
+          "context": "",
+          "skip": false,
+          "overrides": {},
+          "content": "INGRES AI"
+        },
+        "4/declaration/body/0/argument/1/3/3/1": {
+          "type": "element",
+          "hash": "5daec3f4a9835ac14c843a91b347b858",
+          "context": "",
+          "skip": false,
+          "overrides": {},
+          "content": "Get started now"
+        },
+        "5/declaration/body/0/argument/1/1/3": {
+          "type": "element",
+          "hash": "8e8bec4351cf86166336058bdf0f77e6",
+          "context": "",
+          "skip": false,
+          "overrides": {},
+          "content": "INGRES AI"
+        },
+        "5/declaration/body/0/argument/1/3/3/1": {
+          "type": "element",
+          "hash": "5daec3f4a9835ac14c843a91b347b858",
+          "context": "",
+          "skip": false,
+          "overrides": {},
+          "content": "Get started now"
+        }
+      }
+    },
+    "../components/landing/Stats.tsx": {
+      "scopes": {
+        "1/0/init/0/0/value": {
+          "type": "element",
+          "hash": "137d74651adc92c52e469c64c1e1c45e",
+          "context": "",
+          "skip": false,
+          "overrides": {},
+          "content": "6,000+"
+        },
+        "1/0/init/0/1/value": {
+          "type": "element",
+          "hash": "6bbda2c90dbd08ab6b441b4db216b216",
+          "context": "",
+          "skip": false,
+          "overrides": {},
+          "content": "Blocks Covered"
+        },
+        "1/0/init/1/0/value": {
+          "type": "element",
+          "hash": "9dd495dbe8895d3c01212db9ff2b1ce4",
+          "context": "",
+          "skip": false,
+          "overrides": {},
+          "content": "28"
+        },
+        "1/0/init/1/1/value": {
+          "type": "element",
+          "hash": "39439bcc9d6742eb077b7b0b44952899",
+          "context": "",
+          "skip": false,
+          "overrides": {},
+          "content": "States & 8 UTs"
+        },
+        "1/0/init/2/0/value": {
+          "type": "element",
+          "hash": "d725d4b3e52d830695ad7816829a2847",
+          "context": "",
+          "skip": false,
+          "overrides": {},
+          "content": "700+"
+        },
+        "1/0/init/2/1/value": {
+          "type": "element",
+          "hash": "79b0836a0a3eccf1b146eb1c3fe9c2dd",
+          "context": "",
+          "skip": false,
+          "overrides": {},
+          "content": "Districts"
+        },
+        "1/0/init/3/0/value": {
+          "type": "element",
+          "hash": "a98a0ce512942bdb11f923c28fbe5bb2",
+          "context": "",
+          "skip": false,
+          "overrides": {},
+          "content": "Real-time"
+        },
+        "1/0/init/3/1/value": {
+          "type": "element",
+          "hash": "a33c1e2398826e9514db62372918587e",
+          "context": "",
+          "skip": false,
+          "overrides": {},
+          "content": "AI Responses"
+        }
+      }
+    },
+    "../components/landing/TechStack.tsx": {
+      "scopes": {
+        "2/0/init/0/1/value": {
+          "type": "element",
+          "hash": "66a966ca3dd6d56677854e7b68b79d14",
+          "context": "",
+          "skip": false,
+          "overrides": {},
+          "content": "Groq LLM"
+        },
+        "2/0/init/1/1/value": {
+          "type": "element",
+          "hash": "0e111c980b4a255e5b9e83676f2c3c8b",
+          "context": "",
+          "skip": false,
+          "overrides": {},
+          "content": "Qdrant Vector DB"
+        },
+        "2/0/init/2/1/value": {
+          "type": "element",
+          "hash": "7a6a197059512111cb88074068c6de2d",
+          "context": "",
+          "skip": false,
+          "overrides": {},
+          "content": "Node.js Express"
+        },
+        "2/0/init/3/1/value": {
+          "type": "element",
+          "hash": "6eb0a7c408f3eaa826dbb9e17a82fd09",
+          "context": "",
+          "skip": false,
+          "overrides": {},
+          "content": "Next.js 15"
+        },
+        "2/0/init/4/1/value": {
+          "type": "element",
+          "hash": "67243cf40ef77ee29ad6f6752cd0212c",
+          "context": "",
+          "skip": false,
+          "overrides": {},
+          "content": "Python ETL"
+        },
+        "2/declaration/body/0/argument/1/1": {
+          "type": "element",
+          "hash": "1da4644e731e5cb5acd75022ebff1f83",
+          "context": "",
+          "skip": false,
+          "overrides": {},
+          "content": "Built With"
+        },
+        "3/declaration/body/0/argument/1/1": {
+          "type": "element",
+          "hash": "1da4644e731e5cb5acd75022ebff1f83",
+          "context": "",
+          "skip": false,
+          "overrides": {},
+          "content": "Built With"
+        }
+      }
+    },
+    "../components/landing/UseCases.tsx": {
+      "scopes": {
+        "1/0/init/0/0/value": {
+          "type": "element",
+          "hash": "638a9f729fa331c816b3706df2266a00",
+          "context": "",
+          "skip": false,
+          "overrides": {},
+          "content": "Researchers & Scientists"
+        },
+        "1/0/init/0/1/value": {
+          "type": "element",
+          "hash": "c6db53368dc85af55f895b4bf43433be",
+          "context": "",
+          "skip": false,
+          "overrides": {},
+          "content": "Access comprehensive datasets for hydrological studies and environmental impact assessments."
+        },
+        "1/0/init/1/0/value": {
+          "type": "element",
+          "hash": "c9d556447de035d4c60f2c43ff19f891",
+          "context": "",
+          "skip": false,
+          "overrides": {},
+          "content": "Policy Makers"
+        },
+        "1/0/init/1/1/value": {
+          "type": "element",
+          "hash": "78a0d00fd3670e90d3ad650f90f9942d",
+          "context": "",
+          "skip": false,
+          "overrides": {},
+          "content": "Derive data-driven insights for effective water management policies and allocation."
+        },
+        "1/0/init/2/0/value": {
+          "type": "element",
+          "hash": "4753a094276314ec44cbd0dd27012a36",
+          "context": "",
+          "skip": false,
+          "overrides": {},
+          "content": "Farmers & Agriculture"
+        },
+        "1/0/init/2/1/value": {
+          "type": "element",
+          "hash": "b6eb7fba7b7f50e9a1995bf32b66620d",
+          "context": "",
+          "skip": false,
+          "overrides": {},
+          "content": "Understand local groundwater availability to plan irrigation and crop cycles sustainably."
+        },
+        "1/0/init/3/0/value": {
+          "type": "element",
+          "hash": "672bd7d7b6ae1e035c0d8fe76d01084e",
+          "context": "",
+          "skip": false,
+          "overrides": {},
+          "content": "NGOs & Activists"
+        },
+        "1/0/init/3/1/value": {
+          "type": "element",
+          "hash": "a6eeaa3cc9f4976293bdcd4061098bc7",
+          "context": "",
+          "skip": false,
+          "overrides": {},
+          "content": "Monitor water stress in specific regions to advocate for conservation efforts."
+        },
+        "1/0/init/4/0/value": {
+          "type": "element",
+          "hash": "c94ed2e39fb8359aa6ccad3c007bdf93",
+          "context": "",
+          "skip": false,
+          "overrides": {},
+          "content": "Students & Educators"
+        },
+        "1/0/init/4/1/value": {
+          "type": "element",
+          "hash": "2d35e7eb88f0d964d203043838d3e152",
+          "context": "",
+          "skip": false,
+          "overrides": {},
+          "content": "Use as an educational resource to teach about India's geography and water conservation."
+        },
+        "1/0/init/5/0/value": {
+          "type": "element",
+          "hash": "24d0c3902e806c17e4db1cb03a41d05e",
+          "context": "",
+          "skip": false,
+          "overrides": {},
+          "content": "Urban Planners"
+        },
+        "1/0/init/5/1/value": {
+          "type": "element",
+          "hash": "f1408e7654cae2f5a03a9f6ea18b2bc4",
+          "context": "",
+          "skip": false,
+          "overrides": {},
+          "content": "Plan sustainable water infrastructure based on net groundwater availability."
+        },
+        "1/declaration/body/0/argument/1/1": {
+          "type": "element",
+          "hash": "28b3a0da686baf8f1f29626ef2da1256",
+          "context": "",
+          "skip": false,
+          "overrides": {},
+          "content": "Who Can Benefit"
+        },
+        "2/declaration/body/0/argument/1/1": {
+          "type": "element",
+          "hash": "28b3a0da686baf8f1f29626ef2da1256",
+          "context": "",
+          "skip": false,
+          "overrides": {},
+          "content": "Who Can Benefit"
+        }
+      }
+    },
+    "chat/ChatClient.tsx": {
+      "scopes": {
+        "10/declaration/body/15/argument/5/1-placeholder": {
+          "type": "attribute",
+          "hash": "40994f1e03f79973687328d670064d56",
+          "context": "",
+          "skip": false,
+          "overrides": {},
+          "content": "Ask me anything..."
+        },
+        "8/declaration/body/15/argument/5/1-placeholder": {
+          "type": "attribute",
+          "hash": "40994f1e03f79973687328d670064d56",
+          "context": "",
+          "skip": false,
+          "overrides": {},
+          "content": "Ask me anything..."
+        },
+        "9/declaration/body/15/argument/5/1-placeholder": {
+          "type": "attribute",
+          "hash": "40994f1e03f79973687328d670064d56",
+          "context": "",
+          "skip": false,
+          "overrides": {},
+          "content": "Ask me anything..."
+        }
+      }
+    },
+    "chat/ChatHeader.tsx": {
+      "scopes": {
+        "5/declaration/body/0/argument/1/1/3/1": {
+          "type": "element",
+          "hash": "e905a3e57b4535ec778f06ead4278b98",
+          "context": "",
+          "skip": false,
+          "overrides": {},
+          "content": "INGRES AI"
+        },
+        "5/declaration/body/0/argument/1/1/3/3": {
+          "type": "element",
+          "hash": "11cbe324f01a168b985a7622e1eb9d69",
+          "context": "",
+          "skip": false,
+          "overrides": {},
+          "content": "Groundwater Resource Information"
+        },
+        "6/declaration/body/0/argument/1/1/3/1": {
+          "type": "element",
+          "hash": "e905a3e57b4535ec778f06ead4278b98",
+          "context": "",
+          "skip": false,
+          "overrides": {},
+          "content": "INGRES AI"
+        },
+        "6/declaration/body/0/argument/1/1/3/3": {
+          "type": "element",
+          "hash": "11cbe324f01a168b985a7622e1eb9d69",
+          "context": "",
+          "skip": false,
+          "overrides": {},
+          "content": "Groundwater Resource Information"
+        }
+      }
+    },
+    "chat/IndiaMap.tsx": {
+      "scopes": {
+        "16/body/0/argument/3/1": {
+          "type": "element",
+          "hash": "8dc3a792511b1ee18e70d74fbc5e57f1",
+          "context": "",
+          "skip": false,
+          "overrides": {},
+          "content": "India"
+        },
+        "16/body/0/argument/3/3/expression/0/body/1": {
+          "type": "element",
+          "hash": "d727054cb65d0e95c79cfb34bc3e3f28",
+          "context": "",
+          "skip": false,
+          "overrides": {},
+          "content": "/"
+        }
+      }
+    },
+    "chat/MapWrapper.tsx": {
+      "scopes": {
+        "2/0/init/1/1/value/body/1/3": {
+          "type": "element",
+          "hash": "333e682aab0c3b2ffef234f635fd372d",
+          "context": "",
+          "skip": false,
+          "overrides": {},
+          "content": "Loading map..."
+        }
+      }
+    },
+    "chat/WelcomeView.tsx": {
+      "scopes": {
+        "4/declaration/body/0/argument/3/1": {
+          "type": "element",
+          "hash": "60e9b6eb167059d2292121fe41521e1f",
+          "context": "",
+          "skip": false,
+          "overrides": {},
+          "content": "Hi, Welcome!"
+        },
+        "4/declaration/body/0/argument/3/3": {
+          "type": "element",
+          "hash": "c838ce4a50e4fff186089e197f335d9e",
+          "context": "",
+          "skip": false,
+          "overrides": {},
+          "content": "How can I assist you today?"
+        },
+        "5/declaration/body/0/argument/1/1": {
+          "type": "element",
+          "hash": "60e9b6eb167059d2292121fe41521e1f",
+          "context": "",
+          "skip": false,
+          "overrides": {},
+          "content": "Hi, Welcome!"
+        },
+        "5/declaration/body/0/argument/1/3": {
+          "type": "element",
+          "hash": "722d7b3edcfa84091e35e7bb4ee4d1a0",
+          "context": "",
+          "skip": false,
+          "overrides": {},
+          "content": "How can I assist you today?"
+        },
+        "5/declaration/body/0/argument/3/1": {
+          "type": "element",
+          "hash": "60e9b6eb167059d2292121fe41521e1f",
+          "context": "",
+          "skip": false,
+          "overrides": {},
+          "content": "Hi, Welcome!"
+        },
+        "5/declaration/body/0/argument/3/1/expression/callee/object/0/1/value": {
+          "type": "element",
+          "hash": "a82a5a1b3155947837cdaadcd4a8f185",
+          "context": "",
+          "skip": false,
+          "overrides": {},
+          "content": "Regional Analysis"
+        },
+        "5/declaration/body/0/argument/3/1/expression/callee/object/0/2/value": {
+          "type": "element",
+          "hash": "4bf21c4e809261faff0d9ea39d6a9e05",
+          "context": "",
+          "skip": false,
+          "overrides": {},
+          "content": "Get groundwater status for {userLocation.state}"
+        },
+        "5/declaration/body/0/argument/3/1/expression/callee/object/1/1/value": {
+          "type": "element",
+          "hash": "435b8876d063e8cec673e9da97044d56",
+          "context": "",
+          "skip": false,
+          "overrides": {},
+          "content": "Historical Trends"
+        },
+        "5/declaration/body/0/argument/3/1/expression/callee/object/1/2/value": {
+          "type": "element",
+          "hash": "e4a1915f68bdeeeb5d0963b34dc114e3",
+          "context": "",
+          "skip": false,
+          "overrides": {},
+          "content": "View trends for {userLocation.district}"
+        },
+        "5/declaration/body/0/argument/3/1/expression/callee/object/2/1/value": {
+          "type": "element",
+          "hash": "5793f21c8677b867da215f313a74a1aa",
+          "context": "",
+          "skip": false,
+          "overrides": {},
+          "content": "Extraction Analysis"
+        },
+        "5/declaration/body/0/argument/3/1/expression/callee/object/2/2/value": {
+          "type": "element",
+          "hash": "c3277f9390ec4d2b84a4127e3521fc5c",
+          "context": "",
+          "skip": false,
+          "overrides": {},
+          "content": "Analyze extraction changes in {userLocation.state}"
+        },
+        "5/declaration/body/0/argument/3/1/expression/callee/object/3/1/value": {
+          "type": "element",
+          "hash": "3cb4832a06d308b6a88f269499d40615",
+          "context": "",
+          "skip": false,
+          "overrides": {},
+          "content": "State Comparison"
+        },
+        "5/declaration/body/0/argument/3/1/expression/callee/object/3/2/value": {
+          "type": "element",
+          "hash": "667e262418ccb21986d7446207617710",
+          "context": "",
+          "skip": false,
+          "overrides": {},
+          "content": "Compare data across multiple states"
+        },
+        "5/declaration/body/0/argument/3/3": {
+          "type": "element",
+          "hash": "c838ce4a50e4fff186089e197f335d9e",
+          "context": "",
+          "skip": false,
+          "overrides": {},
+          "content": "How can I assist you today?"
+        },
+        "5/declaration/body/0/argument/7/1/expression/callee/object/0/1/value": {
+          "type": "element",
+          "hash": "a82a5a1b3155947837cdaadcd4a8f185",
+          "context": "",
+          "skip": false,
+          "overrides": {},
+          "content": "Regional Analysis"
+        },
+        "5/declaration/body/0/argument/7/1/expression/callee/object/0/2/value": {
+          "type": "element",
+          "hash": "4bf21c4e809261faff0d9ea39d6a9e05",
+          "context": "",
+          "skip": false,
+          "overrides": {},
+          "content": "Get groundwater status for {userLocation.state}"
+        },
+        "5/declaration/body/0/argument/7/1/expression/callee/object/1/1/value": {
+          "type": "element",
+          "hash": "435b8876d063e8cec673e9da97044d56",
+          "context": "",
+          "skip": false,
+          "overrides": {},
+          "content": "Historical Trends"
+        },
+        "5/declaration/body/0/argument/7/1/expression/callee/object/1/2/value": {
+          "type": "element",
+          "hash": "e4a1915f68bdeeeb5d0963b34dc114e3",
+          "context": "",
+          "skip": false,
+          "overrides": {},
+          "content": "View trends for {userLocation.district}"
+        },
+        "5/declaration/body/0/argument/7/1/expression/callee/object/2/1/value": {
+          "type": "element",
+          "hash": "5793f21c8677b867da215f313a74a1aa",
+          "context": "",
+          "skip": false,
+          "overrides": {},
+          "content": "Extraction Analysis"
+        },
+        "5/declaration/body/0/argument/7/1/expression/callee/object/2/2/value": {
+          "type": "element",
+          "hash": "c3277f9390ec4d2b84a4127e3521fc5c",
+          "context": "",
+          "skip": false,
+          "overrides": {},
+          "content": "Analyze extraction changes in {userLocation.state}"
+        },
+        "5/declaration/body/0/argument/7/1/expression/callee/object/3/1/value": {
+          "type": "element",
+          "hash": "3cb4832a06d308b6a88f269499d40615",
+          "context": "",
+          "skip": false,
+          "overrides": {},
+          "content": "State Comparison"
+        },
+        "5/declaration/body/0/argument/7/1/expression/callee/object/3/2/value": {
+          "type": "element",
+          "hash": "667e262418ccb21986d7446207617710",
+          "context": "",
+          "skip": false,
+          "overrides": {},
+          "content": "Compare data across multiple states"
+        }
+      }
+    },
+    "chat/page.tsx": {
+      "scopes": {
+        "11/declaration/body/16/argument/1/7/1-placeholder": {
+          "type": "attribute",
+          "hash": "40994f1e03f79973687328d670064d56",
+          "context": "",
+          "skip": false,
+          "overrides": {},
+          "content": "Ask me anything..."
+        },
+        "11/declaration/body/16/argument/5/1/expression/alternate/1/3": {
+          "type": "element",
+          "hash": "42f2bd9a8068dc037a3fb9502418c55e",
+          "context": "",
+          "skip": false,
+          "overrides": {},
+          "content": "Map View"
+        },
+        "5/declaration/body/1/argument/5/1/expression/alternate/1/3": {
+          "type": "element",
+          "hash": "42f2bd9a8068dc037a3fb9502418c55e",
+          "context": "",
+          "skip": false,
+          "overrides": {},
+          "content": "Map View"
+        }
+      }
+    },
+    "layout.tsx": {
+      "scopes": {
+        "9/declaration/body/0/argument/1/1-content": {
+          "type": "attribute",
+          "hash": "1ec2f03a259b3e50ba9cbae31317a266",
+          "context": "",
+          "skip": false,
+          "overrides": {},
+          "content": "viewport-fit=cover, width=device-width, initial-scale=1.0, minimum-scale=1.0, maximum-scale=1.0, user-scalable=no"
+        }
+      }
+    }
+  }
+}

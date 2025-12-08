@@ -18,11 +18,11 @@ interface LocationInfo {
 }
 
 export default function ChatPage() {
+  const [showMap, setShowMap] = useState(false);
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [showScrollButton, setShowScrollButton] = useState(false);
-  const [showMap, setShowMap] = useState(false);
   const [userLocation, setUserLocation] = useState<LocationInfo>({
     state: "India",
     district: "India",
@@ -53,7 +53,6 @@ export default function ChatPage() {
         setUserLocation({ state, district });
       } catch (error) {
         console.error("Failed to fetch location details:", error);
-        // Keep default location on error
       }
     };
 
@@ -64,7 +63,6 @@ export default function ChatPage() {
         },
         (error) => {
           console.error("Geolocation error:", error);
-          // Keep default location on error
         }
       );
     }
@@ -90,10 +88,8 @@ export default function ChatPage() {
   };
 
   useEffect(() => {
-    // Check scroll position when messages update
     checkScrollPosition();
 
-    // Auto-scroll to bottom when new messages are added (if not manually scrolled up)
     if (!showScrollButton) {
       scrollToBottom();
     }
@@ -107,13 +103,11 @@ export default function ChatPage() {
     setInput("");
     setIsLoading(true);
 
-    // Add loading assistant message
     setMessages((prev) => [
       ...prev,
       { role: "assistant", content: "", charts: [], isLoading: true },
     ]);
 
-    // Create new AbortController for this request
     abortControllerRef.current = new AbortController();
 
     try {
@@ -210,7 +204,6 @@ export default function ChatPage() {
         }
       }
     } catch (error) {
-      // Check if error was due to abort
       if (error instanceof Error && error.name === "AbortError") {
         setMessages((prev) => {
           const updated = [...prev];

@@ -1,5 +1,6 @@
 import { DropletIcon, MessageIcon } from "@/components/icons";
 import { Button } from "@heroui/button";
+import LanguageSelector from "@/components/LanguageSelector";
 import Link from "next/link";
 
 export default function Navigation() {
@@ -12,16 +13,19 @@ export default function Navigation() {
           </div>
           <span className="font-semibold text-base text-white">INGRES AI</span>
         </div>
-        <Link href="/chat">
-          <Button
-            color="primary"
-            size="sm"
-            className="font-medium"
-            endContent={<MessageIcon width={16} height={16} />}
-          >
-            Get started now
-          </Button>
-        </Link>
+        <div className="flex items-center gap-3">
+          <LanguageSelector />
+          <Link href="/chat">
+            <Button
+              color="primary"
+              size="sm"
+              className="font-medium"
+              endContent={<MessageIcon width={16} height={16} />}
+            >
+              Get started now
+            </Button>
+          </Link>
+        </div>
       </div>
     </nav>
   );

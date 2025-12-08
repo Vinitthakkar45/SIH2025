@@ -81,7 +81,7 @@ export default function ChatComposer({
             }
             radius="lg"
           >
-            {isLoading ? "Stop" : "Send"}
+            {isLoading ? <>Stop</> : <>Send</>}
           </Button>
         }
       />

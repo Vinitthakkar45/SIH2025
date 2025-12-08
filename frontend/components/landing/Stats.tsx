@@ -1,8 +1,8 @@
 const stats = [
-  { value: "6,000+", label: "Blocks Covered" },
-  { value: "28", label: "States & 8 UTs" },
-  { value: "700+", label: "Districts" },
-  { value: "Real-time", label: "AI Responses" },
+  { value: <>6,000+</>, label: <>Blocks Covered</> },
+  { value: <>28</>, label: <>States & 8 UTs</> },
+  { value: <>700+</>, label: <>Districts</> },
+  { value: <>Real-time</>, label: <>AI Responses</> },
 ];
 
 export default function Stats() {

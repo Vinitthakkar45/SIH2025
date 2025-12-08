@@ -1,33 +1,57 @@
 const useCases = [
   {
-    title: "Researchers & Scientists",
-    description:
-      "Access comprehensive datasets for hydrological studies and environmental impact assessments.",
+    title: <>Researchers & Scientists</>,
+    description: (
+      <>
+        Access comprehensive datasets for hydrological studies and environmental
+        impact assessments.
+      </>
+    ),
   },
   {
-    title: "Policy Makers",
-    description:
-      "Derive data-driven insights for effective water management policies and allocation.",
+    title: <>Policy Makers</>,
+    description: (
+      <>
+        Derive data-driven insights for effective water management policies and
+        allocation.
+      </>
+    ),
   },
   {
-    title: "Farmers & Agriculture",
-    description:
-      "Understand local groundwater availability to plan irrigation and crop cycles sustainably.",
+    title: <>Farmers & Agriculture</>,
+    description: (
+      <>
+        Understand local groundwater availability to plan irrigation and crop
+        cycles sustainably.
+      </>
+    ),
   },
   {
-    title: "NGOs & Activists",
-    description:
-      "Monitor water stress in specific regions to advocate for conservation efforts.",
+    title: <>NGOs & Activists</>,
+    description: (
+      <>
+        Monitor water stress in specific regions to advocate for conservation
+        efforts.
+      </>
+    ),
   },
   {
-    title: "Students & Educators",
-    description:
-      "Use as an educational resource to teach about India's geography and water conservation.",
+    title: <>Students & Educators</>,
+    description: (
+      <>
+        Use as an educational resource to teach about India&apos;s geography and
+        water conservation.
+      </>
+    ),
   },
   {
-    title: "Urban Planners",
-    description:
-      "Plan sustainable water infrastructure based on net groundwater availability.",
+    title: <>Urban Planners</>,
+    description: (
+      <>
+        Plan sustainable water infrastructure based on net groundwater
+        availability.
+      </>
+    ),
   },
 ];
 

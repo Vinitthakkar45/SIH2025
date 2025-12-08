@@ -1,8 +1,7 @@
-"use client";
-
 import { DropletIcon, MapsIcon, Message01Icon } from "@/components/icons";
 import { Avatar, Button } from "@heroui/react";
 import Link from "next/link";
+import LanguageSelector from "@/components/LanguageSelector";
 
 interface ChatHeaderProps {
   showMap: boolean;
@@ -28,23 +27,26 @@ export default function ChatHeader({ showMap, onToggleMap }: ChatHeaderProps) {
             </p>
           </div>
         </Link>
-        <Button
-          size="sm"
-          onPress={onToggleMap}
-          color={showMap ? "default" : "primary"}
-          startContent={
-            showMap ? (
-              <Message01Icon width={15} height={15} />
-            ) : (
-              <MapsIcon width={15} height={15} />
-            )
-          }
-          className="h-8"
-        >
-          <span className="text-[13px] font-medium">
-            {showMap ? "Hide Map" : "Show Map"}
-          </span>
-        </Button>
+        <div className="flex items-center gap-2">
+          <LanguageSelector />
+          <Button
+            size="sm"
+            onPress={onToggleMap}
+            color={showMap ? "default" : "primary"}
+            startContent={
+              showMap ? (
+                <Message01Icon width={15} height={15} />
+              ) : (
+                <MapsIcon width={15} height={15} />
+              )
+            }
+            className="h-8"
+          >
+            <span className="text-[13px] font-medium">
+              {showMap ? "Hide Map" : "Show Map"}
+            </span>
+          </Button>
+        </div>
       </div>
     </header>
   );

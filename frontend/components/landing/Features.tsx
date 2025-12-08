@@ -11,44 +11,68 @@ const features = [
   {
     icon: MessageIcon,
     color: "text-accent-blue",
-    title: "Conversational AI Assistant",
-    description:
-      "Ask questions in plain English and get context-aware answers about groundwater data with streaming responses.",
+    title: <>Conversational AI Assistant</>,
+    description: (
+      <>
+        Ask questions in plain English and get context-aware answers about
+        groundwater data with streaming responses.
+      </>
+    ),
   },
   {
     icon: DatabaseIcon,
     color: "text-accent-green",
-    title: "Comprehensive Data",
-    description:
-      "Access data for all 28 states, 8 UTs, and 6,000+ blocks. Analyze historical trends and recharge vs extraction metrics.",
+    title: <>Comprehensive Data</>,
+    description: (
+      <>
+        Access data for all 28 states, 8 UTs, and 6,000+ blocks. Analyze
+        historical trends and recharge vs extraction metrics.
+      </>
+    ),
   },
   {
     icon: BarChartIcon,
     color: "text-accent-purple",
-    title: "Smart Visualization",
-    description:
-      "Auto-generated charts and graphs. Comparative bar charts, distribution pie charts, and statistical summaries.",
+    title: <>Smart Visualization</>,
+    description: (
+      <>
+        Auto-generated charts and graphs. Comparative bar charts, distribution
+        pie charts, and statistical summaries.
+      </>
+    ),
   },
   {
     icon: FilterIcon,
     color: "text-accent-orange",
-    title: "Advanced Search",
-    description:
-      "Filter by category (Safe, Critical, Over-Exploited). Search by specific regions or extraction levels.",
+    title: <>Advanced Search</>,
+    description: (
+      <>
+        Filter by category (Safe, Critical, Over-Exploited). Search by specific
+        regions or extraction levels.
+      </>
+    ),
   },
   {
     icon: ActivityIcon,
     color: "text-accent-red",
-    title: "Detailed Metrics",
-    description:
-      "View total extraction (ham), recharge data, net availability, and irrigation breakdown per block.",
+    title: <>Detailed Metrics</>,
+    description: (
+      <>
+        View total extraction (ham), recharge data, net availability, and
+        irrigation breakdown per block.
+      </>
+    ),
   },
   {
     icon: MapPinIcon,
     color: "text-accent-teal",
-    title: "Interactive Map",
-    description:
-      "Visual representation of groundwater status with color-coded regions and pan/zoom capabilities.",
+    title: <>Interactive Map</>,
+    description: (
+      <>
+        Visual representation of groundwater status with color-coded regions and
+        pan/zoom capabilities.
+      </>
+    ),
   },
 ];
 

@@ -111,7 +111,14 @@ const ChartTooltipContent = React.forwardRef<
       indicator?: "line" | "dot" | "dashed";
       nameKey?: string;
       labelKey?: string;
-      payload?: any[];
+      payload?: Array<{
+        dataKey?: string;
+        name?: string;
+        value?: number | string;
+        color?: string;
+        payload?: Record<string, unknown>;
+        fill?: string;
+      }>;
       label?: string;
       active?: boolean;
     }
@@ -182,7 +189,7 @@ const ChartTooltipContent = React.forwardRef<
       <div
         ref={ref}
         className={cn(
-          "grid min-w-[8rem] items-start gap-1.5 rounded-lg bg-zinc-900 px-3 py-2 text-xs shadow-xl",
+          "grid min-w-32 items-start gap-1.5 rounded-lg bg-zinc-900 px-3 py-2 text-xs shadow-xl",
           className
         )}
       >
@@ -191,7 +198,7 @@ const ChartTooltipContent = React.forwardRef<
           {payload.map((item, index) => {
             const key = `${nameKey || item.name || item.dataKey || "value"}`;
             const itemConfig = config[key as keyof typeof config];
-            const indicatorColor = color || item.payload.fill || item.color;
+            const indicatorColor = color || item.payload?.fill || item.color;
 
             return (
               <div
@@ -202,7 +209,7 @@ const ChartTooltipContent = React.forwardRef<
                 )}
               >
                 {formatter && item?.value !== undefined && item.name ? (
-                  formatter(item.value, item.name, item, index, item.payload)
+                  formatter(item.value, item.name, item, index, payload)
                 ) : (
                   <>
                     {itemConfig?.icon ? (
@@ -212,8 +219,8 @@ const ChartTooltipContent = React.forwardRef<
                         <div
                           className={cn("shrink-0 rounded-sm", {
                             "h-2.5 w-2.5": indicator === "dot",
-                            "h-full w-1 min-h-[16px]": indicator === "line",
-                            "w-0 border-[1.5px] border-dashed h-full min-h-[16px]":
+                            "h-full w-1 min-h-4": indicator === "line",
+                            "w-0 border-[1.5px] border-dashed h-full min-h-4":
                               indicator === "dashed",
                           })}
                           style={
@@ -264,7 +271,11 @@ const ChartLegendContent = React.forwardRef<
   React.ComponentProps<"div"> & {
     hideIcon?: boolean;
     nameKey?: string;
-    payload?: any[];
+    payload?: Array<{
+      value?: string;
+      dataKey?: string;
+      color?: string;
+    }>;
     verticalAlign?: "top" | "bottom" | "middle";
   }
 >(
@@ -302,7 +313,7 @@ const ChartLegendContent = React.forwardRef<
                 <itemConfig.icon />
               ) : (
                 <div
-                  className="h-2 w-2 shrink-0 rounded-[2px]"
+                  className="h-2 w-2 shrink-0 rounded-xs"
                   style={{
                     backgroundColor: item.color,
                   }}

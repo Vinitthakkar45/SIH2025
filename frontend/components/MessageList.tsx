@@ -81,7 +81,7 @@ export default function MessageList({
                       }}
                       title={
                         <div className="text-sm text-zinc-400 font-semibold flex items-center gap-3 group-hover:text-white">
-                          View Charts
+                          <>View Charts</>
                           <span>
                             <ChartAverageIcon />
                           </span>
@@ -100,7 +100,7 @@ export default function MessageList({
                     className="mb-8"
                   >
                     <div className="text-xs text-zinc-500 mb-4 font-semibold pl-2.5 flex items-center gap-2 ">
-                      Suggestions
+                      <>Suggestions</>
                       <Idea01Icon width={17} height={17} />
                     </div>
                     <div className="flex flex-wrap gap-2">

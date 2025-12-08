@@ -7,11 +7,11 @@ import {
 } from "@/components/icons";
 
 const techStack = [
-  { icon: CpuIcon, name: "Groq LLM" },
-  { icon: DatabaseIcon, name: "Qdrant Vector DB" },
-  { icon: ServerStackIcon, name: "Node.js Express" },
-  { icon: LayoutIcon, name: "Next.js 15" },
-  { icon: CodeIcon, name: "Python ETL" },
+  { icon: CpuIcon, name: <>Groq LLM</> },
+  { icon: DatabaseIcon, name: <>Qdrant Vector DB</> },
+  { icon: ServerStackIcon, name: <>Node.js Express</> },
+  { icon: LayoutIcon, name: <>Next.js 15</> },
+  { icon: CodeIcon, name: <>Python ETL</> },
 ];
 
 export default function TechStack() {

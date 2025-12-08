@@ -2,35 +2,35 @@ import { CheckmarkCircle01Icon } from "@/components/icons";
 
 const dataSources = [
   {
-    title: "CGWB Reports",
-    description: "Central Ground Water Board official documentation.",
+    title: <>CGWB Reports</>,
+    description: <>Central Ground Water Board official documentation.</>,
   },
   {
-    title: "State Assessments (2022-23)",
-    description: "Latest block-level extraction data.",
+    title: <>State Assessments (2022-23)</>,
+    description: <>Latest block-level extraction data.</>,
   },
   {
-    title: "Recharge Studies",
-    description: "Scientific estimates of ground replenishment.",
+    title: <>Recharge Studies</>,
+    description: <>Scientific estimates of ground replenishment.</>,
   },
 ];
 
 const highlights = [
   {
-    title: "100% Local Processing",
-    description: "No external API dependencies for embeddings.",
+    title: <>100% Local Processing</>,
+    description: <>No external API dependencies for embeddings.</>,
   },
   {
-    title: "Context-Aware",
-    description: "Maintains conversation history for better flow.",
+    title: <>Context-Aware</>,
+    description: <>Maintains conversation history for better flow.</>,
   },
   {
-    title: "Privacy-Focused",
-    description: "No data collection or user tracking.",
+    title: <>Privacy-Focused</>,
+    description: <>No data collection or user tracking.</>,
   },
   {
-    title: "Open Data",
-    description: "Built on public government reports.",
+    title: <>Open Data</>,
+    description: <>Built on public government reports.</>,
   },
 ];
 

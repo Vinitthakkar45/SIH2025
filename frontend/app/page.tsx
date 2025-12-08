@@ -1,3 +1,5 @@
+"use i18n";
+
 import InteractiveDemoSection from "@/components/InteractiveDemoSection";
 import DataSources from "@/components/landing/DataSources";
 import Features from "@/components/landing/Features";

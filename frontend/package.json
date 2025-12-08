@@ -7,8 +7,9 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
+    "type-check": "tsc --noEmit",
     "clean": "rm -rf .next node_modules",
-    "serve":"npx serve@latest out"
+    "serve": "npx serve@latest out"
   },
   "dependencies": {
     "@fontsource-variable/inter": "^5.2.8",
@@ -17,14 +18,17 @@
     "@maplibre/maplibre-gl-leaflet": "^0.1.3",
     "@theexperiencecompany/gaia-icons": "^1.9.0",
     "@types/leaflet": "^1.9.21",
+    "client": "link:lingo.dev/react/client",
     "clsx": "^2.1.1",
     "framer-motion": "12.23.25",
+    "jsdom": "^27.3.0",
     "langsmith": "^0.3.82",
     "leaflet": "^1.9.4",
+    "lingo.dev": "^0.117.10",
     "maplibre-gl": "^5.14.0",
-    "next": "16.0.7",
-    "react": "19.2.0",
-    "react-dom": "19.2.0",
+    "next": "15.2.4",
+    "react": "19.2.1",
+    "react-dom": "19.2.1",
     "react-leaflet": "^5.0.0",
     "react-markdown": "^10.1.0",
     "recharts": "^3.5.1",
@@ -33,14 +37,14 @@
     "tailwind-merge": "^3.4.0"
   },
   "devDependencies": {
-    "@tailwindcss/postcss": "^4",
+    "@tailwindcss/postcss": "^4.1.17",
     "@types/geojson": "^7946.0.16",
-    "@types/node": "^20",
-    "@types/react": "^19",
-    "@types/react-dom": "^19",
-    "eslint": "^9",
+    "@types/node": "^24.10.1",
+    "@types/react": "^19.2.7",
+    "@types/react-dom": "^19.2.3",
+    "eslint": "^9.39.1",
     "eslint-config-next": "16.0.7",
     "tailwindcss": "4.1.17",
-    "typescript": "^5"
+    "typescript": "^5.9.3"
   }
 }
