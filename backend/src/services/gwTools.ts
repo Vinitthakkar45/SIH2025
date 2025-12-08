@@ -1,11 +1,15 @@
 import { tool } from "@langchain/core/tools";
 import { z } from "zod";
 import {
+  metricToField,
+  metricToLabel,
+  metricToUnit,
+  VALID_METRICS,
+} from "../utils/metricHelpers";
+import { filterRecordsByYear, getFilteredYears } from "../utils/yearFiltering";
+import {
   formatGroundwaterDataForLLM,
   formatHistoricalDataForLLM,
-  getAggregateStats,
-  getCategorySummary,
-  getLocationWithChildren,
   getTopLocationsByField,
   searchAndGetGroundwaterData,
   searchAndGetHistoricalData,
@@ -17,17 +21,6 @@ import {
   getTaluksOfDistrict,
   searchLocation,
 } from "./locationSearch";
-import {
-  filterRecordsByYear,
-  getFilteredYears,
-  calculatePercentChange,
-} from "../utils/yearFiltering";
-import {
-  metricToField,
-  metricToLabel,
-  metricToUnit,
-  VALID_METRICS,
-} from "../utils/metricHelpers";
 
 type LocationType = "STATE" | "DISTRICT" | "TALUK";
 
