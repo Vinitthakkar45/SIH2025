@@ -37,7 +37,8 @@ export interface Visualization {
     | "table"
     | "summary"
     | "trend_summary"
-    | "data_container";
+    | "data_container"
+    | "collapsible";
   chartType?:
     | "bar"
     | "pie"
@@ -61,6 +62,8 @@ export interface Visualization {
   columns?: string[];
   data?: TableRow[] | ChartDataItem[] | SummaryData | WaterBalanceData;
   visualizations?: Visualization[];
+  children?: Visualization[];
+  defaultOpen?: boolean;
   locationId?: string;
   locationName?: string;
   threshold?: { safe: number; critical: number; overExploited: number };

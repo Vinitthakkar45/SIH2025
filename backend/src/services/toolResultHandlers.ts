@@ -317,7 +317,6 @@ export async function handleGetTopLocations(
 ): Promise<void> {
   if (!result.found) return;
 
-  const metric = result.metric as string;
   const metricLabel = result.metricLabel as string;
   const metricUnit = result.metricUnit as string;
   const locationType = result.locationType as string;

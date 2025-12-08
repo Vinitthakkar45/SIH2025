@@ -123,7 +123,25 @@ export default function VisualizationRenderer({ visualizations }: VisualizationR
         >
           <div className="space-y-3">
             {viz.visualizations.map((innerViz, idx) =>
-              renderSingleVisualization(innerViz, idx)
+              renderVisualization(innerViz, idx)
+            )}
+          </div>
+        </CollapsibleDataBlock>
+      );
+    }
+
+    // Collapsible type - nested visualizations in a collapsible block
+    if (viz.type === "collapsible" && viz.children) {
+      return (
+        <CollapsibleDataBlock
+          key={index}
+          title={viz.title}
+          subtitle={viz.subtitle}
+          defaultOpen={viz.defaultOpen !== false}
+        >
+          <div className="space-y-3">
+            {viz.children.map((child: Visualization, idx: number) =>
+              renderSingleVisualization(child, idx)
             )}
           </div>
         </CollapsibleDataBlock>

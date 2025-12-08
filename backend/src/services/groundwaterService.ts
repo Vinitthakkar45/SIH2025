@@ -1027,22 +1027,34 @@ export function generateComparisonChartData(
     data: rechargeVsExtractionData,
   });
 
-  // 10. Category Distribution
+  // 10. Category Distribution by Location
+  const locationCategoryData = records.map((r) => {
+    const data = r.data as Record<string, unknown>;
+    const category = String(data.categoryTotal || "Unknown").trim();
+    return {
+      location: r.location.name,
+      category: category === "null" ? "Unknown" : category,
+      stage: data.stageOfExtractionTotal,
+    };
+  });
+
+  // Add table showing each location's category
+  visualizations.push({
+    type: "table",
+    tableType: "categoryByLocation",
+    title: "Category by Location",
+    columns: ["Location", "Category", "Stage (%)"],
+    data: locationCategoryData,
+  });
+
+  // Also add the aggregate pie chart
   const categoryCount: Record<string, number> = {};
-  for (const r of records) {
-    const rawCat = String(
-      (r.data as Record<string, unknown>).categoryTotal || ""
-    ).trim();
-
-    // Skip empty, null, or Unknown categories
-    if (!rawCat || rawCat === "Unknown" || rawCat === "null") continue;
-
-    // Normalize category names
-    const cat = rawCat.toLowerCase().replace(/[\s-]/g, "_");
-    categoryCount[cat] = (categoryCount[cat] || 0) + 1;
+  for (const item of locationCategoryData) {
+    if (item.category && item.category !== "Unknown") {
+      categoryCount[item.category] = (categoryCount[item.category] || 0) + 1;
+    }
   }
 
-  // Only show pie chart if we have valid categories
   if (Object.keys(categoryCount).length > 0) {
     visualizations.push({
       type: "chart",
