@@ -231,7 +231,7 @@ export default function VisualizationRenderer({
   };
 
   return (
-    <Accordion variant="shadow" isCompact defaultExpandedKeys={["data"]}>
+    <Accordion variant="shadow" isCompact>
       <AccordionItem
         key="data"
         aria-label="Groundwater Data Analysis"
