@@ -227,6 +227,10 @@ function fieldToColumn(field: string): string | null {
     stage_of_extraction: "stage_of_extraction_total",
     loss: "loss_total",
     availability: "availability_future_total",
+    irrigation_extraction: "draft_agriculture_total",
+    domestic_extraction: "draft_domestic_total",
+    industrial_extraction: "draft_industry_total",
+    recharge_from_rainfall: "recharge_rainfall_total",
   };
   return fieldMap[field.toLowerCase()] ?? null;
 }
@@ -1080,23 +1084,23 @@ export function generateTrendChartData(
     const data = r.data as Record<string, unknown>;
     return {
       year: r.year,
-      recharge: data.rechargeTotalTotal,
-      rechargeFromRainfall: data.rechargeRainfallTotal,
-      rechargeFromCanal: data.rechargeCanalTotal,
-      rechargeFromWaterBody: data.rechargeWaterBodyTotal,
-      rechargeFromArtificial: data.rechargeArtificialStructureTotal,
+      recharge: Number(data.rechargeTotalTotal) || 0,
+      rechargeFromRainfall: Number(data.rechargeRainfallTotal) || 0,
+      rechargeFromCanal: Number(data.rechargeCanalTotal) || 0,
+      rechargeFromWaterBody: Number(data.rechargeWaterBodyTotal) || 0,
+      rechargeFromArtificial: Number(data.rechargeArtificialStructureTotal) || 0,
       rechargeOther:
-        (data.rechargeSurfaceIrrigationTotal || 0) +
-        (data.rechargeGwIrrigationTotal || 0),
-      extraction: data.draftTotalTotal,
-      extractionIrrigation: data.draftIrrigationTotal,
-      extractionDomestic: data.draftDomesticTotal,
-      extractionIndustrial: data.draftIndustrialTotal,
-      extractable: data.extractableTotal,
-      rainfall: data.rainfallTotal,
-      stageOfExtraction: data.stageOfExtractionTotal,
+        (Number(data.rechargeSurfaceIrrigationTotal) || 0) +
+        (Number(data.rechargeGwIrrigationTotal) || 0),
+      extraction: Number(data.draftTotalTotal) || 0,
+      extractionIrrigation: Number(data.draftIrrigationTotal) || 0,
+      extractionDomestic: Number(data.draftDomesticTotal) || 0,
+      extractionIndustrial: Number(data.draftIndustrialTotal) || 0,
+      extractable: Number(data.extractableTotal) || 0,
+      rainfall: Number(data.rainfallTotal) || 0,
+      stageOfExtraction: Number(data.stageOfExtractionTotal) || 0,
       category: data.categoryTotal,
-      naturalDischarge: data.lossTotal,
+      naturalDischarge: Number(data.lossTotal) || 0,
     };
   });
 
