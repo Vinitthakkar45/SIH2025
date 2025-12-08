@@ -1,17 +1,6 @@
 import { ChatGoogleGenerativeAI } from "@langchain/google-genai";
-import {
-  HumanMessage,
-  AIMessage,
-  SystemMessage,
-  BaseMessage,
-  ToolMessage,
-} from "@langchain/core/messages";
-import {
-  StateGraph,
-  MessagesAnnotation,
-  START,
-  END,
-} from "@langchain/langgraph";
+import { HumanMessage, AIMessage, SystemMessage, BaseMessage, ToolMessage } from "@langchain/core/messages";
+import { StateGraph, MessagesAnnotation, START, END } from "@langchain/langgraph";
 import { ToolNode } from "@langchain/langgraph/prebuilt";
 import { allTools } from "./gwTools";
 import logger from "../utils/logger";
@@ -52,9 +41,7 @@ export function createGroundwaterAgent() {
 
   const toolNode = new ToolNode(allTools);
 
-  function shouldContinue(
-    state: typeof MessagesAnnotation.State
-  ): "tools" | typeof END {
+  function shouldContinue(state: typeof MessagesAnnotation.State): "tools" | typeof END {
     const messages = state.messages;
     const lastMessage = messages[messages.length - 1] as AIMessage;
 
@@ -80,19 +67,6 @@ export function createGroundwaterAgent() {
   return workflow.compile();
 }
 
-export interface ChatMessage {
-  role: "user" | "assistant" | "system";
-  content: string;
-}
-
-export function convertChatHistory(messages: ChatMessage[]): BaseMessage[] {
-  return messages.map((msg) => {
-    if (msg.role === "user") return new HumanMessage(msg.content);
-    if (msg.role === "assistant") return new AIMessage(msg.content);
-    return new SystemMessage(msg.content);
-  });
-}
-
 export interface StreamCallbacks {
   onToken: (token: string) => void;
   onChart: (chart: object) => void;
@@ -102,18 +76,10 @@ export interface StreamCallbacks {
   onError: (error: Error) => void;
 }
 
-export async function streamGroundwaterChat(
-  query: string,
-  chatHistory: ChatMessage[] = [],
-  callbacks: StreamCallbacks
-): Promise<void> {
+export async function streamGroundwaterChat(query: string, callbacks: StreamCallbacks): Promise<void> {
   const agent = createGroundwaterAgent();
 
-  const messages: BaseMessage[] = [
-    new SystemMessage(SYSTEM_PROMPT),
-    ...convertChatHistory(chatHistory),
-    new HumanMessage(query),
-  ];
+  const messages: BaseMessage[] = [new SystemMessage(SYSTEM_PROMPT), new HumanMessage(query)];
 
   let fullResponse = "";
 
@@ -147,11 +113,7 @@ export async function streamGroundwaterChat(
         callbacks.onToolResult(toolName, toolMessage.content as string);
 
         // Process tool result and stream visualizations
-        await processToolResult(
-          toolName,
-          toolMessage.content as string,
-          callbacks.onChart
-        );
+        await processToolResult(toolName, toolMessage.content as string, callbacks.onChart);
       }
     }
 
@@ -163,24 +125,16 @@ export async function streamGroundwaterChat(
   }
 }
 
-export async function invokeGroundwaterChat(
-  query: string,
-  chatHistory: ChatMessage[] = []
-): Promise<{ response: string; charts: object[] }> {
+export async function invokeGroundwaterChat(query: string): Promise<{ response: string; charts: object[] }> {
   const agent = createGroundwaterAgent();
 
-  const messages: BaseMessage[] = [
-    new SystemMessage(SYSTEM_PROMPT),
-    ...convertChatHistory(chatHistory),
-    new HumanMessage(query),
-  ];
+  const messages: BaseMessage[] = [new SystemMessage(SYSTEM_PROMPT), new HumanMessage(query)];
 
   logger.debug("Invoking agent");
   const result = await agent.invoke({ messages });
 
   const lastMessage = result.messages[result.messages.length - 1] as AIMessage;
-  const response =
-    typeof lastMessage.content === "string" ? lastMessage.content : "";
+  const response = typeof lastMessage.content === "string" ? lastMessage.content : "";
 
   // Collect charts from all tool messages
   const charts: object[] = [];

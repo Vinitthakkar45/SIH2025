@@ -26,7 +26,7 @@ export default function WelcomeView({
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.5 }}
-      className="pt-20 pb-8 px-4"
+      className="pt-12 px-4"
     >
       {/* Greeting */}
       <div className="text-center mb-10">
@@ -48,7 +48,7 @@ export default function WelcomeView({
         </motion.p>
       </div>
       {/* Action Cards */}
-      <motion.div className="grid grid-cols-1 md:grid-cols-2 gap-3 max-w-xl mx-auto mb-6 auto-rows-fr">
+      <motion.div className="grid grid-cols-1 md:grid-cols-2 gap-3 max-w-2xl mx-auto mb-6 auto-rows-fr">
         {[
           {
             icon: <Location01Icon width={22} height={22} />,
