@@ -49,30 +49,15 @@ export default function MessageList({
           <div
             className={`max-w-[85%] ${
               message.role === "user"
-                ? "bg-primary text-white rounded-full rounded-br-none px-4 py-2 w-fit"
+                ? "bg-primary text-white rounded-3xl rounded-br-none px-4 py-2 w-fit"
                 : "w-full"
             }`}
           >
             {message.isLoading && !message.content ? (
-              <div className="space-y-2 py-1">
-                <motion.div
-                  animate={{ opacity: [0.5, 1, 0.5] }}
-                  transition={{ repeat: Infinity, duration: 1.5 }}
-                >
-                  <Skeleton className="h-3 w-24 rounded-lg bg-zinc-800" />
-                </motion.div>
-                <motion.div
-                  animate={{ opacity: [0.5, 1, 0.5] }}
-                  transition={{ repeat: Infinity, duration: 1.5, delay: 0.2 }}
-                >
-                  <Skeleton className="h-3 w-40 rounded-lg bg-zinc-800" />
-                </motion.div>
-                <motion.div
-                  animate={{ opacity: [0.5, 1, 0.5] }}
-                  transition={{ repeat: Infinity, duration: 1.5, delay: 0.4 }}
-                >
-                  <Skeleton className="h-3 w-32 rounded-lg bg-zinc-800" />
-                </motion.div>
+              <div className="space-y-2 py-1 w-full">
+                <Skeleton className="h-3 w-1/2 rounded-lg bg-zinc-800" />
+                <Skeleton className="h-3 w-3/5 rounded-lg bg-zinc-800" />
+                <Skeleton className="h-3 w-1/3 rounded-lg bg-zinc-800" />
               </div>
             ) : (
               <>
@@ -111,8 +96,7 @@ export default function MessageList({
                           onPress={() => onSuggestionClick(suggestion)}
                           variant="flat"
                           size="sm"
-                          className="bg-white/5 hover:bg-white/10 text-zinc-300 hover:text-zinc-100 text-[13px] min-h-9 h-auto py-2 font-medium transition-all whitespace-normal text-left"
-                          radius="lg"
+                          className="text-wrap border-2 border-dashed border-zinc-600 font-light text-zinc-400"
                         >
                           {suggestion}
                         </Button>

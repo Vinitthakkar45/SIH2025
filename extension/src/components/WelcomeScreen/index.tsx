@@ -6,7 +6,9 @@ interface WelcomeScreenProps {
   onQuerySelect: (query: string) => void;
 }
 
-export const WelcomeScreen: React.FC<WelcomeScreenProps> = ({ onQuerySelect }) => {
+export const WelcomeScreen: React.FC<WelcomeScreenProps> = ({
+  onQuerySelect,
+}) => {
   return (
     <div className="ig-flex ig-flex-col ig-items-center ig-justify-center ig-h-full ig-p-6 ig-text-center ig-animate-fade-in">
       {/* Logo/Icon */}
@@ -20,9 +22,12 @@ export const WelcomeScreen: React.FC<WelcomeScreenProps> = ({ onQuerySelect }) =
       </div>
 
       {/* Title */}
-      <h2 className="ig-text-xl ig-font-bold ig-text-gray-800 ig-mb-2">INGRES AI Assistant</h2>
+      <h2 className="ig-text-xl ig-font-bold ig-text-gray-800 ig-mb-2">
+        INGRES AI Assistant
+      </h2>
       <p className="ig-text-sm ig-text-gray-500 ig-mb-6 ig-max-w-[280px]">
-        Your intelligent guide to India's groundwater resources. Ask me anything about groundwater data!
+        Your intelligent guide to India's groundwater resources. Ask me anything
+        about groundwater data!
       </p>
 
       {/* Feature Pills */}
@@ -39,13 +44,16 @@ export const WelcomeScreen: React.FC<WelcomeScreenProps> = ({ onQuerySelect }) =
 
       {/* Suggested Queries */}
       <div className="ig-w-full">
-        <p className="ig-text-xs ig-font-medium ig-text-gray-500 ig-mb-3">Try asking:</p>
+        <p className="ig-text-xs ig-font-medium ig-text-gray-500 ig-mb-3">
+          Try asking:
+        </p>
         <div className="ig-space-y-2">
           {SUGGESTED_QUERIES.slice(0, 4).map((query, idx) => (
             <button
               key={idx}
               onClick={() => onQuerySelect(query)}
-              className="ig-w-full ig-text-left ig-text-sm ig-bg-white ig-text-gray-700 ig-px-4 ig-py-3 ig-rounded-xl ig-border ig-border-gray-200 ig-shadow-sm hover:ig-bg-water-50 hover:ig-border-water-300 hover:ig-shadow-md ig-transition-all ig-duration-200">
+              className="ig-w-full ig-text-left ig-text-sm ig-bg-white ig-text-gray-700 ig-px-4 ig-py-3 ig-rounded-xl ig-border ig-border-gray-200 ig-shadow-sm hover:ig-bg-water-50 hover:ig-border-water-300 hover:ig-shadow-md ig-transition-all ig-duration-200"
+            >
               <span className="ig-text-water-500 ig-mr-2">💧</span>
               {query}
             </button>

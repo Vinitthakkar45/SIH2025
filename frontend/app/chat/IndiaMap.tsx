@@ -15,6 +15,7 @@ import {
 import type { Feature, FeatureCollection, Geometry } from "geojson";
 import "leaflet/dist/leaflet.css";
 import { ArrowLeft01Icon, Loading01Icon } from "@/components/icons";
+import { Spinner } from "@heroui/react";
 
 const INDIA_CENTER: LatLngExpression = [22.5937, 78.9629];
 const INDIA_ZOOM = 5;
@@ -290,7 +291,7 @@ export default function IndiaMap() {
   if (loadingStates) {
     return (
       <div className="w-full h-full flex items-center justify-center bg-gray-900">
-        <Loading01Icon className="w-8 h-8 animate-spin text-blue-500" />
+        <Spinner />
       </div>
     );
   }

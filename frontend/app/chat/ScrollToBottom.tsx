@@ -1,8 +1,8 @@
 "use client";
 
+import { ArrowDown02Icon } from "@/components/icons";
 import { Button } from "@heroui/button";
-import { ArrowDown01Icon } from "@/components/icons";
-import { motion, AnimatePresence } from "framer-motion";
+import { AnimatePresence, motion } from "framer-motion";
 
 interface ScrollToBottomProps {
   visible: boolean;
@@ -21,16 +21,10 @@ export default function ScrollToBottom({
           animate={{ opacity: 1, y: 0 }}
           exit={{ opacity: 0, y: 10 }}
           transition={{ duration: 0.2 }}
-          className="absolute bottom-28 left-1/2 -translate-x-1/2 z-10"
+          className="absolute bottom-24 left-1/2 -translate-x-1/2 z-10"
         >
-          <Button
-            isIconOnly
-            radius="full"
-            size="sm"
-            onPress={onClick}
-            className="bg-zinc-800/90 hover:bg-zinc-700 text-zinc-300 shadow-lg backdrop-blur-sm"
-          >
-            <ArrowDown01Icon width={16} height={16} />
+          <Button isIconOnly radius="full" onPress={onClick}>
+            <ArrowDown02Icon width={18} height={18} />
           </Button>
         </motion.div>
       )}

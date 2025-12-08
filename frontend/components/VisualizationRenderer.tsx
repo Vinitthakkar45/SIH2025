@@ -5,7 +5,7 @@ import PieChartComponent from "./charts/PieChartComponent";
 import LineChartComponent from "./charts/LineChartComponent";
 import StatsChart from "./charts/StatsChart";
 import DataTable from "./DataTable";
-import CollapsibleDataBlock from "./CollapsibleDataBlock";
+import DataAccordion from "./DataAccordion";
 import type {
   Visualization,
   TableRow,
@@ -16,27 +16,35 @@ interface VisualizationRendererProps {
   visualizations: Visualization[];
 }
 
-export default function VisualizationRenderer({ visualizations }: VisualizationRendererProps) {
+export default function VisualizationRenderer({
+  visualizations,
+}: VisualizationRendererProps) {
   if (!visualizations || visualizations.length === 0) return null;
 
   const renderSingleVisualization = (viz: Visualization, index: number) => {
-    // Stats/Summary Cards - Always open, not collapsible
+    // Stats/Summary Cards - Now collapsible
     if (viz.type === "stats" || viz.type === "summary") {
       return (
-        <div key={index}>
+        <DataAccordion
+          key={index}
+          title={viz.title}
+          subtitle={viz.description}
+          explanation={viz.explanation}
+          defaultOpen={true}
+        >
           <StatsChart
-            title={viz.title}
+            title=""
             data={viz.data as Record<string, unknown>}
-            explanation={viz.explanation}
+            explanation=""
           />
-        </div>
+        </DataAccordion>
       );
     }
 
     // Tables
     if (viz.type === "table" && viz.columns && viz.data) {
       return (
-        <CollapsibleDataBlock
+        <DataAccordion
           key={index}
           title={viz.title}
           subtitle={
@@ -48,7 +56,7 @@ export default function VisualizationRenderer({ visualizations }: VisualizationR
           defaultOpen={true}
         >
           <DataTable columns={viz.columns} data={viz.data as TableRow[]} />
-        </CollapsibleDataBlock>
+        </DataAccordion>
       );
     }
 
@@ -56,7 +64,7 @@ export default function VisualizationRenderer({ visualizations }: VisualizationR
     if (viz.type === "chart" && viz.data) {
       if (viz.chartType === "bar" || viz.chartType === "grouped_bar") {
         return (
-          <CollapsibleDataBlock
+          <DataAccordion
             key={index}
             title={viz.title}
             subtitle={viz.description}
@@ -69,13 +77,13 @@ export default function VisualizationRenderer({ visualizations }: VisualizationR
               color={viz.color}
               colorByValue={viz.colorByValue}
             />
-          </CollapsibleDataBlock>
+          </DataAccordion>
         );
       }
 
       if (viz.chartType === "pie") {
         return (
-          <CollapsibleDataBlock
+          <DataAccordion
             key={index}
             title={viz.title}
             subtitle={viz.description}
@@ -86,7 +94,7 @@ export default function VisualizationRenderer({ visualizations }: VisualizationR
               title=""
               data={viz.data as { name: string; value: number }[]}
             />
-          </CollapsibleDataBlock>
+          </DataAccordion>
         );
       }
 
@@ -96,7 +104,7 @@ export default function VisualizationRenderer({ visualizations }: VisualizationR
         viz.chartType === "area"
       ) {
         return (
-          <CollapsibleDataBlock
+          <DataAccordion
             key={index}
             title={viz.title}
             subtitle={viz.description}
@@ -108,7 +116,7 @@ export default function VisualizationRenderer({ visualizations }: VisualizationR
               data={viz.data as Record<string, unknown>[]}
               chartType={viz.chartType}
             />
-          </CollapsibleDataBlock>
+          </DataAccordion>
         );
       }
     }
@@ -120,7 +128,7 @@ export default function VisualizationRenderer({ visualizations }: VisualizationR
     // Data container - outer collapsible that contains all visualizations
     if (viz.type === "data_container" && viz.visualizations) {
       return (
-        <CollapsibleDataBlock
+        <DataAccordion
           key={index}
           title={viz.title}
           subtitle={viz.subtitle}
@@ -132,14 +140,14 @@ export default function VisualizationRenderer({ visualizations }: VisualizationR
               renderVisualization(innerViz, idx)
             )}
           </div>
-        </CollapsibleDataBlock>
+        </DataAccordion>
       );
     }
 
     // Collapsible type - nested visualizations in a collapsible block
     if (viz.type === "collapsible" && viz.children) {
       return (
-        <CollapsibleDataBlock
+        <DataAccordion
           key={index}
           title={viz.title}
           subtitle={viz.subtitle}
@@ -151,7 +159,7 @@ export default function VisualizationRenderer({ visualizations }: VisualizationR
               renderSingleVisualization(child, idx)
             )}
           </div>
-        </CollapsibleDataBlock>
+        </DataAccordion>
       );
     }
 
