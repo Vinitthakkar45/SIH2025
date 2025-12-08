@@ -74,7 +74,12 @@ router.post("/stream", async (req: Request, res: Response) => {
         );
       },
       onChart: (chart) => {
-        res.write(`data: ${JSON.stringify({ type: "chart", ...chart })}\n\n`);
+        logger.debug(
+          { chartType: chart.type, chart },
+          "Streaming chart to client"
+        );
+        // Don't override the type if it's already set (e.g., data_container)
+        res.write(`data: ${JSON.stringify(chart)}\n\n`);
       },
       onToolCall: (toolName, args) => {
         logger.debug({ tool: toolName, args }, "Tool invoked");

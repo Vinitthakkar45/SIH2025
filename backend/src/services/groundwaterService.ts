@@ -982,13 +982,32 @@ export function generateTrendChartData(
     return {
       year: r.year,
       recharge: data.rechargeTotalTotal,
+      rechargeFromRainfall: data.rechargeFromRainfall,
+      rechargeFromCanal: data.rechargeFromCanal,
+      rechargeFromTanks: data.rechargeFromTanks,
+      rechargeFromOtherSources: data.rechargeFromOtherSources,
       extraction: data.draftTotalTotal,
+      extractionIrrigation: data.draftIrrigationTotal,
+      extractionDomestic: data.draftDomesticTotal,
+      extractionIndustrial: data.draftIndustrialTotal,
       extractable: data.extractableTotal,
       rainfall: data.rainfallTotal,
       stageOfExtraction: data.stageOfExtractionTotal,
       category: data.categoryTotal,
+      naturalDischarge: data.lossTotal,
     };
   });
+
+  // Table with proper key mapping
+  const tableData = trendData.map((t) => ({
+    year: t.year,
+    "rainfall(mm)": t.rainfall,
+    "recharge(ham)": t.recharge,
+    "extractable(ham)": t.extractable,
+    "extraction(ham)": t.extraction,
+    "stage(%)": t.stageOfExtraction,
+    category: t.category,
+  }));
 
   visualizations.push({
     type: "table",
@@ -1003,7 +1022,7 @@ export function generateTrendChartData(
       "Stage (%)",
       "Category",
     ],
-    data: trendData,
+    data: tableData,
   });
 
   visualizations.push({
@@ -1043,6 +1062,34 @@ export function generateTrendChartData(
 
   visualizations.push({
     type: "chart",
+    chartType: "multi_line",
+    title: `Recharge Sources Breakdown - ${locationName}`,
+    description: "Contribution of different recharge sources over years (ham)",
+    data: trendData.map((t) => ({
+      year: t.year,
+      rainfall: t.rechargeFromRainfall,
+      canal: t.rechargeFromCanal,
+      tanks: t.rechargeFromTanks,
+      other: t.rechargeFromOtherSources,
+    })),
+  });
+
+  visualizations.push({
+    type: "chart",
+    chartType: "multi_line",
+    title: `Extraction by Use Type - ${locationName}`,
+    description:
+      "Groundwater extraction breakdown: irrigation, domestic, industrial (ham)",
+    data: trendData.map((t) => ({
+      year: t.year,
+      irrigation: t.extractionIrrigation,
+      domestic: t.extractionDomestic,
+      industrial: t.extractionIndustrial,
+    })),
+  });
+
+  visualizations.push({
+    type: "chart",
     chartType: "area",
     title: `Extractable Resources Trend - ${locationName}`,
     description: "Available extractable groundwater resources over years (ham)",
@@ -1063,6 +1110,95 @@ export function generateTrendChartData(
     })),
   });
 
+  // Net Balance Chart (Recharge - Extraction)
+  visualizations.push({
+    type: "chart",
+    chartType: "bar",
+    title: `Net Groundwater Balance - ${locationName}`,
+    description: "Net balance = Recharge - Extraction (positive is good, ham)",
+    data: trendData.map((t) => ({
+      name: t.year,
+      value: (t.recharge || 0) - (t.extraction || 0),
+    })),
+  });
+
+  // Sustainability Index Chart (Recharge/Extraction ratio)
+  visualizations.push({
+    type: "chart",
+    chartType: "line",
+    title: `Sustainability Index - ${locationName}`,
+    description: "Ratio of Recharge to Extraction (>1 is sustainable)",
+    data: trendData.map((t) => ({
+      year: t.year,
+      value:
+        t.extraction && t.extraction > 0 ? (t.recharge || 0) / t.extraction : 0,
+    })),
+  });
+
+  // Water Stress Indicator combining extraction and rainfall
+  visualizations.push({
+    type: "chart",
+    chartType: "multi_line",
+    title: `Water Stress Indicators - ${locationName}`,
+    description:
+      "Normalized trends: High stage of extraction + Low rainfall = High stress",
+    data: trendData.map((t) => ({
+      year: t.year,
+      "stage of extraction": t.stageOfExtraction,
+      "rainfall index": t.rainfall ? t.rainfall / 1000 : 0, // Scaled for comparison
+    })),
+  });
+
+  visualizations.push({
+    type: "chart",
+    chartType: "multi_line",
+    title: `Water Balance Trend - ${locationName}`,
+    description: "Recharge, extraction and natural discharge over years (ham)",
+    data: trendData.map((t) => ({
+      year: t.year,
+      recharge: t.recharge,
+      extraction: t.extraction,
+      discharge: t.naturalDischarge,
+    })),
+  });
+
+  // Year-over-year changes
+  if (trendData.length > 1) {
+    const yoyData: {
+      year: string;
+      extractionChange: number;
+      rechargeChange: number;
+    }[] = [];
+    for (let i = 1; i < trendData.length; i++) {
+      const prev = trendData[i - 1];
+      const curr = trendData[i];
+      yoyData.push({
+        year: curr.year,
+        extractionChange:
+          prev.extraction && prev.extraction > 0
+            ? ((curr.extraction - prev.extraction) / prev.extraction) * 100
+            : 0,
+        rechargeChange:
+          prev.recharge && prev.recharge > 0
+            ? ((curr.recharge - prev.recharge) / prev.recharge) * 100
+            : 0,
+      });
+    }
+
+    visualizations.push({
+      type: "chart",
+      chartType: "grouped_bar",
+      title: `Year-over-Year % Change - ${locationName}`,
+      description:
+        "Percentage change in extraction and recharge from previous year",
+      data: yoyData.map((d) => ({
+        year: d.year,
+        extraction: d.extractionChange,
+        recharge: d.rechargeChange,
+      })),
+    });
+  }
+
   const categoryChanges: { year: string; category: string }[] = [];
   for (let i = 0; i < trendData.length; i++) {
     if (i === 0 || trendData[i].category !== trendData[i - 1].category) {
@@ -1073,18 +1209,36 @@ export function generateTrendChartData(
     }
   }
 
-  if (categoryChanges.length > 1) {
-    visualizations.push({
-      type: "stats",
-      title: `Category Changes - ${locationName}`,
-      data: {
-        totalChanges: categoryChanges.length - 1,
-        history: categoryChanges,
-        currentCategory: trendData[trendData.length - 1].category || "Unknown",
-        initialCategory: trendData[0].category || "Unknown",
-      },
-    });
-  }
+  // Enhanced category changes with more insights
+  const latestData = trendData[trendData.length - 1];
+  const earliestData = trendData[0];
+  const avgStageOfExtraction =
+    trendData.reduce((sum, t) => sum + (t.stageOfExtraction || 0), 0) /
+    trendData.length;
+
+  visualizations.push({
+    type: "stats",
+    title: `Trend Summary - ${locationName}`,
+    data: {
+      yearsAnalyzed: trendData.length,
+      categoryChanges: categoryChanges.length - 1,
+      currentCategory: latestData.category || "Unknown",
+      initialCategory: earliestData.category || "Unknown",
+      avgStageOfExtraction: Math.round(avgStageOfExtraction * 10) / 10,
+      extractionTrend:
+        latestData.extraction > earliestData.extraction
+          ? "Increasing"
+          : "Decreasing",
+      rechargeTrend:
+        latestData.recharge > earliestData.recharge
+          ? "Increasing"
+          : "Decreasing",
+      overallTrend:
+        latestData.stageOfExtraction > earliestData.stageOfExtraction
+          ? "Worsening"
+          : "Improving",
+    },
+  });
 
   return visualizations;
 }

@@ -2,6 +2,7 @@
 
 import BarChartComponent from "./charts/BarChartComponent";
 import PieChartComponent from "./charts/PieChartComponent";
+import LineChartComponent from "./charts/LineChartComponent";
 import StatsChart from "./charts/StatsChart";
 import DataTable from "./DataTable";
 import CollapsibleDataBlock from "./CollapsibleDataBlock";
@@ -75,6 +76,27 @@ export default function VisualizationRenderer({ visualizations }: VisualizationR
             <PieChartComponent
               title=""
               data={viz.data as { name: string; value: number }[]}
+            />
+          </CollapsibleDataBlock>
+        );
+      }
+
+      if (
+        viz.chartType === "line" ||
+        viz.chartType === "multi_line" ||
+        viz.chartType === "area"
+      ) {
+        return (
+          <CollapsibleDataBlock
+            key={index}
+            title={viz.title}
+            subtitle={viz.description}
+            defaultOpen={true}
+          >
+            <LineChartComponent
+              title=""
+              data={viz.data as Record<string, unknown>[]}
+              chartType={viz.chartType}
             />
           </CollapsibleDataBlock>
         );

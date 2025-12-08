@@ -18,6 +18,8 @@ import logger from "../utils/logger";
 import {
   getGroundwaterDataByLocationId,
   generateChartData,
+  generateTrendChartData,
+  searchAndGetHistoricalData,
 } from "./groundwaterService";
 
 const SYSTEM_PROMPT = `You are an expert assistant for India's Groundwater Resources Information System (INGRES). You help users understand groundwater data across India at country, state, district, and taluk levels.
@@ -154,16 +156,21 @@ export async function streamGroundwaterChat(
         const toolName = toolMessage.name ?? "unknown";
         callbacks.onToolResult(toolName, toolMessage.content as string);
 
-        // Extract and stream visualizations for search_groundwater_data tool
+        // Extract and stream visualizations
         try {
           const result = JSON.parse(toolMessage.content as string);
 
+          // Handle search_groundwater_data tool
           if (
             toolName === "search_groundwater_data" &&
             result.found &&
             result.locationId
           ) {
-            // Fetch full groundwater data and generate visualizations
+            logger.debug(
+              { locationId: result.locationId, year: result.year },
+              "Intercepting search_groundwater_data tool result"
+            );
+
             const fullRecord = await getGroundwaterDataByLocationId(
               result.locationId,
               result.year
@@ -172,7 +179,11 @@ export async function streamGroundwaterChat(
             if (fullRecord) {
               const visualizations = generateChartData(fullRecord);
 
-              // Send a parent container visualization first
+              logger.debug(
+                { visualizationsCount: visualizations.length },
+                "Generated visualizations for search tool"
+              );
+
               callbacks.onChart({
                 type: "data_container",
                 title: `Groundwater Data - ${result.locationName}`,
@@ -184,6 +195,78 @@ export async function streamGroundwaterChat(
                 year: result.year || "2024-2025",
                 visualizations: visualizations,
               });
+            } else {
+              logger.warn(
+                { locationId: result.locationId },
+                "Failed to fetch full record"
+              );
+            }
+          }
+
+          // Handle get_historical_data tool
+          if (
+            toolName === "get_historical_data" &&
+            result.found &&
+            result.locationId
+          ) {
+            logger.debug(
+              {
+                locationId: result.locationId,
+                locationType: result.locationType,
+              },
+              "Intercepting get_historical_data tool result"
+            );
+
+            // Fetch full historical records
+            const historicalRecords = await searchAndGetHistoricalData(
+              result.locationName,
+              result.locationType?.toUpperCase() as
+                | "STATE"
+                | "DISTRICT"
+                | "TALUK"
+            );
+
+            // Filter by the years that were actually returned
+            const filteredRecords = historicalRecords.filter((r) =>
+              result.yearsAvailable.includes(r.year)
+            );
+
+            logger.debug(
+              { recordsCount: filteredRecords.length },
+              "Fetched historical records"
+            );
+
+            if (filteredRecords.length > 0) {
+              const yearRange =
+                result.yearsAvailable.length > 1
+                  ? `${result.yearsAvailable[0]} to ${
+                      result.yearsAvailable[result.yearsAvailable.length - 1]
+                    }`
+                  : result.yearsAvailable[0];
+
+              const visualizations = generateTrendChartData(
+                filteredRecords,
+                result.locationName
+              );
+
+              logger.debug(
+                { visualizationsCount: visualizations.length },
+                "Generated visualizations for historical data"
+              );
+
+              callbacks.onChart({
+                type: "data_container",
+                title: `Historical Trends - ${result.locationName}`,
+                subtitle: `${result.dataPointCount} years of data: ${yearRange}`,
+                locationId: result.locationId,
+                locationName: result.locationName,
+                visualizations: visualizations,
+              });
+            } else {
+              logger.warn(
+                { locationName: result.locationName },
+                "No historical records found after filtering"
+              );
             }
           }
 

@@ -1,27 +1,26 @@
 import { tool } from "@langchain/core/tools";
 import { z } from "zod";
 import {
-  searchLocation,
-  getAllStates,
-  getDistrictsOfState,
-  getTaluksOfDistrict,
-  getAvailableYears,
-} from "./locationSearch";
-import {
-  searchAndGetGroundwaterData,
-  getTopLocationsByField,
-  getCategorySummary,
-  getAggregateStats,
-  getLocationWithChildren,
+  compareYears,
   formatGroundwaterDataForLLM,
+  formatHistoricalDataForLLM,
   generateChartData,
   generateComparisonChartData,
-  searchAndGetHistoricalData,
-  formatHistoricalDataForLLM,
   generateTrendChartData,
-  getGroundwaterDataForYear,
-  compareYears,
+  getAggregateStats,
+  getCategorySummary,
+  getLocationWithChildren,
+  getTopLocationsByField,
+  searchAndGetGroundwaterData,
+  searchAndGetHistoricalData,
 } from "./groundwaterService";
+import {
+  getAllStates,
+  getAvailableYears,
+  getDistrictsOfState,
+  getTaluksOfDistrict,
+  searchLocation,
+} from "./locationSearch";
 
 export const searchGroundwaterDataTool = tool(
   async ({ locationName, locationType, stateName, districtName, year }) => {
@@ -65,7 +64,7 @@ export const searchGroundwaterDataTool = tool(
   },
   {
     name: "search_groundwater_data",
-    description: `Search for a location and get its AGGREGATED groundwater data for a specific year. This tool handles fuzzy matching (e.g., "uttar pradesh" or "uttar_pradesh" both work).
+    description: `Search for a location and get its AGGREGATED groundwater data for a specific year. This tool handles fuzzy matching and natural language year queries.
 
 DATA AVAILABLE:
 - For STATES: Aggregated data for the entire state (sum of all districts)
@@ -75,20 +74,30 @@ DATA AVAILABLE:
 
 DATA RETURNED:
 Returns a structured summary with key metrics like rainfall, recharge, extraction, extractable resources, stage of extraction, and category.
-The tool DOES NOT return charts - visualizations are streamed separately to the frontend in a collapsible section.
+The tool DOES NOT return charts - visualizations (12 charts/tables including summary, recharge breakdown, extraction analysis, stage of extraction status, water balance) are streamed separately to the frontend in a collapsible section.
 
 WHEN TO USE:
-- User asks about groundwater in a specific location (for any year)
+- User asks about groundwater in a specific location for current/specific year
+- "Show me Gujarat data" or "Gujarat groundwater data"
+- "What's the extraction in Karnataka for 2021-2022?"
+- "Give me Maharashtra recharge data for 2023"
+- "How much water is available in Tamil Nadu in 2022-2023?"
 - User wants recharge, extraction, rainfall, or category data for a place
 - User asks about water availability, stage of extraction, or resource status
-- User asks for data for a specific year (e.g., "Gujarat in 2021-2022")
 - User wants to see detailed breakdown of sources (recharge/discharge/extraction)
+
+NATURAL LANGUAGE YEAR PARSING:
+- "Gujarat" or "Gujarat data" → use default year (2024-2025)
+- "Gujarat in 2021" or "Gujarat for 2021-2022" → parse to "2021-2022"
+- "2023-24 data for Maharashtra" → parse to "2023-2024"
+- "Karnataka 2022" → parse to "2022-2023"
+- Always convert shorthand years to full format (2021 → 2021-2022, 2023 → 2023-2024)
 
 TIPS FOR BETTER RESULTS:
 - If searching for a district, provide the state name for disambiguation
 - If searching for a taluk, provide the district name for disambiguation
 - Many locations share names across states (e.g., "Lucknow" district - specify "Uttar Pradesh")
-- Default to 2024-2025 if user doesn't specify a year
+- Convert natural language years to YYYY-YYYY format
 - After using this tool, mention to the user that detailed visualizations are available in the collapsible data section`,
     schema: z.object({
       locationName: z
@@ -118,7 +127,7 @@ TIPS FOR BETTER RESULTS:
         .string()
         .optional()
         .describe(
-          "Year in format YYYY-YYYY (e.g., '2024-2025'). Defaults to latest year (2024-2025) if not specified. Available years: 2016-2017, 2019-2020, 2021-2022, 2022-2023, 2023-2024, 2024-2025."
+          "Year in format YYYY-YYYY (e.g., '2024-2025'). Parse natural language years: '2021' → '2021-2022', '2023-24' → '2023-2024'. Defaults to latest year (2024-2025) if not specified. Available years: 2016-2017, 2019-2020, 2021-2022, 2022-2023, 2023-2024, 2024-2025."
         ),
     }),
   }
@@ -505,9 +514,9 @@ function metricToField(metric: string): string {
 }
 
 export const getHistoricalDataTool = tool(
-  async ({ locationName, locationType }) => {
+  async ({ locationName, locationType, fromYear, toYear, specificYears }) => {
     const type = locationType.toUpperCase() as "STATE" | "DISTRICT" | "TALUK";
-    const records = await searchAndGetHistoricalData(locationName, type);
+    let records = await searchAndGetHistoricalData(locationName, type);
 
     if (records.length === 0) {
       const availableYears = await getAvailableYears();
@@ -518,18 +527,42 @@ export const getHistoricalDataTool = tool(
       });
     }
 
+    // Filter by year range or specific years
+    if (specificYears && specificYears.length > 0) {
+      records = records.filter((r) => specificYears.includes(r.year));
+    } else if (fromYear || toYear) {
+      records = records.filter((r) => {
+        if (fromYear && toYear) {
+          return r.year >= fromYear && r.year <= toYear;
+        } else if (fromYear) {
+          return r.year >= fromYear;
+        } else if (toYear) {
+          return r.year <= toYear;
+        }
+        return true;
+      });
+    }
+
+    if (records.length === 0) {
+      return JSON.stringify({
+        found: false,
+        message: `No data found for "${locationName}" in the specified year range`,
+      });
+    }
+
     return JSON.stringify({
       found: true,
       locationName: records[0].locationName,
+      locationId: records[0].locationId,
+      locationType: locationType,
       yearsAvailable: records.map((r) => r.year),
       dataPointCount: records.length,
       textSummary: formatHistoricalDataForLLM(records),
-      charts: generateTrendChartData(records, records[0].locationName),
     });
   },
   {
     name: "get_historical_data",
-    description: `Get historical groundwater data across all available years for a location to analyze trends.
+    description: `Get historical groundwater data across multiple years for a location to analyze trends. Supports flexible year filtering.
 
 AVAILABLE YEARS: 2016-2017, 2019-2020, 2021-2022, 2022-2023, 2023-2024, 2024-2025
 
@@ -539,12 +572,22 @@ WHEN TO USE:
 - User asks "how has extraction changed in Maharashtra over the years"
 - User wants to compare a location's data across different years
 - User asks about year-over-year changes
+- User asks for data "from 2019 to 2023", "since 2020", "until 2022", or "for 2019, 2021, 2023"
+
+FLEXIBLE YEAR FILTERING:
+- "from X to Y" or "between X and Y" → use fromYear and toYear
+- "since X" or "from X onwards" → use fromYear only
+- "until Y" or "up to Y" → use toYear only
+- "for years X, Y, Z" → use specificYears array
+- No filters → returns all available years
 
 DATA RETURNED:
-- Year-wise data table
-- Trend charts (line charts showing changes over time)
-- Comparison of recharge vs extraction trends
-- Category changes over time`,
+- Year-wise data table with key metrics
+- Trend charts (line charts) showing changes over time
+- Multi-line comparison of recharge vs extraction
+- Rainfall trends, stage of extraction trends
+- Category changes over time
+All visualizations are streamed in a collapsible container.`,
     schema: z.object({
       locationName: z
         .string()
@@ -552,6 +595,24 @@ DATA RETURNED:
       locationType: z
         .enum(["state", "district", "taluk"])
         .describe("Type of location"),
+      fromYear: z
+        .string()
+        .optional()
+        .describe(
+          "Start year for range filter (format: YYYY-YYYY, e.g., '2019-2020'). Use for queries like 'since 2020' or 'from 2019 to 2023'."
+        ),
+      toYear: z
+        .string()
+        .optional()
+        .describe(
+          "End year for range filter (format: YYYY-YYYY, e.g., '2023-2024'). Use for queries like 'until 2023' or 'from 2019 to 2023'."
+        ),
+      specificYears: z
+        .array(z.string())
+        .optional()
+        .describe(
+          "Array of specific years to include (format: ['2019-2020', '2022-2023']). Use when user mentions specific years like 'for 2019, 2021, and 2023'."
+        ),
     }),
   }
 );
