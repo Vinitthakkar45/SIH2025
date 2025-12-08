@@ -344,7 +344,11 @@ export const getTopLocationsTool = tool(
         textSummary: `Top ${limit} ${type}s by ${metricLabel}:\n${aggregatedData
           .map(
             (d, i) =>
-              `${i + 1}. ${d.name}: ${d.avgValue.toFixed(2)} ${metricUnit} (range: ${d.minValue.toFixed(2)} - ${d.maxValue.toFixed(2)})`
+              `${i + 1}. ${d.name}: ${d.avgValue.toFixed(
+                2
+              )} ${metricUnit} (range: ${d.minValue.toFixed(
+                2
+              )} - ${d.maxValue.toFixed(2)})`
           )
           .join("\n")}`,
       });
@@ -387,7 +391,9 @@ export const getTopLocationsTool = tool(
       textSummary: `Top ${limit} ${type}s by ${metricLabel}:\n${data
         .map(
           (d) =>
-            `${d.rank}. ${d.name}: ${Number(d.value).toFixed(2)} ${metricUnit} (Category: ${d.category})`
+            `${d.rank}. ${d.name}: ${Number(d.value).toFixed(
+              2
+            )} ${metricUnit} (Category: ${d.category})`
         )
         .join("\n")}`,
     });

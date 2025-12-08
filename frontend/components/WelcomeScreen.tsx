@@ -1,39 +1,34 @@
 "use client";
 
-import { DropletIcon } from "./icons";
-import { Button } from "@heroui/button";
+import { SparklesIcon } from "./icons";
 
 interface WelcomeScreenProps {
   suggestedQueries: string[];
   onQueryClick: (query: string) => void;
 }
 
-export default function WelcomeScreen({
-  suggestedQueries,
-  onQueryClick,
-}: WelcomeScreenProps) {
+export default function WelcomeScreen({ suggestedQueries, onQueryClick }: WelcomeScreenProps) {
   return (
-    <div className="text-center py-12">
-      <div className="w-16 h-16 rounded-lg bg-dark-tertiary flex items-center justify-center mx-auto mb-4">
-        <DropletIcon size={32} className="text-primary" />
+    <div className="flex flex-col items-center justify-center min-h-[50vh] px-4">
+      {/* Minimal greeting */}
+      <div className="flex items-center gap-2 mb-8">
+        <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-primary/20 to-primary/5 flex items-center justify-center">
+          <SparklesIcon size={18} className="text-primary" />
+        </div>
+        <h2 className="text-lg font-medium text-zinc-300">How can I help you today?</h2>
       </div>
-      <h2 className="text-xl font-semibold text-zinc-100 mb-2">
-        Welcome to INGRES AI
-      </h2>
-      <p className="text-zinc-400 mb-6 max-w-md mx-auto">
-        Ask me anything about India&apos;s groundwater resources - state data,
-        district comparisons, extraction levels, and more.
-      </p>
-      <div className="flex flex-wrap justify-center gap-2">
+
+      {/* Suggestion chips */}
+      <div className="flex flex-wrap justify-center gap-2 max-w-2xl">
         {suggestedQueries.map((q) => (
-          <Button
+          <button
             key={q}
-            onPress={() => onQueryClick(q)}
-            variant="flat"
-            radius="full"
-          >
+            onClick={() => onQueryClick(q)}
+            className="px-4 py-2 text-sm text-zinc-400 bg-zinc-800/50 hover:bg-zinc-700/50 
+                       border border-zinc-700/50 hover:border-zinc-600 rounded-full 
+                       transition-all duration-200 hover:text-zinc-200 hover:scale-[1.02]">
             {q}
-          </Button>
+          </button>
         ))}
       </div>
     </div>

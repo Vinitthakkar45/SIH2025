@@ -1,31 +1,9 @@
-import {
-  pgTable,
-  uuid,
-  text,
-  doublePrecision,
-  jsonb,
-  pgEnum,
-  index,
-  type AnyPgColumn,
-} from "drizzle-orm/pg-core";
+import { pgTable, uuid, text, doublePrecision, jsonb, pgEnum, index, timestamp, integer, type AnyPgColumn } from "drizzle-orm/pg-core";
 import { relations } from "drizzle-orm";
 
-export const locationTypeEnum = pgEnum("location_type", [
-  "COUNTRY",
-  "STATE",
-  "DISTRICT",
-  "TALUK",
-]);
+export const locationTypeEnum = pgEnum("location_type", ["COUNTRY", "STATE", "DISTRICT", "TALUK"]);
 
-export const categoryEnum = pgEnum("category", [
-  "safe",
-  "semi_critical",
-  "critical",
-  "over_exploited",
-  "salinity",
-  "hilly_area",
-  "no_data",
-]);
+export const categoryEnum = pgEnum("category", ["safe", "semi_critical", "critical", "over_exploited", "salinity", "hilly_area", "no_data"]);
 
 export const locations = pgTable(
   "locations",
@@ -76,12 +54,8 @@ export const groundwaterData = pgTable(
 
     // Ground Water Recharge (ham)
     rechargeRainfallCommand: doublePrecision("recharge_rainfall_command"),
-    rechargeRainfallNonCommand: doublePrecision(
-      "recharge_rainfall_non_command"
-    ),
-    rechargeRainfallPoorQuality: doublePrecision(
-      "recharge_rainfall_poor_quality"
-    ),
+    rechargeRainfallNonCommand: doublePrecision("recharge_rainfall_non_command"),
+    rechargeRainfallPoorQuality: doublePrecision("recharge_rainfall_poor_quality"),
     rechargeRainfallTotal: doublePrecision("recharge_rainfall_total"),
 
     rechargeCanalCommand: doublePrecision("recharge_canal_command"),
@@ -89,51 +63,25 @@ export const groundwaterData = pgTable(
     rechargeCanalPoorQuality: doublePrecision("recharge_canal_poor_quality"),
     rechargeCanalTotal: doublePrecision("recharge_canal_total"),
 
-    rechargeSurfaceIrrigationCommand: doublePrecision(
-      "recharge_surface_irrigation_command"
-    ),
-    rechargeSurfaceIrrigationNonCommand: doublePrecision(
-      "recharge_surface_irrigation_non_command"
-    ),
-    rechargeSurfaceIrrigationPoorQuality: doublePrecision(
-      "recharge_surface_irrigation_poor_quality"
-    ),
-    rechargeSurfaceIrrigationTotal: doublePrecision(
-      "recharge_surface_irrigation_total"
-    ),
+    rechargeSurfaceIrrigationCommand: doublePrecision("recharge_surface_irrigation_command"),
+    rechargeSurfaceIrrigationNonCommand: doublePrecision("recharge_surface_irrigation_non_command"),
+    rechargeSurfaceIrrigationPoorQuality: doublePrecision("recharge_surface_irrigation_poor_quality"),
+    rechargeSurfaceIrrigationTotal: doublePrecision("recharge_surface_irrigation_total"),
 
-    rechargeGwIrrigationCommand: doublePrecision(
-      "recharge_gw_irrigation_command"
-    ),
-    rechargeGwIrrigationNonCommand: doublePrecision(
-      "recharge_gw_irrigation_non_command"
-    ),
-    rechargeGwIrrigationPoorQuality: doublePrecision(
-      "recharge_gw_irrigation_poor_quality"
-    ),
+    rechargeGwIrrigationCommand: doublePrecision("recharge_gw_irrigation_command"),
+    rechargeGwIrrigationNonCommand: doublePrecision("recharge_gw_irrigation_non_command"),
+    rechargeGwIrrigationPoorQuality: doublePrecision("recharge_gw_irrigation_poor_quality"),
     rechargeGwIrrigationTotal: doublePrecision("recharge_gw_irrigation_total"),
 
     rechargeWaterBodyCommand: doublePrecision("recharge_water_body_command"),
-    rechargeWaterBodyNonCommand: doublePrecision(
-      "recharge_water_body_non_command"
-    ),
-    rechargeWaterBodyPoorQuality: doublePrecision(
-      "recharge_water_body_poor_quality"
-    ),
+    rechargeWaterBodyNonCommand: doublePrecision("recharge_water_body_non_command"),
+    rechargeWaterBodyPoorQuality: doublePrecision("recharge_water_body_poor_quality"),
     rechargeWaterBodyTotal: doublePrecision("recharge_water_body_total"),
 
-    rechargeArtificialStructureCommand: doublePrecision(
-      "recharge_artificial_structure_command"
-    ),
-    rechargeArtificialStructureNonCommand: doublePrecision(
-      "recharge_artificial_structure_non_command"
-    ),
-    rechargeArtificialStructurePoorQuality: doublePrecision(
-      "recharge_artificial_structure_poor_quality"
-    ),
-    rechargeArtificialStructureTotal: doublePrecision(
-      "recharge_artificial_structure_total"
-    ),
+    rechargeArtificialStructureCommand: doublePrecision("recharge_artificial_structure_command"),
+    rechargeArtificialStructureNonCommand: doublePrecision("recharge_artificial_structure_non_command"),
+    rechargeArtificialStructurePoorQuality: doublePrecision("recharge_artificial_structure_poor_quality"),
+    rechargeArtificialStructureTotal: doublePrecision("recharge_artificial_structure_total"),
 
     rechargeTotalCommand: doublePrecision("recharge_total_command"),
     rechargeTotalNonCommand: doublePrecision("recharge_total_non_command"),
@@ -148,18 +96,12 @@ export const groundwaterData = pgTable(
 
     baseflowLateralCommand: doublePrecision("baseflow_lateral_command"),
     baseflowLateralNonCommand: doublePrecision("baseflow_lateral_non_command"),
-    baseflowLateralPoorQuality: doublePrecision(
-      "baseflow_lateral_poor_quality"
-    ),
+    baseflowLateralPoorQuality: doublePrecision("baseflow_lateral_poor_quality"),
     baseflowLateralTotal: doublePrecision("baseflow_lateral_total"),
 
     baseflowVerticalCommand: doublePrecision("baseflow_vertical_command"),
-    baseflowVerticalNonCommand: doublePrecision(
-      "baseflow_vertical_non_command"
-    ),
-    baseflowVerticalPoorQuality: doublePrecision(
-      "baseflow_vertical_poor_quality"
-    ),
+    baseflowVerticalNonCommand: doublePrecision("baseflow_vertical_non_command"),
+    baseflowVerticalPoorQuality: doublePrecision("baseflow_vertical_poor_quality"),
     baseflowVerticalTotal: doublePrecision("baseflow_vertical_total"),
 
     evaporationCommand: doublePrecision("evaporation_command"),
@@ -179,35 +121,21 @@ export const groundwaterData = pgTable(
     extractableTotal: doublePrecision("extractable_total"),
 
     // Total GW Availability
-    totalGwAvailabilityCommand: doublePrecision(
-      "total_gw_availability_command"
-    ),
-    totalGwAvailabilityNonCommand: doublePrecision(
-      "total_gw_availability_non_command"
-    ),
-    totalGwAvailabilityPoorQuality: doublePrecision(
-      "total_gw_availability_poor_quality"
-    ),
+    totalGwAvailabilityCommand: doublePrecision("total_gw_availability_command"),
+    totalGwAvailabilityNonCommand: doublePrecision("total_gw_availability_non_command"),
+    totalGwAvailabilityPoorQuality: doublePrecision("total_gw_availability_poor_quality"),
     totalGwAvailabilityTotal: doublePrecision("total_gw_availability_total"),
 
     // Availability for Future Use
     availabilityFutureCommand: doublePrecision("availability_future_command"),
-    availabilityFutureNonCommand: doublePrecision(
-      "availability_future_non_command"
-    ),
-    availabilityFuturePoorQuality: doublePrecision(
-      "availability_future_poor_quality"
-    ),
+    availabilityFutureNonCommand: doublePrecision("availability_future_non_command"),
+    availabilityFuturePoorQuality: doublePrecision("availability_future_poor_quality"),
     availabilityFutureTotal: doublePrecision("availability_future_total"),
 
     // Ground Water Extraction / Draft (ham)
     draftAgricultureCommand: doublePrecision("draft_agriculture_command"),
-    draftAgricultureNonCommand: doublePrecision(
-      "draft_agriculture_non_command"
-    ),
-    draftAgriculturePoorQuality: doublePrecision(
-      "draft_agriculture_poor_quality"
-    ),
+    draftAgricultureNonCommand: doublePrecision("draft_agriculture_non_command"),
+    draftAgriculturePoorQuality: doublePrecision("draft_agriculture_poor_quality"),
     draftAgricultureTotal: doublePrecision("draft_agriculture_total"),
 
     draftDomesticCommand: doublePrecision("draft_domestic_command"),
@@ -227,53 +155,33 @@ export const groundwaterData = pgTable(
 
     // Stage of Extraction (%)
     stageOfExtractionCommand: doublePrecision("stage_of_extraction_command"),
-    stageOfExtractionNonCommand: doublePrecision(
-      "stage_of_extraction_non_command"
-    ),
-    stageOfExtractionPoorQuality: doublePrecision(
-      "stage_of_extraction_poor_quality"
-    ),
+    stageOfExtractionNonCommand: doublePrecision("stage_of_extraction_non_command"),
+    stageOfExtractionPoorQuality: doublePrecision("stage_of_extraction_poor_quality"),
     stageOfExtractionTotal: doublePrecision("stage_of_extraction_total"),
 
     // GW Allocation
     allocationDomesticCommand: doublePrecision("allocation_domestic_command"),
-    allocationDomesticNonCommand: doublePrecision(
-      "allocation_domestic_non_command"
-    ),
-    allocationDomesticPoorQuality: doublePrecision(
-      "allocation_domestic_poor_quality"
-    ),
+    allocationDomesticNonCommand: doublePrecision("allocation_domestic_non_command"),
+    allocationDomesticPoorQuality: doublePrecision("allocation_domestic_poor_quality"),
     allocationDomesticTotal: doublePrecision("allocation_domestic_total"),
 
     allocationIndustryCommand: doublePrecision("allocation_industry_command"),
-    allocationIndustryNonCommand: doublePrecision(
-      "allocation_industry_non_command"
-    ),
-    allocationIndustryPoorQuality: doublePrecision(
-      "allocation_industry_poor_quality"
-    ),
+    allocationIndustryNonCommand: doublePrecision("allocation_industry_non_command"),
+    allocationIndustryPoorQuality: doublePrecision("allocation_industry_poor_quality"),
     allocationIndustryTotal: doublePrecision("allocation_industry_total"),
 
     allocationTotalCommand: doublePrecision("allocation_total_command"),
     allocationTotalNonCommand: doublePrecision("allocation_total_non_command"),
-    allocationTotalPoorQuality: doublePrecision(
-      "allocation_total_poor_quality"
-    ),
+    allocationTotalPoorQuality: doublePrecision("allocation_total_poor_quality"),
     allocationTotalTotal: doublePrecision("allocation_total_total"),
 
     // Area data
     areaRechargeWorthyTotal: doublePrecision("area_recharge_worthy_total"),
     areaRechargeWorthyCommand: doublePrecision("area_recharge_worthy_command"),
-    areaRechargeWorthyNonCommand: doublePrecision(
-      "area_recharge_worthy_non_command"
-    ),
-    areaRechargeWorthyPoorQuality: doublePrecision(
-      "area_recharge_worthy_poor_quality"
-    ),
+    areaRechargeWorthyNonCommand: doublePrecision("area_recharge_worthy_non_command"),
+    areaRechargeWorthyPoorQuality: doublePrecision("area_recharge_worthy_poor_quality"),
 
-    areaNonRechargeWorthyTotal: doublePrecision(
-      "area_non_recharge_worthy_total"
-    ),
+    areaNonRechargeWorthyTotal: doublePrecision("area_non_recharge_worthy_total"),
     areaTotalTotal: doublePrecision("area_total_total"),
 
     // Report Summary (for aggregated counts at state/district level)
@@ -286,12 +194,75 @@ export const groundwaterData = pgTable(
   ]
 );
 
-export const groundwaterDataRelations = relations(
-  groundwaterData,
-  ({ one }) => ({
-    location: one(locations, {
-      fields: [groundwaterData.locationId],
-      references: [locations.id],
-    }),
-  })
+export const groundwaterDataRelations = relations(groundwaterData, ({ one }) => ({
+  location: one(locations, {
+    fields: [groundwaterData.locationId],
+    references: [locations.id],
+  }),
+}));
+
+// ==================== CHAT HISTORY SCHEMA ====================
+
+export const messageRoleEnum = pgEnum("message_role", ["user", "assistant", "system"]);
+
+// Conversations table - stores each chat session
+export const conversations = pgTable(
+  "conversations",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    title: text("title").notNull().default("New Chat"),
+    createdAt: timestamp("created_at").defaultNow().notNull(),
+    updatedAt: timestamp("updated_at").defaultNow().notNull(),
+    // For future multi-user support
+    userId: text("user_id").default("default_user"),
+    // Metadata for the conversation
+    metadata: jsonb("metadata"),
+  },
+  (table) => [
+    index("conversations_user_id_idx").on(table.userId),
+    index("conversations_created_at_idx").on(table.createdAt),
+    index("conversations_updated_at_idx").on(table.updatedAt),
+  ]
 );
+
+// Messages table - stores individual messages within conversations
+export const messages = pgTable(
+  "messages",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    conversationId: uuid("conversation_id")
+      .notNull()
+      .references(() => conversations.id, { onDelete: "cascade" }),
+    role: messageRoleEnum("role").notNull(),
+    content: text("content").notNull(),
+    // Store visualizations (charts, tables, etc.) as JSON
+    visualizations: jsonb("visualizations").$type<object[]>(),
+    // Store suggestions for follow-up questions
+    suggestions: jsonb("suggestions").$type<string[]>(),
+    // Message order within conversation
+    sequenceNumber: integer("sequence_number").notNull(),
+    createdAt: timestamp("created_at").defaultNow().notNull(),
+    // Token count for context management
+    tokenCount: integer("token_count"),
+    // Metadata (tool calls, etc.)
+    metadata: jsonb("metadata"),
+  },
+  (table) => [
+    index("messages_conversation_id_idx").on(table.conversationId),
+    index("messages_sequence_idx").on(table.conversationId, table.sequenceNumber),
+    index("messages_created_at_idx").on(table.createdAt),
+  ]
+);
+
+// Relations for conversations
+export const conversationsRelations = relations(conversations, ({ many }) => ({
+  messages: many(messages),
+}));
+
+// Relations for messages
+export const messagesRelations = relations(messages, ({ one }) => ({
+  conversation: one(conversations, {
+    fields: [messages.conversationId],
+    references: [conversations.id],
+  }),
+}));

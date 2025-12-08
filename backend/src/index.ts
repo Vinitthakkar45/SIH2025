@@ -6,6 +6,7 @@ import cors from "cors";
 
 import gwChatRouter from "./routes/gwChat.js";
 import gwMapRouter from "./routes/gwMap.js";
+import conversationsRouter from "./routes/conversations.js";
 import { initLocationSearch } from "./services/locationSearch.js";
 import logger from "./utils/logger.js";
 import { requestLogger, errorHandler } from "./middleware/logging.js";
@@ -13,6 +14,8 @@ import { requestLogger, errorHandler } from "./middleware/logging.js";
 dotenv.config();
 const app = express();
 const PORT = process.env.PORT;
+
+console.log(PORT);
 
 // Middleware
 app.use(cors());
@@ -22,6 +25,7 @@ app.use(requestLogger);
 // Routes
 app.use("/api/gw-chat", gwChatRouter);
 app.use("/api/gw-map", gwMapRouter);
+app.use("/api/conversations", conversationsRouter);
 
 // Health check
 app.get("/api/health", (_req, res) => {

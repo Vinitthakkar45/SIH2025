@@ -117,15 +117,18 @@ export default function InteractiveDemoSection() {
   };
 
   return (
-    <section className="py-24 bg-zinc-950">
-      <div className="max-w-4xl mx-auto px-6">
+    <section className="py-24 bg-zinc-900/30">
+      <div className="max-w-5xl mx-auto px-6">
         <div className="text-center mb-12">
-          <h2 className="text-sm font-medium text-blue-500 mb-2 uppercase tracking-widest">
-            Try Asking
+          <h2 className="text-sm font-medium text-primary mb-2 uppercase tracking-wider">
+            Try It Out
           </h2>
-          <h3 className="text-3xl font-medium text-white tracking-tight">
-            Conversational Intelligence
+          <h3 className="text-3xl md:text-4xl font-bold text-white tracking-tight">
+            See INGRES AI in Action
           </h3>
+          <p className="text-zinc-400 mt-4 max-w-2xl mx-auto">
+            Ask questions about groundwater data and get instant AI-powered insights
+          </p>
         </div>
 
         <div className="flex flex-wrap justify-center gap-3 mb-8">
@@ -133,31 +136,33 @@ export default function InteractiveDemoSection() {
             <Button
               key={index}
               radius="full"
-              className="cursor-pointer"
+              className={`cursor-pointer font-medium transition-all ${
+                selectedExample === index
+                  ? "bg-primary text-white"
+                  : "bg-zinc-800 text-zinc-300 hover:bg-zinc-700"
+              }`}
               onPress={() => handleQueryClick(example.query, index)}
-              color={selectedExample === index ? "primary" : "default"}
-              variant={selectedExample === index ? "solid" : "flat"}
             >
               {example.query}
             </Button>
           ))}
         </div>
 
-        <div className="bg-linear-to-br from-zinc-900/40 to-zinc-800/40 backdrop-filter backdrop-blur-xl border border-zinc-800/50 rounded-xl p-1 md:p-2">
-          <div className="bg-zinc-950 rounded-lg p-6 min-h-[400px] flex flex-col">
+        <div className="bg-zinc-900 border-2 border-zinc-800 rounded-2xl shadow-2xl overflow-hidden">
+          <div className="p-6 md:p-8 min-h-[400px] flex flex-col">
             <div className="flex-1 space-y-6 mb-8">
-              <div className="flex items-start gap-3">
-                <div className="w-8 h-8 rounded-full bg-primary/20 flex items-center justify-center shrink-0">
+              <div className="flex items-start gap-4">
+                <div className="w-10 h-10 rounded-xl bg-primary/20 flex items-center justify-center shrink-0">
                   <SparklesIcon
-                    width={20}
-                    height={20}
+                    width={22}
+                    height={22}
                     className="text-primary"
                   />
                 </div>
-                <div className="space-y-3 max-w-[90%] flex-1">
+                <div className="space-y-4 flex-1">
                   <MarkdownRenderer
                     content={currentExample.response}
-                    className="text-zinc-300"
+                    className="text-zinc-300 leading-relaxed"
                   />
                   {currentExample.charts.map((chart, i) => (
                     <ChartRenderer key={i} chart={chart} />
@@ -166,12 +171,14 @@ export default function InteractiveDemoSection() {
               </div>
             </div>
 
-            <ChatComposer
-              value={input}
-              onChange={setInput}
-              onSubmit={handleComposerSubmit}
-              placeholder="Ask about specific districts, extraction rates, or trends..."
-            />
+            <div className="border-t border-zinc-800 pt-6">
+              <ChatComposer
+                value={input}
+                onChange={setInput}
+                onSubmit={handleComposerSubmit}
+                placeholder="Ask about specific districts, extraction rates, or trends..."
+              />
+            </div>
           </div>
         </div>
       </div>
