@@ -1,16 +1,18 @@
 "use client";
 
-import BarChartComponent from "./charts/BarChartComponent";
-import PieChartComponent from "./charts/PieChartComponent";
-import LineChartComponent from "./charts/LineChartComponent";
-import StatsChart from "./charts/StatsChart";
-import DataTable from "./DataTable";
-import DataAccordion from "./DataAccordion";
 import type {
-  Visualization,
-  TableRow,
   ChartDataItem,
+  TableRow,
+  Visualization,
 } from "@/types/visualizations";
+import { Accordion, AccordionItem } from "@heroui/react";
+import BarChartComponent from "./charts/BarChartComponent";
+import LineChartComponent from "./charts/LineChartComponent";
+import PieChartComponent from "./charts/PieChartComponent";
+import StatsChart from "./charts/StatsChart";
+import DataAccordion from "./DataAccordion";
+import DataTable from "./DataTable";
+import { ChartAverageIcon } from "./icons";
 
 interface VisualizationRendererProps {
   visualizations: Visualization[];
@@ -20,6 +22,29 @@ export default function VisualizationRenderer({
   visualizations,
 }: VisualizationRendererProps) {
   if (!visualizations || visualizations.length === 0) return null;
+
+  const separateContent = (vizList: Visualization[]) => {
+    const tabularContent: Visualization[] = [];
+    const chartContent: Visualization[] = [];
+
+    vizList.forEach((viz) => {
+      if (
+        viz.type === "table" ||
+        viz.type === "stats" ||
+        viz.type === "summary"
+      ) {
+        tabularContent.push(viz);
+      } else if (viz.type === "chart") {
+        chartContent.push(viz);
+      } else if (viz.type === "data_container" || viz.type === "collapsible") {
+        tabularContent.push(viz);
+      }
+    });
+
+    return { tabularContent, chartContent };
+  };
+
+  const { tabularContent, chartContent } = separateContent(visualizations);
 
   const renderSingleVisualization = (
     viz: Visualization,
@@ -181,7 +206,41 @@ export default function VisualizationRenderer({
 
   return (
     <div className="space-y-3">
-      {visualizations.map((viz, idx) => renderVisualization(viz, idx))}
+      {/* Tables & Stats - Visible by default, NO accordion wrapper */}
+      {tabularContent.length > 0 && (
+        <div className="space-y-3">
+          {tabularContent.map((viz, idx) => renderVisualization(viz, idx))}
+        </div>
+      )}
+
+      {/* Charts - Hidden in accordion at the bottom */}
+      {chartContent.length > 0 && (
+        <Accordion variant="shadow" isCompact>
+          <AccordionItem
+            key="charts"
+            aria-label="View Charts & Visualizations"
+            classNames={{
+              trigger:
+                "bg-zinc-900 cursor-pointer rounded-xl hover:bg-zinc-800 transition-colors",
+            }}
+            title={
+              <div className="text-sm font-semibold flex items-center gap-2">
+                <ChartAverageIcon width={18} height={18} />
+                View Charts & Visualizations
+              </div>
+            }
+            subtitle={`${chartContent.length} chart${
+              chartContent.length !== 1 ? "s" : ""
+            } available`}
+          >
+            <div className="space-y-3 pt-2">
+              {chartContent.map((viz, idx) =>
+                renderSingleVisualization(viz, idx, false)
+              )}
+            </div>
+          </AccordionItem>
+        </Accordion>
+      )}
     </div>
   );
 }
