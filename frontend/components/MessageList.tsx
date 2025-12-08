@@ -95,8 +95,7 @@ export default function MessageList({
                           key={i}
                           onPress={() => onSuggestionClick(suggestion)}
                           variant="flat"
-                          size="sm"
-                          className="text-wrap border-2 border-dashed border-zinc-600 font-light text-zinc-400"
+                          className="text-wrap border-1 border-dashed border-zinc-600 font-light text-zinc-400"
                         >
                           {suggestion}
                         </Button>

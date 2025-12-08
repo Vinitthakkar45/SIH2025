@@ -3,12 +3,13 @@
 import { Button } from "@heroui/button";
 import { Spinner, Textarea } from "@heroui/react";
 import { useRef, useState } from "react";
-import { SentIcon } from "./icons";
+import { SentIcon, StopIcon } from "./icons";
 
 interface ChatComposerProps {
   value: string;
   onChange: (value: string) => void;
   onSubmit: (value: string) => void;
+  onStop?: () => void;
   isLoading?: boolean;
   disabled?: boolean;
   placeholder?: string;
@@ -19,17 +20,21 @@ export default function ChatComposer({
   value,
   onChange,
   onSubmit,
+  onStop,
   isLoading = false,
   disabled = false,
   placeholder = "Ask about groundwater data...",
   className = "",
 }: ChatComposerProps) {
   const [isFocused, setIsFocused] = useState(false);
-  const textareaRef = useRef<HTMLTextAreaElement>(null);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!value.trim() || isLoading || disabled) return;
+    if (isLoading && onStop) {
+      onStop();
+      return;
+    }
+    if (!value.trim() || disabled) return;
     onSubmit(value);
   };
 
@@ -43,7 +48,6 @@ export default function ChatComposer({
   return (
     <form onSubmit={handleSubmit} className={`relative ${className}`}>
       <Textarea
-        // ref={textareaRef}
         value={value}
         onChange={(e) => onChange(e.target.value)}
         onKeyDown={handleKeyDown}
@@ -55,32 +59,36 @@ export default function ChatComposer({
         rows={1}
         minRows={1.4}
         size="lg"
-        classNames={{ innerWrapper: "items-end", inputWrapper: "pr-2" }}
+        classNames={{ innerWrapper: "items-end", inputWrapper: "pr-2 pl-4" }}
         radius="lg"
         endContent={
           <Button
             type="submit"
-            disabled={isLoading || disabled || !value.trim()}
+            disabled={disabled || (!isLoading && !value.trim())}
             color={
-              isLoading || disabled || !value.trim() ? "default" : "primary"
+              disabled || (!isLoading && !value.trim())
+                ? "default"
+                : isLoading
+                ? "danger"
+                : "primary"
             }
             startContent={
               isLoading ? (
-                <Spinner color="white" size="sm" />
+                <StopIcon color="white" size="sm" />
               ) : (
                 <SentIcon width={22} height={22} className="min-w-5" />
               )
             }
             radius="lg"
           >
-            Send
+            {isLoading ? "Stop" : "Send"}
           </Button>
         }
       />
 
       <p
         className={`
-        text-xs text-zinc-600 text-center mt-2 transition-opacity duration-200
+        text-xs text-zinc-600 text-center mt-1 transition-opacity duration-200
         ${isFocused ? "opacity-100" : "opacity-0"}
       `}
       >

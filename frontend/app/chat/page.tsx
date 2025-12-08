@@ -29,6 +29,7 @@ export default function ChatPage() {
   });
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const messagesContainerRef = useRef<HTMLDivElement>(null);
+  const abortControllerRef = useRef<AbortController | null>(null);
 
   useEffect(() => {
     const fetchLocation = async (latitude: number, longitude: number) => {
@@ -112,11 +113,15 @@ export default function ChatPage() {
       { role: "assistant", content: "", charts: [], isLoading: true },
     ]);
 
+    // Create new AbortController for this request
+    abortControllerRef.current = new AbortController();
+
     try {
       const response = await fetch(`${API_URL}/api/gw-chat/stream`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ query }),
+        signal: abortControllerRef.current.signal,
       });
 
       if (!response.ok) throw new Error("Failed to get response");
@@ -205,19 +210,33 @@ export default function ChatPage() {
         }
       }
     } catch (error) {
-      console.error("Chat error:", error);
-      setMessages((prev) => {
-        const updated = [...prev];
-        const lastIdx = updated.length - 1;
-        updated[lastIdx] = {
-          role: "assistant",
-          content: "Sorry, I encountered an error. Please try again.",
-          isLoading: false,
-        };
-        return updated;
-      });
+      // Check if error was due to abort
+      if (error instanceof Error && error.name === "AbortError") {
+        setMessages((prev) => {
+          const updated = [...prev];
+          const lastIdx = updated.length - 1;
+          updated[lastIdx] = {
+            ...updated[lastIdx],
+            isLoading: false,
+          };
+          return updated;
+        });
+      } else {
+        console.error("Chat error:", error);
+        setMessages((prev) => {
+          const updated = [...prev];
+          const lastIdx = updated.length - 1;
+          updated[lastIdx] = {
+            role: "assistant",
+            content: "Sorry, I encountered an error. Please try again.",
+            isLoading: false,
+          };
+          return updated;
+        });
+      }
     } finally {
       setIsLoading(false);
+      abortControllerRef.current = null;
     }
   };
 
@@ -232,8 +251,14 @@ export default function ChatPage() {
     setInput("");
   };
 
+  const handleStop = () => {
+    if (abortControllerRef.current) {
+      abortControllerRef.current.abort();
+    }
+  };
+
   return (
-    <div className="flex h-screen bg-zinc-950 overflow-hidden">
+    <div className="flex h-screen bg-dark-primary overflow-hidden">
       <div className="flex flex-col flex-1 min-w-0">
         <ChatHeader
           onToggleMap={() => setShowMap(!showMap)}
@@ -269,11 +294,12 @@ export default function ChatPage() {
           }}
         />
 
-        <div className="max-w-2xl mx-auto w-full">
+        <div className="max-w-2xl mx-auto w-full pt-3">
           <ChatComposer
             value={input}
             onChange={setInput}
             onSubmit={handleSubmit}
+            onStop={handleStop}
             isLoading={isLoading}
             placeholder="Ask me anything..."
           />

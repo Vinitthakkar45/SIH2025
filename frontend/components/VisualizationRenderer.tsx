@@ -21,7 +21,11 @@ export default function VisualizationRenderer({
 }: VisualizationRendererProps) {
   if (!visualizations || visualizations.length === 0) return null;
 
-  const renderSingleVisualization = (viz: Visualization, index: number) => {
+  const renderSingleVisualization = (
+    viz: Visualization,
+    index: number,
+    isNested: boolean = false
+  ) => {
     // Stats/Summary Cards - Now collapsible
     if (viz.type === "stats" || viz.type === "summary") {
       return (
@@ -31,6 +35,7 @@ export default function VisualizationRenderer({
           subtitle={viz.description}
           explanation={viz.explanation}
           defaultOpen={true}
+          variant={isNested ? "light" : "shadow"}
         >
           <StatsChart
             title=""
@@ -54,6 +59,7 @@ export default function VisualizationRenderer({
           }
           explanation={viz.explanation}
           defaultOpen={true}
+          variant={isNested ? "light" : "shadow"}
         >
           <DataTable columns={viz.columns} data={viz.data as TableRow[]} />
         </DataAccordion>
@@ -70,6 +76,7 @@ export default function VisualizationRenderer({
             subtitle={viz.description}
             explanation={viz.explanation}
             defaultOpen={true}
+            variant={isNested ? "light" : "shadow"}
           >
             <BarChartComponent
               title=""
@@ -89,6 +96,7 @@ export default function VisualizationRenderer({
             subtitle={viz.description}
             explanation={viz.explanation}
             defaultOpen={true}
+            variant={isNested ? "light" : "shadow"}
           >
             <PieChartComponent
               title=""
@@ -110,6 +118,7 @@ export default function VisualizationRenderer({
             subtitle={viz.description}
             explanation={viz.explanation}
             defaultOpen={true}
+            variant={isNested ? "light" : "shadow"}
           >
             <LineChartComponent
               title=""
@@ -137,7 +146,10 @@ export default function VisualizationRenderer({
         >
           <div className="space-y-3">
             {viz.visualizations.map((innerViz, idx) =>
-              renderVisualization(innerViz, idx)
+              innerViz.type === "collapsible" ||
+              innerViz.type === "data_container"
+                ? renderVisualization(innerViz, idx)
+                : renderSingleVisualization(innerViz, idx, true)
             )}
           </div>
         </DataAccordion>
@@ -156,7 +168,7 @@ export default function VisualizationRenderer({
         >
           <div className="space-y-3">
             {viz.children.map((child: Visualization, idx: number) =>
-              renderSingleVisualization(child, idx)
+              renderSingleVisualization(child, idx, true)
             )}
           </div>
         </DataAccordion>

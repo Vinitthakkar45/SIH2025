@@ -9,6 +9,7 @@ interface DataAccordionItemProps {
   explanation?: string;
   defaultOpen?: boolean;
   children: React.ReactNode;
+  variant?: "shadow" | "light" | "bordered" | "splitted";
 }
 
 export default function DataAccordion({
@@ -17,9 +18,10 @@ export default function DataAccordion({
   explanation,
   defaultOpen = false,
   children,
+  variant = "shadow",
 }: DataAccordionItemProps) {
   return (
-    <Accordion defaultExpandedKeys={defaultOpen ? ["1"] : []} variant="shadow">
+    <Accordion defaultExpandedKeys={defaultOpen ? ["1"] : []} variant={variant}>
       <AccordionItem
         key="1"
         aria-label={title}
