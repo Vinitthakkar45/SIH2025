@@ -1,16 +1,18 @@
 "use client";
 
-import BarChartComponent from "./charts/BarChartComponent";
-import PieChartComponent from "./charts/PieChartComponent";
-import LineChartComponent from "./charts/LineChartComponent";
-import StatsChart from "./charts/StatsChart";
-import DataTable from "./DataTable";
-import DataAccordion from "./DataAccordion";
 import type {
-  Visualization,
-  TableRow,
   ChartDataItem,
+  TableRow,
+  Visualization,
 } from "@/types/visualizations";
+import { Accordion, AccordionItem } from "@heroui/react";
+import BarChartComponent from "./charts/BarChartComponent";
+import LineChartComponent from "./charts/LineChartComponent";
+import PieChartComponent from "./charts/PieChartComponent";
+import StatsChart from "./charts/StatsChart";
+import DataAccordion from "./DataAccordion";
+import DataTable from "./DataTable";
+import { ChartAverageIcon } from "./icons";
 
 interface VisualizationRendererProps {
   visualizations: Visualization[];
@@ -20,6 +22,55 @@ export default function VisualizationRenderer({
   visualizations,
 }: VisualizationRendererProps) {
   if (!visualizations || visualizations.length === 0) return null;
+
+  // Flatten data_container visualizations first
+  const flattenVisualizations = (vizList: Visualization[]): Visualization[] => {
+    const flattened: Visualization[] = [];
+
+    vizList.forEach((viz) => {
+      if (viz.type === "data_container" && viz.visualizations) {
+        // Recursively flatten nested visualizations
+        flattened.push(...flattenVisualizations(viz.visualizations));
+      } else {
+        flattened.push(viz);
+      }
+    });
+
+    return flattened;
+  };
+
+  const separateContent = (vizList: Visualization[]) => {
+    const tabularContent: Visualization[] = [];
+    const chartContent: Visualization[] = [];
+
+    // First flatten any data_containers
+    const flatViz = flattenVisualizations(vizList);
+
+    flatViz.forEach((viz) => {
+      if (
+        viz.type === "table" ||
+        viz.type === "stats" ||
+        viz.type === "summary"
+      ) {
+        tabularContent.push(viz);
+      } else if (viz.type === "chart") {
+        chartContent.push(viz);
+      } else if (viz.type === "collapsible" && viz.children) {
+        // For collapsible, separate its children
+        viz.children.forEach((child) => {
+          if (child.type === "chart") {
+            chartContent.push(child);
+          } else {
+            tabularContent.push(child);
+          }
+        });
+      }
+    });
+
+    return { tabularContent, chartContent };
+  };
+
+  const { tabularContent, chartContent } = separateContent(visualizations);
 
   const renderSingleVisualization = (
     viz: Visualization,
@@ -180,8 +231,64 @@ export default function VisualizationRenderer({
   };
 
   return (
-    <div className="space-y-3">
-      {visualizations.map((viz, idx) => renderVisualization(viz, idx))}
-    </div>
+    <Accordion variant="shadow" isCompact>
+      <AccordionItem
+        key="data"
+        aria-label="Groundwater Data Analysis"
+        classNames={{
+          trigger: "bg-zinc-900 cursor-pointer rounded-xl",
+        }}
+        title={
+          <div className="text-sm font-semibold">
+            📊 Groundwater Data Analysis
+          </div>
+        }
+        subtitle={`${tabularContent.length + chartContent.length} items`}
+      >
+        <div className="space-y-3 pt-2">
+          {/* Tables & Stats - Visible by default */}
+          {tabularContent.length > 0 && (
+            <div className="space-y-3">
+              {tabularContent.map((viz, idx) => renderVisualization(viz, idx))}
+            </div>
+          )}
+
+          {/* Charts - Hidden in nested accordion */}
+          {chartContent.length > 0 && (
+            <div className="flex justify-center">
+              <Accordion variant="bordered" isCompact className="w-full">
+                <AccordionItem
+                  key="charts"
+                  aria-label="View Charts & Visualizations"
+                  classNames={{
+                    trigger:
+                      "bg-zinc-800/50 cursor-pointer rounded-xl hover:bg-zinc-800 transition-colors",
+                    content: "pt-3",
+                  }}
+                  title={
+                    <div className="text-sm font-semibold flex items-center justify-center gap-2">
+                      <ChartAverageIcon width={18} height={18} />
+                      View Charts & Visualizations
+                    </div>
+                  }
+                  subtitle={
+                    <div className="text-center text-xs">
+                      {chartContent.length} chart
+                      {chartContent.length !== 1 ? "s" : ""} available
+                    </div>
+                  }
+                >
+                  <div className="space-y-3">
+                    {chartContent.map((viz, idx) =>
+                      renderSingleVisualization(viz, idx, false)
+                    )}
+                  </div>
+                </AccordionItem>
+              </Accordion>
+            </div>
+          )}
+        </div>
+      </AccordionItem>
+    </Accordion>
   );
 }

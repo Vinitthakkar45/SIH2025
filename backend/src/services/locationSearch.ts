@@ -3,7 +3,7 @@ import { db } from "../db/gw-db";
 import { locations, groundwaterData } from "../db/gw-schema";
 import { eq } from "drizzle-orm";
 
-interface LocationRecord {
+export interface LocationRecord {
   id: string;
   externalId: string | null;
   name: string;

@@ -55,9 +55,6 @@ export default function BarChartComponent({
     );
   }
 
-  // Debug: log the data to see its structure
-  console.log("Bar chart data:", data);
-
   // Find the key used for names (could be "name", "Name", "Source", etc.)
   const firstItem = data[0];
   const nameKey =
@@ -71,8 +68,6 @@ export default function BarChartComponent({
   const dataKeys = Object.keys(firstItem).filter(
     (k) => k !== nameKey && typeof firstItem[k] === "number"
   );
-
-  console.log("Name key:", nameKey, "Data keys:", dataKeys);
 
   dataKeys.forEach((key, i) => {
     chartConfig[key] = {

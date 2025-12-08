@@ -99,7 +99,7 @@ export default function MessageList({
                     transition={{ delay: 0.3 }}
                     className="mb-8"
                   >
-                    <div className="text-xs text-zinc-500 mb-4 font-semibold pl-2.5 flex items-center gap-2 ">
+                    <div className="text-xs text-zinc-500 mb-4 font-semibold pl-2.5 flex items-center gap-2">
                       <>Suggestions</>
                       <Idea01Icon width={17} height={17} />
                     </div>
@@ -109,7 +109,7 @@ export default function MessageList({
                           key={i}
                           onPress={() => onSuggestionClick(suggestion)}
                           variant="flat"
-                          className="text-wrap border-1 border-dashed border-zinc-600 font-light text-zinc-400 text-left justify-start"
+                          className="h-auto py-2 px-3 border-1 border-dashed border-zinc-600 font-light text-zinc-400 text-left justify-start whitespace-normal"
                         >
                           {suggestion}
                         </Button>
