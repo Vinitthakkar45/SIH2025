@@ -1,13 +1,15 @@
 "use client";
 
-import ChatComposer from "@/components/ChatComposer";
-import ChatSidebar from "@/components/ChatSidebar";
 import MessageList, { type Message } from "@/components/MessageList";
-import WelcomeScreen from "@/components/WelcomeScreen";
 import type { Visualization } from "@/types/visualizations";
-import { ArrowDown02Icon } from "@/components/icons";
-import { Button } from "@heroui/button";
 import { useEffect, useRef, useState, useCallback } from "react";
+import Sidebar from "./Sidebar";
+import ChatHeader from "./ChatHeader";
+import ChatInput from "./ChatInput";
+import WelcomeView from "./WelcomeView";
+import ScrollToBottom from "./ScrollToBottom";
+import MapWrapper from "./MapWrapper";
+import { Map as MapIcon } from "lucide-react";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001";
 
@@ -21,7 +23,8 @@ export default function ChatPage() {
   const [input, setInput] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [showScrollButton, setShowScrollButton] = useState(false);
-  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+  const [showSidebar, setShowSidebar] = useState(true);
+  const [showMap, setShowMap] = useState(false);
   const [userLocation, setUserLocation] = useState<LocationInfo>({
     state: "India",
     district: "India",
@@ -100,12 +103,7 @@ export default function ChatPage() {
     [currentConversationId, loadConversation]
   );
 
-  // Handle starting a new chat
-  const handleNewChat = useCallback(() => {
-    setMessages([]);
-    setCurrentConversationId(null);
-    setInput("");
-  }, []);
+
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -275,62 +273,87 @@ export default function ChatPage() {
     `How has groundwater extraction changed in ${userLocation.state} over the years?`,
   ];
 
-  const handleToggleSidebar = useCallback(() => {
-    setSidebarCollapsed((prev) => !prev);
+  const handleNewChat = useCallback(() => {
+    setMessages([]);
+    setCurrentConversationId(null);
+    setInput("");
   }, []);
 
   return (
-    <div className="flex h-screen bg-dark-primary overflow-hidden">
-      {/* Chat Sidebar */}
-      <ChatSidebar
-        currentConversationId={currentConversationId}
-        onSelectConversation={handleSelectConversation}
+    <div className="flex h-screen bg-zinc-950 overflow-hidden">
+      {/* Sidebar */}
+      <Sidebar
+        isOpen={showSidebar}
         onNewChat={handleNewChat}
-        isCollapsed={sidebarCollapsed}
-        onToggleCollapse={handleToggleSidebar}
+        activeChatId={currentConversationId || undefined}
+        onChatSelect={handleSelectConversation}
       />
 
       {/* Main Chat Area */}
       <div className="flex flex-col flex-1 min-w-0">
+        {/* Header */}
+        <ChatHeader
+          onToggleSidebar={() => setShowSidebar(!showSidebar)}
+          onToggleMap={() => setShowMap(!showMap)}
+          showMap={showMap}
+        />
+
         {/* Messages Area */}
         <main
           ref={messagesContainerRef}
           onScroll={handleScroll}
-          className="flex-1 overflow-y-auto scrollbar-thin scrollbar-thumb-zinc-700 scrollbar-track-transparent">
-          <div className="max-w-4xl mx-auto px-4 py-6 min-h-full">
+          className="flex-1 overflow-y-auto"
+        >
+          <div className="max-w-4xl mx-auto px-6 py-8 space-y-6">
             {messages.length === 0 ? (
-              <WelcomeScreen suggestedQueries={suggestedQueries} onQueryClick={handleSubmit} />
+              <WelcomeView
+                onQueryClick={handleSubmit}
+                userLocation={userLocation}
+              />
             ) : (
-              <div className="space-y-4">
-                <MessageList messages={messages} onSuggestionClick={handleSubmit} />
-              </div>
+              <MessageList
+                messages={messages}
+                onSuggestionClick={handleSubmit}
+              />
             )}
-            <div ref={messagesEndRef} className="h-4" />
+            <div ref={messagesEndRef} />
           </div>
         </main>
 
-        {/* Input Area */}
-        <footer className="p-4 shrink-0">
-          {/* Scroll to bottom button */}
-          {showScrollButton && (
-            <div className="flex justify-center mb-3">
-              <Button
-                isIconOnly
-                radius="full"
-                size="sm"
-                variant="flat"
-                className="bg-zinc-800/90 backdrop-blur-sm border border-zinc-700/50 shadow-lg"
-                onPress={() => {
-                  scrollToBottom();
-                  setShowScrollButton(false);
-                }}>
-                <ArrowDown02Icon size={16} />
-              </Button>
-            </div>
-          )}
+        {/* Scroll to Bottom Button */}
+        <ScrollToBottom
+          visible={showScrollButton}
+          onClick={() => {
+            scrollToBottom();
+            setShowScrollButton(false);
+          }}
+        />
 
-          <ChatComposer value={input} onChange={setInput} onSubmit={handleSubmit} isLoading={isLoading} className="max-w-3xl mx-auto" />
-        </footer>
+        {/* Input */}
+        <ChatInput
+          value={input}
+          onChange={setInput}
+          onSubmit={handleSubmit}
+          isLoading={isLoading}
+        />
+      </div>
+
+      {/* Map Panel */}
+      <div
+        className={`${
+          showMap ? "w-1/2 opacity-100" : "w-0 opacity-0"
+        } transition-all duration-300 bg-zinc-900 border-l border-zinc-800 overflow-hidden`}
+      >
+        {showMap ? (
+          <MapWrapper />
+        ) : (
+          <div className="flex items-center justify-center h-full text-center text-zinc-400">
+            <div>
+              <MapIcon size={48} className="mx-auto mb-4 opacity-50" />
+              <p className="font-medium">Map View</p>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );
