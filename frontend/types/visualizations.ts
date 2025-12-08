@@ -7,6 +7,7 @@ export interface ChartDataItem {
   value?: number;
   command?: number;
   nonCommand?: number;
+  fill?: string;
   [key: string]: unknown;
 }
 
@@ -63,4 +64,6 @@ export interface Visualization {
   locationId?: string;
   locationName?: string;
   threshold?: { safe: number; critical: number; overExploited: number };
+  color?: string;
+  colorByValue?: boolean;
 }

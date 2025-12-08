@@ -60,7 +60,12 @@ export default function VisualizationRenderer({ visualizations }: VisualizationR
             subtitle={viz.description}
             defaultOpen={true}
           >
-            <BarChartComponent title="" data={viz.data as ChartDataItem[]} />
+            <BarChartComponent
+              title=""
+              data={viz.data as ChartDataItem[]}
+              color={viz.color}
+              colorByValue={viz.colorByValue}
+            />
           </CollapsibleDataBlock>
         );
       }

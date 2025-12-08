@@ -1,6 +1,14 @@
 "use client";
 
-import { Bar, BarChart, CartesianGrid, Legend, XAxis, YAxis } from "recharts";
+import {
+  Bar,
+  BarChart,
+  CartesianGrid,
+  Cell,
+  Legend,
+  XAxis,
+  YAxis,
+} from "recharts";
 import {
   ChartConfig,
   ChartContainer,
@@ -12,6 +20,8 @@ interface BarChartComponentProps {
   title: string;
   description?: string;
   data: Record<string, unknown>[];
+  color?: string;
+  colorByValue?: boolean;
 }
 
 const COLORS = [
@@ -27,6 +37,8 @@ export default function BarChartComponent({
   title,
   description,
   data,
+  color,
+  colorByValue,
 }: BarChartComponentProps) {
   // Build chart config dynamically
   const chartConfig: ChartConfig = {};
@@ -65,7 +77,7 @@ export default function BarChartComponent({
   dataKeys.forEach((key, i) => {
     chartConfig[key] = {
       label: key.charAt(0).toUpperCase() + key.slice(1),
-      color: COLORS[i % COLORS.length],
+      color: color || COLORS[i % COLORS.length],
     };
   });
 
@@ -100,14 +112,28 @@ export default function BarChartComponent({
             content={<ChartTooltipContent indicator="line" />}
             cursor={false}
           />
-          <Legend wrapperStyle={{ color: "#a1a1aa" }} iconType="circle" />
+          {dataKeys.length > 1 && (
+            <Legend wrapperStyle={{ color: "#a1a1aa" }} iconType="circle" />
+          )}
           {dataKeys.map((key, i) => (
             <Bar
               key={key}
               dataKey={key}
-              fill={COLORS[i % COLORS.length]}
+              fill={color || COLORS[i % COLORS.length]}
               radius={[4, 4, 0, 0]}
-            />
+            >
+              {colorByValue &&
+                data.map((entry, index) => (
+                  <Cell
+                    key={`cell-${index}`}
+                    fill={
+                      (entry.fill as string) ||
+                      color ||
+                      COLORS[i % COLORS.length]
+                    }
+                  />
+                ))}
+            </Bar>
           ))}
         </BarChart>
       </ChartContainer>

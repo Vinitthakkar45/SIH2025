@@ -855,14 +855,11 @@ export function generateComparisonChartData(
   const locationsTableData = records.map((r) => {
     const data = r.data as Record<string, unknown>;
     return {
-      name: r.location.name,
-      type: r.location.type,
-      rainfall: data.rainfallTotal,
-      extractable: data.extractableTotal,
-      extraction: data.draftTotalTotal,
-      recharge: data.rechargeTotalTotal,
-      stageOfExtraction: data.stageOfExtractionTotal,
-      category: data.categoryTotal,
+      Name: r.location.name,
+      "Rainfall (mm)": data.rainfallTotal,
+      "Extractable (ham)": data.extractableTotal,
+      "Extraction (ham)": data.draftTotalTotal,
+      "Stage (%)": data.stageOfExtractionTotal,
     };
   });
 
@@ -912,15 +909,23 @@ export function generateComparisonChartData(
     title: "Rainfall Comparison",
     description: "Annual rainfall across locations (mm)",
     data: rainfallData,
+    color: "hsl(217, 91%, 60%)",
   });
 
   // 4. Stage of Extraction Comparison
   const stageData = records.map((r) => {
     const data = r.data as Record<string, unknown>;
+    const stage = data.stageOfExtractionTotal as number;
+    let color = "hsl(142, 71%, 45%)"; // Green for safe
+    if (stage >= 100) color = "hsl(4, 90%, 58%)"; // Red for over-exploited
+    else if (stage >= 90) color = "hsl(38, 92%, 50%)"; // Orange for critical
+    else if (stage >= 70) color = "hsl(217, 91%, 60%)"; // Blue for semi-critical
+
     return {
       name: r.location.name,
-      value: data.stageOfExtractionTotal,
+      value: stage,
       category: data.categoryTotal,
+      fill: color,
     };
   });
 
@@ -931,27 +936,121 @@ export function generateComparisonChartData(
     description: "Extraction as percentage of extractable resources (%)",
     data: stageData,
     threshold: { safe: 70, critical: 90, overExploited: 100 },
+    colorByValue: true,
   });
 
-  // 5. Category Distribution
-  const categoryCount: Record<string, number> = {};
-  for (const r of records) {
-    const cat = String(
-      (r.data as Record<string, unknown>).categoryTotal || "Unknown"
-    );
-    categoryCount[cat] = (categoryCount[cat] || 0) + 1;
-  }
+  // 5. Total Recharge Comparison
+  const rechargeData = records.map((r) => ({
+    name: r.location.name,
+    value: (r.data as Record<string, unknown>).rechargeTotalTotal,
+  }));
 
   visualizations.push({
     type: "chart",
-    chartType: "pie",
-    title: "Category Distribution",
-    description: "Distribution of locations by groundwater category",
-    data: Object.entries(categoryCount).map(([name, value]) => ({
-      name,
-      value,
-    })),
+    chartType: "bar",
+    title: "Total Recharge Comparison",
+    description: "Annual groundwater recharge across locations (ham)",
+    data: rechargeData,
+    color: "hsl(142, 71%, 45%)",
   });
+
+  // 6. Total Extraction Comparison
+  const extractionData = records.map((r) => ({
+    name: r.location.name,
+    value: (r.data as Record<string, unknown>).draftTotalTotal,
+  }));
+
+  visualizations.push({
+    type: "chart",
+    chartType: "bar",
+    title: "Total Extraction Comparison",
+    description: "Annual groundwater extraction across locations (ham)",
+    data: extractionData,
+    color: "hsl(4, 90%, 58%)",
+  });
+
+  // 7. Extractable Resources Comparison
+  const extractableData = records.map((r) => ({
+    name: r.location.name,
+    value: (r.data as Record<string, unknown>).extractableTotal,
+  }));
+
+  visualizations.push({
+    type: "chart",
+    chartType: "bar",
+    title: "Extractable Resources Comparison",
+    description: "Annual extractable groundwater resources (ham)",
+    data: extractableData,
+    color: "hsl(258, 90%, 66%)",
+  });
+
+  // 8. Net Groundwater Balance Comparison
+  const balanceData = records.map((r) => {
+    const data = r.data as Record<string, unknown>;
+    const recharge = Number(data.rechargeTotalTotal) || 0;
+    const extraction = Number(data.draftTotalTotal) || 0;
+    const loss = Number(data.lossTotal) || 0;
+    return {
+      name: r.location.name,
+      value: recharge - extraction - loss,
+    };
+  });
+
+  visualizations.push({
+    type: "chart",
+    chartType: "bar",
+    title: "Net Groundwater Balance Comparison",
+    description: "Net balance: Recharge - Extraction - Natural Discharge (ham)",
+    data: balanceData,
+    color: "hsl(38, 92%, 50%)",
+  });
+
+  // 9. Recharge vs Extraction Multi-line Comparison
+  const rechargeVsExtractionData = records.map((r) => {
+    const data = r.data as Record<string, unknown>;
+    return {
+      name: r.location.name,
+      recharge: data.rechargeTotalTotal,
+      extraction: data.draftTotalTotal,
+    };
+  });
+
+  visualizations.push({
+    type: "chart",
+    chartType: "grouped_bar",
+    title: "Recharge vs Extraction Direct Comparison",
+    description: "Side-by-side comparison of recharge and extraction (ham)",
+    data: rechargeVsExtractionData,
+  });
+
+  // 10. Category Distribution
+  const categoryCount: Record<string, number> = {};
+  for (const r of records) {
+    const rawCat = String(
+      (r.data as Record<string, unknown>).categoryTotal || ""
+    ).trim();
+
+    // Skip empty, null, or Unknown categories
+    if (!rawCat || rawCat === "Unknown" || rawCat === "null") continue;
+
+    // Normalize category names
+    const cat = rawCat.toLowerCase().replace(/[\s-]/g, "_");
+    categoryCount[cat] = (categoryCount[cat] || 0) + 1;
+  }
+
+  // Only show pie chart if we have valid categories
+  if (Object.keys(categoryCount).length > 0) {
+    visualizations.push({
+      type: "chart",
+      chartType: "pie",
+      title: "Category Distribution",
+      description: "Distribution of locations by groundwater category",
+      data: Object.entries(categoryCount).map(([name, value]) => ({
+        name,
+        value,
+      })),
+    });
+  }
 
   return visualizations;
 }
@@ -1322,4 +1421,237 @@ function calculateChange(oldVal: unknown, newVal: unknown): string {
   const change = ((newNum - oldNum) / oldNum) * 100;
   const sign = change >= 0 ? "+" : "";
   return `${sign}${change.toFixed(1)}%`;
+}
+
+export function generateHistoricalComparisonChartData(
+  locationsData: Array<{ locationName: string; records: HistoricalRecord[] }>
+): object[] {
+  const visualizations: object[] = [];
+
+  if (locationsData.length === 0) return visualizations;
+
+  const allYears = new Set<string>();
+  for (const loc of locationsData) {
+    for (const r of loc.records) {
+      allYears.add(r.year);
+    }
+  }
+  const sortedYears = Array.from(allYears).sort();
+
+  const locationNames = locationsData.map((l) => l.locationName);
+
+  // 1. Summary Table - Latest year comparison
+  const latestYear = sortedYears[sortedYears.length - 1];
+  const tableData = locationsData.map((loc) => {
+    const latestRecord = loc.records.find((r) => r.year === latestYear);
+    const data = (latestRecord?.data || {}) as Record<string, unknown>;
+    return {
+      Name: loc.locationName,
+      Year: latestYear,
+      "Rainfall (mm)": data.rainfallTotal ?? "-",
+      "Recharge (ham)": data.rechargeTotalTotal ?? "-",
+      "Extraction (ham)": data.draftTotalTotal ?? "-",
+      "Stage (%)": data.stageOfExtractionTotal ?? "-",
+      Category: data.categoryTotal ?? "-",
+    };
+  });
+
+  visualizations.push({
+    type: "table",
+    tableType: "comparison",
+    title: `Location Comparison - ${latestYear}`,
+    columns: [
+      "Name",
+      "Year",
+      "Rainfall (mm)",
+      "Recharge (ham)",
+      "Extraction (ham)",
+      "Stage (%)",
+      "Category",
+    ],
+    data: tableData,
+  });
+
+  // 2. Extraction Trends - Multi-location line chart
+  const extractionTrendData = sortedYears.map((year) => {
+    const point: Record<string, unknown> = { year };
+    for (const loc of locationsData) {
+      const record = loc.records.find((r) => r.year === year);
+      point[loc.locationName] = record
+        ? (record.data as Record<string, unknown>).draftTotalTotal
+        : null;
+    }
+    return point;
+  });
+
+  visualizations.push({
+    type: "chart",
+    chartType: "multi_line",
+    title: "Extraction Trends Comparison",
+    description: "Groundwater extraction over years across locations (ham)",
+    data: extractionTrendData,
+    lines: locationNames,
+  });
+
+  // 3. Stage of Extraction Trends
+  const stageTrendData = sortedYears.map((year) => {
+    const point: Record<string, unknown> = { year };
+    for (const loc of locationsData) {
+      const record = loc.records.find((r) => r.year === year);
+      point[loc.locationName] = record
+        ? (record.data as Record<string, unknown>).stageOfExtractionTotal
+        : null;
+    }
+    return point;
+  });
+
+  visualizations.push({
+    type: "chart",
+    chartType: "multi_line",
+    title: "Stage of Extraction Trends",
+    description: "Extraction stage (%) over years across locations",
+    data: stageTrendData,
+    lines: locationNames,
+    threshold: { safe: 70, critical: 90, overExploited: 100 },
+  });
+
+  // 4. Recharge Trends
+  const rechargeTrendData = sortedYears.map((year) => {
+    const point: Record<string, unknown> = { year };
+    for (const loc of locationsData) {
+      const record = loc.records.find((r) => r.year === year);
+      point[loc.locationName] = record
+        ? (record.data as Record<string, unknown>).rechargeTotalTotal
+        : null;
+    }
+    return point;
+  });
+
+  visualizations.push({
+    type: "chart",
+    chartType: "multi_line",
+    title: "Recharge Trends Comparison",
+    description: "Groundwater recharge over years across locations (ham)",
+    data: rechargeTrendData,
+    lines: locationNames,
+  });
+
+  // 5. Rainfall Trends
+  const rainfallTrendData = sortedYears.map((year) => {
+    const point: Record<string, unknown> = { year };
+    for (const loc of locationsData) {
+      const record = loc.records.find((r) => r.year === year);
+      point[loc.locationName] = record
+        ? (record.data as Record<string, unknown>).rainfallTotal
+        : null;
+    }
+    return point;
+  });
+
+  visualizations.push({
+    type: "chart",
+    chartType: "multi_line",
+    title: "Rainfall Trends Comparison",
+    description: "Annual rainfall over years across locations (mm)",
+    data: rainfallTrendData,
+    lines: locationNames,
+  });
+
+  // 6. Extractable Resources Trends
+  const extractableTrendData = sortedYears.map((year) => {
+    const point: Record<string, unknown> = { year };
+    for (const loc of locationsData) {
+      const record = loc.records.find((r) => r.year === year);
+      point[loc.locationName] = record
+        ? (record.data as Record<string, unknown>).extractableTotal
+        : null;
+    }
+    return point;
+  });
+
+  visualizations.push({
+    type: "chart",
+    chartType: "multi_line",
+    title: "Extractable Resources Trends",
+    description: "Available extractable resources over years (ham)",
+    data: extractableTrendData,
+    lines: locationNames,
+  });
+
+  // 7. Net Balance Trends (Recharge - Extraction - Loss)
+  const balanceTrendData = sortedYears.map((year) => {
+    const point: Record<string, unknown> = { year };
+    for (const loc of locationsData) {
+      const record = loc.records.find((r) => r.year === year);
+      if (record) {
+        const data = record.data as Record<string, unknown>;
+        const recharge = Number(data.rechargeTotalTotal) || 0;
+        const extraction = Number(data.draftTotalTotal) || 0;
+        const loss = Number(data.lossTotal) || 0;
+        point[loc.locationName] = recharge - extraction - loss;
+      } else {
+        point[loc.locationName] = null;
+      }
+    }
+    return point;
+  });
+
+  visualizations.push({
+    type: "chart",
+    chartType: "multi_line",
+    title: "Net Groundwater Balance Trends",
+    description: "Net balance (Recharge - Extraction - Loss) over years (ham)",
+    data: balanceTrendData,
+    lines: locationNames,
+  });
+
+  // 8. Latest Year Bar Comparison - Extraction
+  const latestExtractionData = locationsData.map((loc) => {
+    const latestRecord = loc.records.find((r) => r.year === latestYear);
+    return {
+      name: loc.locationName,
+      value: latestRecord
+        ? (latestRecord.data as Record<string, unknown>).draftTotalTotal
+        : 0,
+    };
+  });
+
+  visualizations.push({
+    type: "chart",
+    chartType: "bar",
+    title: `Extraction Comparison - ${latestYear}`,
+    description: "Groundwater extraction in latest year (ham)",
+    data: latestExtractionData,
+    color: "hsl(4, 90%, 58%)",
+  });
+
+  // 9. Latest Year Bar Comparison - Stage
+  const latestStageData = locationsData.map((loc) => {
+    const latestRecord = loc.records.find((r) => r.year === latestYear);
+    const stage = latestRecord
+      ? Number(
+          (latestRecord.data as Record<string, unknown>).stageOfExtractionTotal
+        )
+      : 0;
+    let color = "hsl(142, 71%, 45%)";
+    if (stage >= 100) color = "hsl(4, 90%, 58%)";
+    else if (stage >= 90) color = "hsl(38, 92%, 50%)";
+    else if (stage >= 70) color = "hsl(217, 91%, 60%)";
+    return {
+      name: loc.locationName,
+      value: stage,
+      fill: color,
+    };
+  });
+
+  visualizations.push({
+    type: "chart",
+    chartType: "bar",
+    title: `Stage of Extraction Comparison - ${latestYear}`,
+    description: "Stage of extraction in latest year (%)",
+    data: latestStageData,
+    colorByValue: true,
+  });
+
+  return visualizations;
 }

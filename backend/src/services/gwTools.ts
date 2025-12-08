@@ -1,12 +1,9 @@
 import { tool } from "@langchain/core/tools";
 import { z } from "zod";
 import {
-  compareYears,
   formatGroundwaterDataForLLM,
   formatHistoricalDataForLLM,
   generateChartData,
-  generateComparisonChartData,
-  generateTrendChartData,
   getAggregateStats,
   getCategorySummary,
   getLocationWithChildren,
@@ -23,7 +20,16 @@ import {
 } from "./locationSearch";
 
 export const searchGroundwaterDataTool = tool(
-  async ({ locationName, locationType, stateName, districtName, year }) => {
+  async ({
+    locationName,
+    locationType,
+    stateName,
+    districtName,
+    year,
+    fromYear,
+    toYear,
+    specificYears,
+  }) => {
     const type = locationType?.toUpperCase() as
       | "STATE"
       | "DISTRICT"
@@ -37,6 +43,53 @@ export const searchGroundwaterDataTool = tool(
         ? districtName
         : undefined;
 
+    // If year range or specific years requested, use historical data
+    if (fromYear || toYear || specificYears) {
+      let records = await searchAndGetHistoricalData(locationName, type!);
+
+      if (records.length === 0) {
+        return JSON.stringify({
+          found: false,
+          message: `No historical data found for "${locationName}"`,
+        });
+      }
+
+      // Filter by year range or specific years
+      if (specificYears && specificYears.length > 0) {
+        records = records.filter((r) => specificYears.includes(r.year));
+      } else if (fromYear || toYear) {
+        records = records.filter((r) => {
+          if (fromYear && toYear) {
+            return r.year >= fromYear && r.year <= toYear;
+          } else if (fromYear) {
+            return r.year >= fromYear;
+          } else if (toYear) {
+            return r.year <= toYear;
+          }
+          return true;
+        });
+      }
+
+      if (records.length === 0) {
+        return JSON.stringify({
+          found: false,
+          message: `No data found for "${locationName}" in the specified year range`,
+        });
+      }
+
+      return JSON.stringify({
+        found: true,
+        isHistorical: true,
+        locationName: records[0].locationName,
+        locationId: records[0].locationId,
+        locationType: type,
+        yearsAvailable: records.map((r) => r.year),
+        dataPointCount: records.length,
+        textSummary: formatHistoricalDataForLLM(records),
+      });
+    }
+
+    // Single year query
     const record = await searchAndGetGroundwaterData(
       locationName,
       type,
@@ -64,41 +117,21 @@ export const searchGroundwaterDataTool = tool(
   },
   {
     name: "search_groundwater_data",
-    description: `Search for a location and get its AGGREGATED groundwater data for a specific year. This tool handles fuzzy matching and natural language year queries.
+    description: `Search location and get groundwater data for SINGLE YEAR or MULTIPLE YEARS (with trends).
 
-DATA AVAILABLE:
-- For STATES: Aggregated data for the entire state (sum of all districts)
-- For DISTRICTS: Aggregated data for the entire district (sum of all taluks)
-- For TALUKS: Individual taluk-level data (lowest granularity)
-- YEARS: 2016-2017, 2019-2020, 2021-2022, 2022-2023, 2023-2024, 2024-2025 (default: 2024-2025)
+DATA: States (aggregated), Districts (aggregated), Taluks (individual) • Years: 2016-2017 to 2024-2025 (default: 2024-2025)
 
-DATA RETURNED:
-Returns a structured summary with key metrics like rainfall, recharge, extraction, extractable resources, stage of extraction, and category.
-The tool DOES NOT return charts - visualizations (12 charts/tables including summary, recharge breakdown, extraction analysis, stage of extraction status, water balance) are streamed separately to the frontend in a collapsible section.
+USE FOR: "Gujarat data", "Maharashtra in 2021-2022", "Tamil Nadu from 2019 to 2023", "Karnataka since 2020"
 
-WHEN TO USE:
-- User asks about groundwater in a specific location for current/specific year
-- "Show me Gujarat data" or "Gujarat groundwater data"
-- "What's the extraction in Karnataka for 2021-2022?"
-- "Give me Maharashtra recharge data for 2023"
-- "How much water is available in Tamil Nadu in 2022-2023?"
-- User wants recharge, extraction, rainfall, or category data for a place
-- User asks about water availability, stage of extraction, or resource status
-- User wants to see detailed breakdown of sources (recharge/discharge/extraction)
+YEAR FILTERING:
+- 'year': "2023-2024" → Single year snapshot (12+ visualizations)
+- 'fromYear' + 'toYear': "2019-2020" to "2023-2024" → Year range trends (14+ visualizations)
+- 'fromYear' only: "2020-2021" → From year onwards ("since 2020")
+- 'toYear' only: "2022-2023" → Until year ("until 2022")
+- 'specificYears': ["2019-2020", "2022-2023"] → Non-consecutive years ("for 2019 and 2022")
+- Omit all → Defaults to 2024-2025
 
-NATURAL LANGUAGE YEAR PARSING:
-- "Gujarat" or "Gujarat data" → use default year (2024-2025)
-- "Gujarat in 2021" or "Gujarat for 2021-2022" → parse to "2021-2022"
-- "2023-24 data for Maharashtra" → parse to "2023-2024"
-- "Karnataka 2022" → parse to "2022-2023"
-- Always convert shorthand years to full format (2021 → 2021-2022, 2023 → 2023-2024)
-
-TIPS FOR BETTER RESULTS:
-- If searching for a district, provide the state name for disambiguation
-- If searching for a taluk, provide the district name for disambiguation
-- Many locations share names across states (e.g., "Lucknow" district - specify "Uttar Pradesh")
-- Convert natural language years to YYYY-YYYY format
-- After using this tool, mention to the user that detailed visualizations are available in the collapsible data section`,
+RETURNS: Single year → summary, tables, charts | Multi-year → trends, YoY changes, sustainability metrics`,
     schema: z.object({
       locationName: z
         .string()
@@ -127,23 +160,128 @@ TIPS FOR BETTER RESULTS:
         .string()
         .optional()
         .describe(
-          "Year in format YYYY-YYYY (e.g., '2024-2025'). Parse natural language years: '2021' → '2021-2022', '2023-24' → '2023-2024'. Defaults to latest year (2024-2025) if not specified. Available years: 2016-2017, 2019-2020, 2021-2022, 2022-2023, 2023-2024, 2024-2025."
+          "Year in format YYYY-YYYY (e.g., '2024-2025'). Parse natural language years: '2021' → '2021-2022', '2023-24' → '2023-2024'. Defaults to latest year (2024-2025) if not specified. Available years: 2016-2017, 2019-2020, 2021-2022, 2022-2023, 2023-2024, 2024-2025. NOTE: Use fromYear/toYear or specificYears for multi-year queries."
+        ),
+      fromYear: z
+        .string()
+        .optional()
+        .describe(
+          "Start year for range filter (format: YYYY-YYYY, e.g., '2019-2020'). Use with toYear or alone for 'since X' queries. When provided, returns historical trend data."
+        ),
+      toYear: z
+        .string()
+        .optional()
+        .describe(
+          "End year for range filter (format: YYYY-YYYY, e.g., '2023-2024'). Use with fromYear or alone for 'until X' queries. When provided, returns historical trend data."
+        ),
+      specificYears: z
+        .array(z.string())
+        .optional()
+        .describe(
+          "Array of specific years (format: ['2019-2020', '2022-2023']). Use when user wants data for specific non-consecutive years. When provided, returns historical trend data."
         ),
     }),
   }
 );
 
 export const compareLocationsTool = tool(
-  async ({ locationNames, locationType }) => {
+  async ({
+    locationNames,
+    locationType,
+    year,
+    fromYear,
+    toYear,
+    specificYears,
+  }) => {
     const type = locationType?.toUpperCase() as
       | "STATE"
       | "DISTRICT"
       | "TALUK"
       | undefined;
+
+    // Multi-year comparison across locations
+    if (fromYear || toYear || specificYears) {
+      const allLocationRecords: Array<{
+        locationName: string;
+        locationId: string;
+        records: any[];
+      }> = [];
+
+      for (const name of locationNames) {
+        let records = await searchAndGetHistoricalData(name, type!);
+
+        if (records.length === 0) continue;
+
+        // Filter by year range or specific years
+        if (specificYears && specificYears.length > 0) {
+          records = records.filter((r) => specificYears.includes(r.year));
+        } else if (fromYear || toYear) {
+          records = records.filter((r) => {
+            if (fromYear && toYear) {
+              return r.year >= fromYear && r.year <= toYear;
+            } else if (fromYear) {
+              return r.year >= fromYear;
+            } else if (toYear) {
+              return r.year <= toYear;
+            }
+            return true;
+          });
+        }
+
+        if (records.length > 0) {
+          allLocationRecords.push({
+            locationName: records[0].locationName,
+            locationId: records[0].locationId,
+            records: records,
+          });
+        }
+      }
+
+      if (allLocationRecords.length === 0) {
+        return JSON.stringify({
+          found: false,
+          message:
+            "No historical data found for the specified locations in the given year range",
+        });
+      }
+
+      const yearsAvailable = allLocationRecords[0].records.map((r) => r.year);
+      const textSummaries = allLocationRecords
+        .map(
+          (loc) =>
+            `${loc.locationName}:\n${formatHistoricalDataForLLM(loc.records)}`
+        )
+        .join("\n\n---\n\n");
+
+      return JSON.stringify({
+        found: true,
+        isHistoricalComparison: true,
+        count: allLocationRecords.length,
+        locationType: type || "STATE",
+        locationsCompared: allLocationRecords.map((l) => l.locationName),
+        yearsAvailable: yearsAvailable,
+        dataPointCount: yearsAvailable.length,
+        locationData: allLocationRecords.map((loc) => ({
+          locationName: loc.locationName,
+          locationId: loc.locationId,
+          locationType: type || "STATE",
+          years: loc.records.map((r) => r.year),
+        })),
+        textSummary: textSummaries,
+      });
+    }
+
+    // Single year comparison
+    const targetYear = year || "2024-2025";
     const records = [];
 
     for (const name of locationNames) {
-      const record = await searchAndGetGroundwaterData(name, type);
+      const record = await searchAndGetGroundwaterData(
+        name,
+        type,
+        undefined,
+        targetYear
+      );
       if (record) records.push(record);
     }
 
@@ -161,8 +299,10 @@ export const compareLocationsTool = tool(
     return JSON.stringify({
       found: true,
       count: records.length,
+      year: targetYear,
+      locationsCompared: locationNames,
       textSummary: textSummaries,
-      charts: generateComparisonChartData(records),
+      locationIds: records.map((r) => r.location.id),
       locations: records.map((r) => ({
         id: r.location.id,
         name: r.location.name,
@@ -172,28 +312,143 @@ export const compareLocationsTool = tool(
   },
   {
     name: "compare_locations",
-    description: `Compare groundwater data across multiple locations side-by-side.
+    description: `Compare 2-10 locations side-by-side for SINGLE YEAR or MULTIPLE YEARS (with trends).
 
-WHEN TO USE:
-- User wants to compare two or more states, districts, or taluks
-- User asks which location has better/worse groundwater status
-- User wants to see differences in recharge, extraction, or rainfall between places
+USE FOR: "Compare Gujarat and Maharashtra", "Compare top 5 states from 2019 to 2023", "Which state has improved since 2020?"
 
-DATA RETURNED:
-- Side-by-side metrics for each location
-- Comparison charts showing recharge, extraction, extractable resources, and rainfall
-- Stage of extraction comparison`,
+YEAR FILTERING:
+- 'year': "2023-2024" → Single year comparison (8+ charts: table, metrics, rainfall, stage, recharge, extraction, balance, etc.)
+- 'fromYear' + 'toYear': "2019-2020" to "2023-2024" → Multi-year comparison trends for all locations
+- 'fromYear' only: "2020-2021" → From year onwards ("since 2020")
+- 'toYear' only: "2022-2023" → Until year ("until 2022")
+- 'specificYears': ["2019-2020", "2022-2023"] → Non-consecutive years
+- Omit all → Defaults to 2024-2025
+
+RETURNS: Single year → comparison charts | Multi-year → historical trends for each location side-by-side`,
     schema: z.object({
       locationNames: z
         .array(z.string())
-        .describe(
-          "Array of location names to compare. All should ideally be same type (all states, all districts, or all taluks)."
-        ),
+        .min(2)
+        .max(10)
+        .describe("Array of 2-10 location names to compare."),
       locationType: z
         .enum(["state", "district", "taluk"])
         .optional()
+        .describe("Type of locations being compared (state/district/taluk)."),
+      year: z
+        .string()
+        .optional()
         .describe(
-          "Type of locations being compared. If all are states, use 'state'. If mixed, leave empty."
+          "Year for single-year comparison (format: YYYY-YYYY, e.g., '2023-2024'). Defaults to 2024-2025. NOTE: Use fromYear/toYear or specificYears for multi-year comparison."
+        ),
+      fromYear: z
+        .string()
+        .optional()
+        .describe(
+          "Start year for range filter (format: YYYY-YYYY, e.g., '2019-2020'). Use with toYear or alone for 'since X' queries. Returns historical comparison trends."
+        ),
+      toYear: z
+        .string()
+        .optional()
+        .describe(
+          "End year for range filter (format: YYYY-YYYY, e.g., '2023-2024'). Use with fromYear or alone for 'until X' queries. Returns historical comparison trends."
+        ),
+      specificYears: z
+        .array(z.string())
+        .optional()
+        .describe(
+          "Array of specific years (format: ['2019-2020', '2022-2023']). Use for non-consecutive years comparison."
+        ),
+    }),
+  }
+);
+
+export const getHistoricalDataTool = tool(
+  async ({ locationName, locationType, fromYear, toYear, specificYears }) => {
+    const type = locationType.toUpperCase() as "STATE" | "DISTRICT" | "TALUK";
+    let records = await searchAndGetHistoricalData(locationName, type);
+
+    if (records.length === 0) {
+      const availableYears = await getAvailableYears();
+      return JSON.stringify({
+        found: false,
+        message: `No historical data found for "${locationName}"`,
+        availableYears,
+      });
+    }
+
+    // Filter by year range or specific years
+    if (specificYears && specificYears.length > 0) {
+      records = records.filter((r) => specificYears.includes(r.year));
+    } else if (fromYear || toYear) {
+      records = records.filter((r) => {
+        if (fromYear && toYear) {
+          return r.year >= fromYear && r.year <= toYear;
+        } else if (fromYear) {
+          return r.year >= fromYear;
+        } else if (toYear) {
+          return r.year <= toYear;
+        }
+        return true;
+      });
+    }
+
+    if (records.length === 0) {
+      return JSON.stringify({
+        found: false,
+        message: `No data found for "${locationName}" in the specified year range`,
+      });
+    }
+
+    return JSON.stringify({
+      found: true,
+      locationName: records[0].locationName,
+      locationId: records[0].locationId,
+      locationType: locationType,
+      yearsAvailable: records.map((r) => r.year),
+      dataPointCount: records.length,
+      textSummary: formatHistoricalDataForLLM(records),
+    });
+  },
+  {
+    name: "get_historical_data",
+    description: `Get multi-year historical trends for a location. Similar to search_groundwater_data with year filters.
+
+USE FOR: "Gujarat trends", "Maharashtra over the years", "Tamil Nadu from 2019 to 2023", "Karnataka changes since 2020"
+NOTE: search_groundwater_data can also handle historical queries - use either tool.
+
+YEAR FILTERING:
+- 'fromYear' + 'toYear': "2019-2020" to "2023-2024" → Year range ("from 2019 to 2023")
+- 'fromYear' only: "2020-2021" → From year onwards ("since 2020")
+- 'toYear' only: "2022-2023" → Until year ("until 2022")
+- 'specificYears': ["2019-2020", "2022-2023"] → Specific years ("for 2019 and 2022")
+- Omit all → Returns all available years (2016-2017 to 2024-2025)
+
+RETURNS: 14+ visualizations - year-wise table, trend lines, YoY changes, sustainability metrics, category evolution`,
+    schema: z.object({
+      locationName: z
+        .string()
+        .describe("Name of the location (state, district, or taluk)"),
+      locationType: z
+        .enum(["state", "district", "taluk"])
+        .describe("Type of location"),
+      fromYear: z
+        .string()
+        .optional()
+        .describe(
+          "Start year for range filter (format: YYYY-YYYY, e.g., '2019-2020'). Use for queries like 'since 2020' or 'from 2019 to 2023'."
+        ),
+      toYear: z
+        .string()
+        .optional()
+        .describe(
+          "End year for range filter (format: YYYY-YYYY, e.g., '2023-2024'). Use for queries like 'until 2023' or 'from 2019 to 2023'."
+        ),
+      specificYears: z
+        .array(z.string())
+        .optional()
+        .describe(
+          "Array of specific years to include (format: ['2019-2020', '2022-2023']). Use when user mentions specific years like 'for 2019, 2021, and 2023'."
         ),
     }),
   }
@@ -513,162 +768,6 @@ function metricToField(metric: string): string {
   return map[metric] ?? metric;
 }
 
-export const getHistoricalDataTool = tool(
-  async ({ locationName, locationType, fromYear, toYear, specificYears }) => {
-    const type = locationType.toUpperCase() as "STATE" | "DISTRICT" | "TALUK";
-    let records = await searchAndGetHistoricalData(locationName, type);
-
-    if (records.length === 0) {
-      const availableYears = await getAvailableYears();
-      return JSON.stringify({
-        found: false,
-        message: `No historical data found for "${locationName}"`,
-        availableYears,
-      });
-    }
-
-    // Filter by year range or specific years
-    if (specificYears && specificYears.length > 0) {
-      records = records.filter((r) => specificYears.includes(r.year));
-    } else if (fromYear || toYear) {
-      records = records.filter((r) => {
-        if (fromYear && toYear) {
-          return r.year >= fromYear && r.year <= toYear;
-        } else if (fromYear) {
-          return r.year >= fromYear;
-        } else if (toYear) {
-          return r.year <= toYear;
-        }
-        return true;
-      });
-    }
-
-    if (records.length === 0) {
-      return JSON.stringify({
-        found: false,
-        message: `No data found for "${locationName}" in the specified year range`,
-      });
-    }
-
-    return JSON.stringify({
-      found: true,
-      locationName: records[0].locationName,
-      locationId: records[0].locationId,
-      locationType: locationType,
-      yearsAvailable: records.map((r) => r.year),
-      dataPointCount: records.length,
-      textSummary: formatHistoricalDataForLLM(records),
-    });
-  },
-  {
-    name: "get_historical_data",
-    description: `Get historical groundwater data across multiple years for a location to analyze trends. Supports flexible year filtering.
-
-AVAILABLE YEARS: 2016-2017, 2019-2020, 2021-2022, 2022-2023, 2023-2024, 2024-2025
-
-WHEN TO USE:
-- User asks about trends or historical changes
-- User wants to see how groundwater has changed over time
-- User asks "how has extraction changed in Maharashtra over the years"
-- User wants to compare a location's data across different years
-- User asks about year-over-year changes
-- User asks for data "from 2019 to 2023", "since 2020", "until 2022", or "for 2019, 2021, 2023"
-
-FLEXIBLE YEAR FILTERING:
-- "from X to Y" or "between X and Y" → use fromYear and toYear
-- "since X" or "from X onwards" → use fromYear only
-- "until Y" or "up to Y" → use toYear only
-- "for years X, Y, Z" → use specificYears array
-- No filters → returns all available years
-
-DATA RETURNED:
-- Year-wise data table with key metrics
-- Trend charts (line charts) showing changes over time
-- Multi-line comparison of recharge vs extraction
-- Rainfall trends, stage of extraction trends
-- Category changes over time
-All visualizations are streamed in a collapsible container.`,
-    schema: z.object({
-      locationName: z
-        .string()
-        .describe("Name of the location (state, district, or taluk)"),
-      locationType: z
-        .enum(["state", "district", "taluk"])
-        .describe("Type of location"),
-      fromYear: z
-        .string()
-        .optional()
-        .describe(
-          "Start year for range filter (format: YYYY-YYYY, e.g., '2019-2020'). Use for queries like 'since 2020' or 'from 2019 to 2023'."
-        ),
-      toYear: z
-        .string()
-        .optional()
-        .describe(
-          "End year for range filter (format: YYYY-YYYY, e.g., '2023-2024'). Use for queries like 'until 2023' or 'from 2019 to 2023'."
-        ),
-      specificYears: z
-        .array(z.string())
-        .optional()
-        .describe(
-          "Array of specific years to include (format: ['2019-2020', '2022-2023']). Use when user mentions specific years like 'for 2019, 2021, and 2023'."
-        ),
-    }),
-  }
-);
-
-export const compareYearsTool = tool(
-  async ({ locationName, locationType, years }) => {
-    const type = locationType.toUpperCase() as "STATE" | "DISTRICT" | "TALUK";
-    const records = await compareYears(locationName, type, years || []);
-
-    if (records.length === 0) {
-      const availableYears = await getAvailableYears();
-      return JSON.stringify({
-        found: false,
-        message: `No data found for "${locationName}"`,
-        availableYears,
-      });
-    }
-
-    const filteredRecords = years?.length
-      ? records.filter((r) => years.includes(r.year))
-      : records;
-
-    return JSON.stringify({
-      found: true,
-      locationName: records[0].locationName,
-      yearsCompared: filteredRecords.map((r) => r.year),
-      textSummary: formatHistoricalDataForLLM(filteredRecords),
-      charts: generateTrendChartData(filteredRecords, records[0].locationName),
-    });
-  },
-  {
-    name: "compare_years",
-    description: `Compare groundwater data for a location across specific years.
-
-AVAILABLE YEARS: 2016-2017, 2019-2020, 2021-2022, 2022-2023, 2023-2024, 2024-2025
-
-WHEN TO USE:
-- User wants to compare specific years (e.g., "compare 2019-2020 and 2024-2025")
-- User asks what changed between two years
-- User wants year-on-year comparison
-
-If years are not specified, returns all available years.`,
-    schema: z.object({
-      locationName: z.string().describe("Name of the location"),
-      locationType: z
-        .enum(["state", "district", "taluk"])
-        .describe("Type of location"),
-      years: z
-        .array(z.string())
-        .optional()
-        .describe(
-          "Specific years to compare (format: YYYY-YYYY). If empty, compares all available years."
-        ),
-    }),
-  }
-);
 
 export const getAvailableYearsTool = tool(
   async () => {
@@ -701,6 +800,5 @@ export const allTools = [
   listLocationsTool,
   getLocationDetailsTool,
   getHistoricalDataTool,
-  compareYearsTool,
   getAvailableYearsTool,
 ];
