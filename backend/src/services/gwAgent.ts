@@ -15,6 +15,10 @@ import {
 import { ToolNode } from "@langchain/langgraph/prebuilt";
 import { allTools } from "./gwTools";
 import logger from "../utils/logger";
+import {
+  getGroundwaterDataByLocationId,
+  generateChartData,
+} from "./groundwaterService";
 
 const SYSTEM_PROMPT = `You are an expert assistant for India's Groundwater Resources Information System (INGRES). You help users understand groundwater data across India at country, state, district, and taluk levels.
 
@@ -147,22 +151,54 @@ export async function streamGroundwaterChat(
 
       if (message._getType() === "tool") {
         const toolMessage = message as ToolMessage;
-        callbacks.onToolResult(
-          toolMessage.name ?? "unknown",
-          toolMessage.content as string
-        );
+        const toolName = toolMessage.name ?? "unknown";
+        callbacks.onToolResult(toolName, toolMessage.content as string);
 
-        // Extract charts from tool results
+        // Extract and stream visualizations for search_groundwater_data tool
         try {
           const result = JSON.parse(toolMessage.content as string);
+
+          if (
+            toolName === "search_groundwater_data" &&
+            result.found &&
+            result.locationId
+          ) {
+            // Fetch full groundwater data and generate visualizations
+            const fullRecord = await getGroundwaterDataByLocationId(
+              result.locationId,
+              result.year
+            );
+
+            if (fullRecord) {
+              const visualizations = generateChartData(fullRecord);
+
+              // Send a parent container visualization first
+              callbacks.onChart({
+                type: "data_container",
+                title: `Groundwater Data - ${result.locationName}`,
+                subtitle: `${result.locationType} • Year: ${
+                  result.year || "2024-2025"
+                }`,
+                locationId: result.locationId,
+                locationName: result.locationName,
+                year: result.year || "2024-2025",
+                visualizations: visualizations,
+              });
+            }
+          }
+
+          // Legacy support: if charts are in tool result, stream them
           if (result.charts) {
             for (const chart of result.charts) {
               collectedCharts.push(chart);
               callbacks.onChart(chart);
             }
           }
-        } catch {
-          // Not JSON or no charts
+        } catch (error) {
+          logger.debug(
+            { error, toolName },
+            "Failed to parse tool result or generate charts"
+          );
         }
       }
     }

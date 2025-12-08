@@ -24,7 +24,7 @@ import {
 } from "./groundwaterService";
 
 export const searchGroundwaterDataTool = tool(
-  async ({ locationName, locationType, stateName, districtName }) => {
+  async ({ locationName, locationType, stateName, districtName, year }) => {
     const type = locationType?.toUpperCase() as
       | "STATE"
       | "DISTRICT"
@@ -41,7 +41,8 @@ export const searchGroundwaterDataTool = tool(
     const record = await searchAndGetGroundwaterData(
       locationName,
       type,
-      parentName
+      parentName,
+      year
     );
 
     if (!record) {
@@ -55,29 +56,40 @@ export const searchGroundwaterDataTool = tool(
 
     return JSON.stringify({
       found: true,
+      locationId: record.location.id,
+      locationName: record.location.name,
+      locationType: record.location.type,
+      year: record.year,
       textSummary: formatGroundwaterDataForLLM(record),
-      charts: generateChartData(record),
-      rawData: record,
     });
   },
   {
     name: "search_groundwater_data",
-    description: `Search for a location and get its AGGREGATED groundwater data. This tool handles fuzzy matching (e.g., "uttar pradesh" or "uttar_pradesh" both work).
+    description: `Search for a location and get its AGGREGATED groundwater data for a specific year. This tool handles fuzzy matching (e.g., "uttar pradesh" or "uttar_pradesh" both work).
 
 DATA AVAILABLE:
 - For STATES: Aggregated data for the entire state (sum of all districts)
 - For DISTRICTS: Aggregated data for the entire district (sum of all taluks)
 - For TALUKS: Individual taluk-level data (lowest granularity)
+- YEARS: 2016-2017, 2019-2020, 2021-2022, 2022-2023, 2023-2024, 2024-2025 (default: 2024-2025)
+
+DATA RETURNED:
+Returns a structured summary with key metrics like rainfall, recharge, extraction, extractable resources, stage of extraction, and category.
+The tool DOES NOT return charts - visualizations are streamed separately to the frontend in a collapsible section.
 
 WHEN TO USE:
-- User asks about groundwater in a specific location
+- User asks about groundwater in a specific location (for any year)
 - User wants recharge, extraction, rainfall, or category data for a place
 - User asks about water availability, stage of extraction, or resource status
+- User asks for data for a specific year (e.g., "Gujarat in 2021-2022")
+- User wants to see detailed breakdown of sources (recharge/discharge/extraction)
 
 TIPS FOR BETTER RESULTS:
 - If searching for a district, provide the state name for disambiguation
 - If searching for a taluk, provide the district name for disambiguation
-- Many locations share names across states (e.g., "Lucknow" district - specify "Uttar Pradesh")`,
+- Many locations share names across states (e.g., "Lucknow" district - specify "Uttar Pradesh")
+- Default to 2024-2025 if user doesn't specify a year
+- After using this tool, mention to the user that detailed visualizations are available in the collapsible data section`,
     schema: z.object({
       locationName: z
         .string()
@@ -101,6 +113,12 @@ TIPS FOR BETTER RESULTS:
         .optional()
         .describe(
           "Parent district name when searching for a taluk. Helps disambiguate taluks with same name in different districts."
+        ),
+      year: z
+        .string()
+        .optional()
+        .describe(
+          "Year in format YYYY-YYYY (e.g., '2024-2025'). Defaults to latest year (2024-2025) if not specified. Available years: 2016-2017, 2019-2020, 2021-2022, 2022-2023, 2023-2024, 2024-2025."
         ),
     }),
   }
@@ -538,53 +556,6 @@ DATA RETURNED:
   }
 );
 
-export const getDataForYearTool = tool(
-  async ({ locationName, year, locationType }) => {
-    const type = locationType?.toUpperCase() as
-      | "STATE"
-      | "DISTRICT"
-      | "TALUK"
-      | undefined;
-    const record = await getGroundwaterDataForYear(locationName, year, type);
-
-    if (!record) {
-      const availableYears = await getAvailableYears();
-      return JSON.stringify({
-        found: false,
-        message: `No data found for "${locationName}" in year ${year}`,
-        availableYears,
-      });
-    }
-
-    return JSON.stringify({
-      found: true,
-      year: record.year,
-      textSummary: formatGroundwaterDataForLLM(record),
-      charts: generateChartData(record),
-    });
-  },
-  {
-    name: "get_data_for_year",
-    description: `Get groundwater data for a specific location for a specific year.
-
-AVAILABLE YEARS: 2016-2017, 2019-2020, 2021-2022, 2022-2023, 2023-2024, 2024-2025
-
-WHEN TO USE:
-- User specifically asks about data for a particular year
-- User asks "what was Maharashtra's groundwater status in 2021-2022"
-- User wants to check data for an older year
-- Default to latest year (2024-2025) if user doesn't specify a year`,
-    schema: z.object({
-      locationName: z.string().describe("Name of the location"),
-      year: z.string().describe("Year in format YYYY-YYYY (e.g., '2022-2023')"),
-      locationType: z
-        .enum(["state", "district", "taluk"])
-        .optional()
-        .describe("Type of location for disambiguation"),
-    }),
-  }
-);
-
 export const compareYearsTool = tool(
   async ({ locationName, locationType, years }) => {
     const type = locationType.toUpperCase() as "STATE" | "DISTRICT" | "TALUK";
@@ -669,7 +640,6 @@ export const allTools = [
   listLocationsTool,
   getLocationDetailsTool,
   getHistoricalDataTool,
-  getDataForYearTool,
   compareYearsTool,
   getAvailableYearsTool,
 ];

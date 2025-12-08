@@ -770,6 +770,79 @@ export function generateChartData(record: GroundwaterRecord): object[] {
     },
   });
 
+  // 10. Stage of Extraction Category Status
+  const stageOfExtraction = Number(data.stageOfExtractionTotal) || 0;
+  const category = String(data.categoryTotal || "Unknown");
+  visualizations.push({
+    type: "stats",
+    title: `Extraction Status & Category`,
+    description: `Current stage: ${stageOfExtraction.toFixed(2)}%`,
+    data: {
+      stageOfExtraction,
+      category,
+      status:
+        stageOfExtraction < 70
+          ? "Safe"
+          : stageOfExtraction < 90
+          ? "Semi-Critical"
+          : stageOfExtraction < 100
+          ? "Critical"
+          : "Over-Exploited",
+      healthIndicator:
+        stageOfExtraction < 70
+          ? "Healthy"
+          : stageOfExtraction < 90
+          ? "Moderate Stress"
+          : stageOfExtraction < 100
+          ? "High Stress"
+          : "Severe Stress",
+    },
+    threshold: {
+      safe: 70,
+      critical: 90,
+      overExploited: 100,
+    },
+  });
+
+  // 11. Recharge vs Extraction Comparison (Bar Chart)
+  const rechargeVsExtraction = [
+    { name: "Recharge", value: data.rechargeTotalTotal },
+    { name: "Extraction", value: data.draftTotalTotal },
+    { name: "Natural Discharge", value: data.lossTotal },
+  ].filter((r) => r.value);
+
+  if (rechargeVsExtraction.length > 0) {
+    visualizations.push({
+      type: "chart",
+      chartType: "bar",
+      title: `Recharge vs Extraction Analysis - ${locationName}`,
+      description:
+        "Comparison of recharge, extraction, and natural discharge (ham)",
+      data: rechargeVsExtraction,
+    });
+  }
+
+  // 12. Availability & Sustainability Metrics
+  const availabilityData = {
+    extractable: Number(data.extractableTotal) || 0,
+    currentExtraction: Number(data.draftTotalTotal) || 0,
+    futureAvailability: Number(data.availabilityFutureTotal) || 0,
+    utilizationPercent: stageOfExtraction,
+    remainingCapacity: Math.max(
+      0,
+      (Number(data.extractableTotal) || 0) - (Number(data.draftTotalTotal) || 0)
+    ),
+  };
+
+  visualizations.push({
+    type: "stats",
+    title: `Availability & Sustainability Metrics`,
+    description: `Future availability: ${formatNumber(
+      availabilityData.futureAvailability
+    )} ham`,
+    data: availabilityData,
+  });
+
   return visualizations;
 }
 

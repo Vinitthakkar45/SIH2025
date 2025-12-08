@@ -1,95 +1,20 @@
 "use client";
 
-import ChartRenderer from "@/components/ChartRenderer";
 import ChatComposer from "@/components/ChatComposer";
+import MessageList, { type Message } from "@/components/MessageList";
+import WelcomeScreen from "@/components/WelcomeScreen";
+import type { Visualization } from "@/types/visualizations";
 import {
   ArrowDown02Icon,
   DropletIcon,
   MapsIcon,
   MessageIcon,
-  SparklesIcon,
 } from "@/components/icons";
-import MarkdownRenderer from "@/components/MarkdownRenderer";
 import { Button } from "@heroui/button";
-import { Skeleton } from "@heroui/react";
 import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001";
-
-interface TableRow {
-  source?: string;
-  name?: string;
-  command?: number | null;
-  nonCommand?: number | null;
-  total?: number | null;
-  [key: string]: unknown;
-}
-
-interface ChartDataItem {
-  name: string;
-  value?: number;
-  command?: number;
-  nonCommand?: number;
-  [key: string]: unknown;
-}
-
-interface SummaryData {
-  extractableTotal?: number;
-  extractionTotal?: number;
-  rainfall?: number;
-  rechargeTotal?: number;
-  naturalDischarges?: number;
-  stageOfExtraction?: number;
-  category?: string;
-}
-
-interface WaterBalanceData {
-  recharge?: number;
-  naturalDischarge?: number;
-  extractable?: number;
-  extraction?: number;
-  availabilityForFuture?: number;
-}
-
-interface Visualization {
-  type: "chart" | "stats" | "table" | "summary" | "trend_summary";
-  chartType?:
-    | "bar"
-    | "pie"
-    | "grouped_bar"
-    | "waterBalance"
-    | "line"
-    | "multi_line"
-    | "area";
-  tableType?:
-    | "recharge"
-    | "discharges"
-    | "extractable"
-    | "extraction"
-    | "locations"
-    | "trend";
-  title: string;
-  description?: string;
-  headerValue?: number;
-  year?: string;
-  years?: string[];
-  latestYear?: string;
-  earliestYear?: string;
-  dataPoints?: number;
-  columns?: string[];
-  data: TableRow[] | ChartDataItem[] | SummaryData | WaterBalanceData;
-  threshold?: { safe: number; critical: number; overExploited: number };
-}
-
-interface Message {
-  role: "user" | "assistant";
-  content: string;
-  charts?: ChartData[];
-  suggestions?: string[];
-  isLoading?: boolean;
-  suggestions?: string[];
-}
 
 export default function ChatPage() {
   const [messages, setMessages] = useState<Message[]>([]);
@@ -192,7 +117,8 @@ export default function ChatPage() {
                 data.type === "stats" ||
                 data.type === "table" ||
                 data.type === "summary" ||
-                data.type === "trend_summary"
+                data.type === "trend_summary" ||
+                data.type === "data_container"
               ) {
                 charts.push(data);
                 setMessages((prev) => {
@@ -336,101 +262,13 @@ export default function ChatPage() {
         >
           <div className="max-w-4xl mx-auto space-y-4">
             {messages.length === 0 && (
-              <div className="text-center py-12">
-                <div className="w-16 h-16 rounded-lg bg-dark-tertiary flex items-center justify-center mx-auto mb-4">
-                  <DropletIcon size={32} className="text-primary" />
-                </div>
-                <h2 className="text-xl font-semibold text-zinc-100 mb-2">
-                  Welcome to INGRES AI
-                </h2>
-                <p className="text-zinc-400 mb-6 max-w-md mx-auto">
-                  Ask me anything about India&apos;s groundwater resources -
-                  state data, district comparisons, extraction levels, and more.
-                </p>
-                <div className="flex flex-wrap justify-center gap-2">
-                  {suggestedQueries.map((q) => (
-                    <Button
-                      key={q}
-                      onPress={() => handleSubmit(q)}
-                      variant="flat"
-                      radius="full"
-                    >
-                      {q}
-                    </Button>
-                  ))}
-                </div>
-              </div>
+              <WelcomeScreen
+                suggestedQueries={suggestedQueries}
+                onQueryClick={handleSubmit}
+              />
             )}
 
-            {messages.map((message, idx) => (
-              <div
-                key={idx}
-                className={`flex ${
-                  message.role === "user" ? "justify-end" : "justify-start"
-                }`}
-              >
-                {message.role === "assistant" && (
-                  <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center shrink-0 mt-2">
-                    <SparklesIcon
-                      width={23}
-                      height={23}
-                      className="text-primary"
-                    />
-                  </div>
-                )}
-                <div
-                  className={`max-w-[90%] px-4 py-2 ${
-                    message.role === "user"
-                      ? "bg-primary text-white rounded-3xl rounded-br-none w-fit"
-                      : "w-full"
-                  }`}
-                >
-                  {message.isLoading && !message.content ? (
-                    <div className="space-y-3 w-full">
-                      <Skeleton className="h-3 w-1/3 rounded-lg" />
-                      <Skeleton className="h-3 w-3/4 rounded-lg" />
-                      <Skeleton className="h-3 w-2/3 rounded-lg" />
-                    </div>
-                  ) : (
-                    <>
-                      <MarkdownRenderer
-                        content={message.content}
-                        className={
-                          message.role === "assistant" ? "text-zinc-200" : ""
-                        }
-                      />
-                      {message.charts && message.charts.length > 0 && (
-                        <div className="mt-3 space-y-3">
-                          {message.charts.map((chart, i) => (
-                            <ChartRenderer key={i} chart={chart} />
-                          ))}
-                        </div>
-                      )}
-                      {message.suggestions &&
-                        message.suggestions.length > 0 && (
-                          <div className="mt-4 mb-10">
-                            <p className="text-sm text-zinc-400 mb-2 font-medium">
-                              Follow-up questions:
-                            </p>
-                            <div className="flex flex-wrap gap-2">
-                              {message.suggestions.map((suggestion, i) => (
-                                <Button
-                                  key={i}
-                                  onPress={() => handleSubmit(suggestion)}
-                                  variant="light"
-                                  className="border-dashed border-zinc-600 border-1 text-zinc-400 font-light"
-                                >
-                                  {suggestion}
-                                </Button>
-                              ))}
-                            </div>
-                          </div>
-                        )}
-                    </>
-                  )}
-                </div>
-              </div>
-            ))}
+            <MessageList messages={messages} onSuggestionClick={handleSubmit} />
 
             <div ref={messagesEndRef} />
           </div>
