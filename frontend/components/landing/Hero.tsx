@@ -7,11 +7,11 @@ export default function Hero() {
     <section className="relative pt-32 pb-20 md:pt-40 md:pb-28 overflow-hidden">
       {/* Subtle gradient overlay */}
       <div className="absolute inset-0 bg-linear-to-b from-zinc-900/50 to-zinc-950 pointer-events-none"></div>
-      
+
       <div className="relative z-10 max-w-6xl mx-auto px-6">
         <div className="text-center space-y-8">
           {/* Badge */}
-          <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-zinc-800/50 border border-zinc-700/50">
+          <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-zinc-800/50">
             <span className="text-xs font-medium text-zinc-300">
               ✨ INGRES AI version 2.0 is here!
             </span>
@@ -26,15 +26,15 @@ export default function Hero() {
               with our <span className="text-primary">AI.</span>
             </h1>
             <p className="text-lg md:text-xl text-zinc-400 max-w-2xl mx-auto leading-relaxed">
-              Gain access to real-time groundwater analytics and actionable insights,
-              empowering you to make informed decisions
+              Gain access to real-time groundwater analytics and actionable
+              insights, empowering you to make informed decisions
             </p>
           </div>
 
           {/* Search Box - styled like Framer template */}
           <div className="max-w-2xl mx-auto">
             <div className="relative">
-              <div className="flex items-center gap-3 px-4 py-3.5 bg-zinc-900 rounded-2xl border border-zinc-800 shadow-xl">
+              <div className="flex items-center gap-3 px-4 py-3.5 bg-zinc-900 rounded-2xl shadow-xl">
                 <input
                   type="text"
                   placeholder="What's the groundwater status in my region?"
@@ -61,21 +61,10 @@ export default function Hero() {
           {/* CTA Buttons */}
           <div className="flex flex-col sm:flex-row items-center justify-center gap-3 pt-4">
             <Link href="/chat">
-              <Button
-                size="lg"
-                color="primary"
-                className="font-medium px-8"
-              >
+              <Button color="primary" className="font-medium px-4">
                 Get started now
               </Button>
             </Link>
-            <Button
-              size="lg"
-              variant="bordered"
-              className="border-zinc-700 text-zinc-300 font-medium hover:bg-zinc-800 px-8"
-            >
-              How it works
-            </Button>
           </div>
 
           {/* Social Proof */}
@@ -83,7 +72,9 @@ export default function Hero() {
             <div className="flex items-center justify-center gap-2 text-sm text-zinc-400">
               <span className="flex">
                 {[...Array(5)].map((_, i) => (
-                  <span key={i} className="text-yellow-500">★</span>
+                  <span key={i} className="text-yellow-500">
+                    ★
+                  </span>
                 ))}
               </span>
               <span>Trusted by researchers and policymakers</span>
@@ -94,7 +85,7 @@ export default function Hero() {
 
       {/* Floating Cards - Dark theme */}
       <div className="absolute top-1/4 left-[5%] hidden lg:block">
-        <div className="bg-zinc-900 rounded-2xl shadow-2xl p-6 w-72 border border-zinc-800 rotate-[-5deg]">
+        <div className="bg-zinc-900 rounded-2xl shadow-2xl p-6 w-72 rotate-[-5deg]">
           <p className="text-xs text-zinc-500 mb-2">Blocks Covered</p>
           <p className="text-4xl font-bold text-white mb-1">6,000+</p>
           <p className="text-xs text-primary mb-4">view breakdown</p>
@@ -106,7 +97,7 @@ export default function Hero() {
       </div>
 
       <div className="absolute top-1/4 right-[5%] hidden lg:block">
-        <div className="bg-zinc-900 rounded-2xl shadow-2xl p-6 w-64 border border-zinc-800 rotate-[5deg]">
+        <div className="bg-zinc-900 rounded-2xl shadow-2xl p-6 w-64 rotate-[5deg]">
           <p className="text-xs text-zinc-500 mb-3">Data Accuracy</p>
           <div className="flex items-center justify-center">
             <div className="relative w-32 h-32">

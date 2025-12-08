@@ -127,7 +127,8 @@ export default function InteractiveDemoSection() {
             See INGRES AI in Action
           </h3>
           <p className="text-zinc-400 mt-4 max-w-2xl mx-auto">
-            Ask questions about groundwater data and get instant AI-powered insights
+            Ask questions about groundwater data and get instant AI-powered
+            insights
           </p>
         </div>
 
@@ -148,7 +149,7 @@ export default function InteractiveDemoSection() {
           ))}
         </div>
 
-        <div className="bg-zinc-900 border-2 border-zinc-800 rounded-2xl shadow-2xl overflow-hidden">
+        <div className="bg-zinc-900 rounded-2xl shadow-2xl overflow-hidden">
           <div className="p-6 md:p-8 min-h-[400px] flex flex-col">
             <div className="flex-1 space-y-6 mb-8">
               <div className="flex items-start gap-4">
@@ -171,7 +172,7 @@ export default function InteractiveDemoSection() {
               </div>
             </div>
 
-            <div className="border-t border-zinc-800 pt-6">
+            <div className="pt-6">
               <ChatComposer
                 value={input}
                 onChange={setInput}

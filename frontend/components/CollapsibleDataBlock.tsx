@@ -19,7 +19,7 @@ export default function CollapsibleDataBlock({
   const [isOpen, setIsOpen] = useState(defaultOpen);
 
   return (
-    <div className="border border-zinc-700 rounded-lg overflow-hidden bg-dark-tertiary">
+    <div className="rounded-lg overflow-hidden bg-dark-tertiary">
       <button
         onClick={() => setIsOpen(!isOpen)}
         className="w-full px-4 py-3 flex items-center justify-between hover:bg-zinc-800 transition-colors"
@@ -37,11 +37,7 @@ export default function CollapsibleDataBlock({
         )}
       </button>
 
-      {isOpen && (
-        <div className="px-4 py-3 border-t border-zinc-700 space-y-3">
-          {children}
-        </div>
-      )}
+      {isOpen && <div className="px-4 py-3 space-y-3">{children}</div>}
     </div>
   );
 }

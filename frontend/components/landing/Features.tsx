@@ -72,10 +72,14 @@ export default function Features() {
             return (
               <div
                 key={idx}
-                className="group p-6 rounded-2xl bg-zinc-900 border border-zinc-800 hover:shadow-2xl hover:shadow-primary/10 hover:border-zinc-700 transition-all duration-300"
+                className="group p-6 rounded-2xl bg-zinc-900 hover:shadow-2xl hover:shadow-primary/10 transition-all duration-300"
               >
                 <div className="w-12 h-12 rounded-xl bg-zinc-800 flex items-center justify-center mb-4 group-hover:bg-primary/20 transition-colors">
-                  <Icon width={24} height={24} className={`${feature.color} group-hover:text-primary transition-colors`} />
+                  <Icon
+                    width={24}
+                    height={24}
+                    className={`${feature.color} group-hover:text-primary transition-colors`}
+                  />
                 </div>
                 <h3 className="text-lg font-semibold text-white mb-2">
                   {feature.title}

@@ -28,7 +28,7 @@ export default function ScrollToBottom({
             radius="full"
             size="sm"
             onPress={onClick}
-            className="bg-zinc-800/90 hover:bg-zinc-700 text-zinc-300 shadow-lg border border-zinc-700/50 backdrop-blur-sm"
+            className="bg-zinc-800/90 hover:bg-zinc-700 text-zinc-300 shadow-lg backdrop-blur-sm"
           >
             <ArrowDown01Icon width={16} height={16} />
           </Button>

@@ -41,9 +41,7 @@ export default function DataSources() {
         <div className="grid md:grid-cols-2 gap-16">
           {/* Data Sources */}
           <div>
-            <h2 className="text-2xl font-bold text-white mb-8">
-              Data Sources
-            </h2>
+            <h2 className="text-2xl font-bold text-white mb-8">Data Sources</h2>
             <div className="space-y-6">
               {dataSources.map((source, idx) => (
                 <div key={idx} className="flex gap-3">
@@ -74,7 +72,7 @@ export default function DataSources() {
               {highlights.map((highlight, idx) => (
                 <div
                   key={idx}
-                  className="p-4 rounded-xl border border-zinc-800 bg-zinc-900 hover:bg-zinc-800 hover:shadow-lg transition-all"
+                  className="p-4 rounded-xl bg-zinc-900 hover:bg-zinc-800 hover:shadow-lg transition-all"
                 >
                   <h4 className="text-sm font-semibold text-white mb-1">
                     {highlight.title}

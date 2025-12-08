@@ -138,7 +138,7 @@ function QuickActionPill({ icon, text }: QuickActionPillProps) {
       variant="flat"
       startContent={icon}
       size="sm"
-      className="bg-white/5 hover:bg-white/10 text-zinc-400 hover:text-zinc-300 cursor-pointer border border-white/10 hover:border-white/20 text-[12px] h-7 transition-all"
+      className="bg-white/5 hover:bg-white/10 text-zinc-400 hover:text-zinc-300 cursor-pointer text-[12px] h-7 transition-all"
     >
       {text}
     </Chip>
