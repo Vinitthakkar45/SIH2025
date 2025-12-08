@@ -36,19 +36,20 @@ const chartConfig = {
 export default function Hero() {
   return (
     <section className="relative pt-32 pb-20 md:pt-40 md:pb-28 overflow-hidden">
-      <div className="absolute inset-0 bg-linear-to-b from-zinc-900/50 to-zinc-950 pointer-events-none"></div>
+      <div className="absolute inset-0 bg-linear-to-b from-zinc-900/50 to-zinc-950 pointer-events-none" />
 
       <div className="relative z-10 max-w-6xl mx-auto px-6">
         <div className="text-center space-y-8">
           <div className="space-y-6">
             <h1 className="text-5xl md:text-7xl font-bold tracking-tight text-white leading-tight">
-              Redefine Analytics
+              Unlock India's
               <br />
-              with our <span className="text-primary">AI.</span>
+              Groundwater <span className="text-primary">Intelligence</span>
             </h1>
             <p className="text-lg md:text-xl text-zinc-400 max-w-2xl mx-auto leading-relaxed">
-              Gain access to real-time groundwater analytics and actionable
-              insights, empowering you to make informed decisions
+              Transform complex hydrogeological data into actionable insights
+              with AI-powered analytics for sustainable water resource
+              management
             </p>
           </div>
 
