@@ -8,6 +8,7 @@ import {
 import { Button } from "@heroui/button";
 import { Bar, BarChart, Cell, Pie, PieChart, XAxis, YAxis } from "recharts";
 import { SparklesIcon } from "../icons";
+import Link from "next/link";
 
 // Sample data for floating charts
 const groundwaterCategoryData = [
@@ -77,11 +78,11 @@ export default function Hero() {
 
           {/* CTA Buttons */}
           <div className="flex flex-col sm:flex-row items-center justify-center gap-3 pt-4">
-            <a href="/chat">
+            <Link href="/chat">
               <Button color="primary" className="font-medium px-4">
                 Get started now
               </Button>
-            </a>
+            </Link>
           </div>
 
           {/* Social Proof */}
