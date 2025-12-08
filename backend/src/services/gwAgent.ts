@@ -14,40 +14,39 @@ import {
 } from "@langchain/langgraph";
 import { ToolNode } from "@langchain/langgraph/prebuilt";
 import { allTools } from "./gwTools";
-import logger from "../utils/logger";
-import { processToolResult } from "./toolResultHandlers";
 
-const SYSTEM_PROMPT = `You are a friendly water expert helping everyday people understand groundwater in India. Think of yourself as a helpful neighbor who knows about water resources and wants to explain things simply.
+const SYSTEM_PROMPT = `You are an expert assistant for India's Groundwater Resources Information System (INGRES). You help users understand groundwater data across India at country, state, district, and taluk levels.
 
-You can help people learn about:
-- How much underground water is available in their area
-- Whether water levels are healthy or concerning
-- How water use has changed over the years
-- Which areas have good or poor water conditions
+Your capabilities:
+1. Find and retrieve groundwater data for any location in India
+2. Compare groundwater metrics across multiple locations
+3. Identify top/bottom locations by various metrics (rainfall, extraction, recharge, etc.)
+4. Provide category summaries (safe, semi-critical, critical, over-exploited, saline)
+5. Explain groundwater concepts and data
 
-What you know about:
-• Rainfall - How much rain falls in an area (measured in millimeters)
-• Water Recharge - Underground water that gets refilled from rain, rivers, and irrigation
-• Water Extraction - Underground water pumped out for farming, homes, and factories
-• Water Health Status - Categories like "Safe" (plenty of water), "Semi-Critical", "Critical", or "Over-Exploited" (using too much)
-• Stage of Extraction - A percentage showing how much water is being used compared to what's available (below 70% is healthy, above 100% means trouble)
+Key metrics you can help with:
+- Rainfall (mm)
+- Ground Water Recharge (ham) - from rainfall, canals, irrigation, tanks, artificial structures
+- Natural Discharges/Loss (ham) - baseflow, evaporation, transpiration
+- Annual Extractable Ground Water Resources (ham)
+- Ground Water Extraction (ham) - for irrigation, domestic, industrial use
+- Stage of Extraction (%) - ratio of extraction to availability
+- Category - classification based on extraction levels
 
-How to explain things:
-1. Use everyday language - say "underground water" instead of "groundwater resources"
-2. Give real-world context - "That's enough water to fill X Olympic swimming pools"
-3. Explain what numbers mean - "70% extraction means we're using 70 out of every 100 liters available"
-4. Use comparisons - "Rainfall here is similar to [city], so you can imagine how much that is"
-5. Share practical implications - "This means wells might run dry during summer" or "Water levels are healthy here"
-6. When showing charts, briefly explain what the picture shows and what to look for
+When answering:
+1. First use tools to find and retrieve relevant data
+2. Present data clearly with actual numbers
+3. Explain what the numbers mean in context
+4. If charts are returned by tools, mention that visualizations are available
+5. Be helpful in explaining groundwater concepts if asked
 
-Always get actual data before answering - don't guess! When asked about trends or changes over time, look at historical data to give accurate information.
-
-Remember: Your goal is to help regular people understand water conditions in simple, clear terms they can relate to.`;
+Always use the appropriate tools to get accurate, up-to-date data rather than making assumptions.`;
 
 export function createGroundwaterAgent() {
   const model = new ChatGoogleGenerativeAI({
-    model: "gemini-2.5-flash",
+    model: "gemini-2.0-flash-exp",
     temperature: 0,
+    apiVersion: "v1beta",
   }).bindTools(allTools);
 
   const toolNode = new ToolNode(allTools);
@@ -115,10 +114,10 @@ export async function streamGroundwaterChat(
     new HumanMessage(query),
   ];
 
+  const collectedCharts: object[] = [];
   let fullResponse = "";
 
   try {
-    logger.debug("Starting agent stream");
     const stream = await agent.stream({ messages }, { streamMode: "messages" });
 
     for await (const chunk of stream) {
@@ -143,22 +142,28 @@ export async function streamGroundwaterChat(
 
       if (message._getType() === "tool") {
         const toolMessage = message as ToolMessage;
-        const toolName = toolMessage.name ?? "unknown";
-        callbacks.onToolResult(toolName, toolMessage.content as string);
-
-        // Process tool result and stream visualizations
-        await processToolResult(
-          toolName,
-          toolMessage.content as string,
-          callbacks.onChart
+        callbacks.onToolResult(
+          toolMessage.name ?? "unknown",
+          toolMessage.content as string
         );
+
+        // Extract charts from tool results
+        try {
+          const result = JSON.parse(toolMessage.content as string);
+          if (result.charts) {
+            for (const chart of result.charts) {
+              collectedCharts.push(chart);
+              callbacks.onChart(chart);
+            }
+          }
+        } catch {
+          // Not JSON or no charts
+        }
       }
     }
 
-    logger.debug("Agent stream completed");
     callbacks.onComplete(fullResponse);
   } catch (error) {
-    logger.error({ err: error }, "Agent stream failed");
     callbacks.onError(error as Error);
   }
 }
@@ -175,7 +180,6 @@ export async function invokeGroundwaterChat(
     new HumanMessage(query),
   ];
 
-  logger.debug("Invoking agent");
   const result = await agent.invoke({ messages });
 
   const lastMessage = result.messages[result.messages.length - 1] as AIMessage;
@@ -197,6 +201,5 @@ export async function invokeGroundwaterChat(
     }
   }
 
-  logger.debug({ chartsCount: charts.length }, "Agent invocation completed");
   return { response, charts };
 }

@@ -96,7 +96,7 @@ export default function ChatPage() {
     if (!showScrollButton) {
       scrollToBottom();
     }
-  }, [messages, showScrollButton]);
+  }, [messages]);
 
   const handleSubmit = async (query: string) => {
     if (!query.trim() || isLoading) return;
@@ -116,7 +116,12 @@ export default function ChatPage() {
       const response = await fetch(`${API_URL}/api/gw-chat/stream`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ query }),
+        body: JSON.stringify({
+          query,
+          chatHistory: messages
+            .slice(-6)
+            .map((m) => ({ role: m.role, content: m.content })),
+        }),
       });
 
       if (!response.ok) throw new Error("Failed to get response");
