@@ -40,7 +40,6 @@ export default function ChatHeader({ showMap, onToggleMap }: ChatHeaderProps) {
             )
           }
           className="h-8"
-          radius="lg"
         >
           <span className="text-[13px] font-medium">
             {showMap ? "Hide Map" : "Show Map"}

@@ -248,7 +248,7 @@ export default function ChatPage() {
 
   return (
     <div className="flex h-screen bg-dark-primary overflow-hidden">
-      <div className="flex flex-col flex-1 min-w-0">
+      <div className="flex flex-col flex-1 min-w-0 relative">
         <ChatHeader
           onToggleMap={() => setShowMap(!showMap)}
           showMap={showMap}

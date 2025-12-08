@@ -20,12 +20,18 @@ export default function DataAccordion({
   variant = "shadow",
 }: DataAccordionItemProps) {
   return (
-    <Accordion defaultExpandedKeys={defaultOpen ? ["1"] : []} variant={variant}>
+    <Accordion
+      defaultExpandedKeys={defaultOpen ? ["1"] : []}
+      variant={variant}
+      isCompact
+    >
       <AccordionItem
         key="1"
         aria-label={title}
         title={title}
-        classNames={{ trigger: "bg-zinc-900 cursor-pointer px-4 rounded-xl" }}
+        classNames={{
+          trigger: "bg-zinc-900 cursor-pointer rounded-xl",
+        }}
         subtitle={subtitle}
       >
         <div className="space-y-3">
