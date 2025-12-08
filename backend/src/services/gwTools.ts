@@ -63,8 +63,8 @@ export const searchGroundwaterDataTool = tool(
       type === "DISTRICT"
         ? stateName
         : type === "TALUK"
-        ? districtName
-        : undefined;
+          ? districtName
+          : undefined;
 
     if (yearParams.fromYear || yearParams.toYear || yearParams.specificYears) {
       let records = await searchAndGetHistoricalData(locationName, type!);
@@ -102,9 +102,8 @@ export const searchGroundwaterDataTool = tool(
     if (!record) {
       return JSON.stringify({
         found: false,
-        message: `No groundwater data found for "${locationName}"${
-          parentName ? ` in ${parentName}` : ""
-        }`,
+        message: `No groundwater data found for "${locationName}"${parentName ? ` in ${parentName}` : ""
+          }`,
       });
     }
     return JSON.stringify({
@@ -439,11 +438,10 @@ export const getCategorySummaryTool = tool(
         latestCategoryCounts: latestData.categoryCounts,
         categoryTrendData,
         yearlyStats: yearlyData,
-        textSummary: `Category Summary (${yearsToQuery[0]} to ${
-          yearsToQuery[yearsToQuery.length - 1]
-        }):\nCurrent: ${Object.entries(latestData.categoryCounts)
-          .map(([cat, count]) => `${cat}: ${count}`)
-          .join(", ")}`,
+        textSummary: `Category Summary (${yearsToQuery[0]} to ${yearsToQuery[yearsToQuery.length - 1]
+          }):\nCurrent: ${Object.entries(latestData.categoryCounts)
+            .map(([cat, count]) => `${cat}: ${count}`)
+            .join(", ")}`,
       });
     }
 
@@ -597,7 +595,7 @@ export const getLocationDetailsTool = tool(
           ),
           overallTrend:
             Number(latestData.stageOfExtractionTotal) >
-            Number(earliestData.stageOfExtractionTotal)
+              Number(earliestData.stageOfExtractionTotal)
               ? "Worsening"
               : "Improving",
         },
