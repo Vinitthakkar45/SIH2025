@@ -1,9 +1,33 @@
-import { pgTable, uuid, text, doublePrecision, jsonb, pgEnum, index, timestamp, integer, type AnyPgColumn } from "drizzle-orm/pg-core";
+import {
+  pgTable,
+  uuid,
+  text,
+  doublePrecision,
+  jsonb,
+  pgEnum,
+  index,
+  timestamp,
+  integer,
+  type AnyPgColumn,
+} from "drizzle-orm/pg-core";
 import { relations } from "drizzle-orm";
 
-export const locationTypeEnum = pgEnum("location_type", ["COUNTRY", "STATE", "DISTRICT", "TALUK"]);
+export const locationTypeEnum = pgEnum("location_type", [
+  "COUNTRY",
+  "STATE",
+  "DISTRICT",
+  "TALUK",
+]);
 
-export const categoryEnum = pgEnum("category", ["safe", "semi_critical", "critical", "over_exploited", "salinity", "hilly_area", "no_data"]);
+export const categoryEnum = pgEnum("category", [
+  "safe",
+  "semi_critical",
+  "critical",
+  "over_exploited",
+  "salinity",
+  "hilly_area",
+  "no_data",
+]);
 
 export const locations = pgTable(
   "locations",
@@ -270,71 +294,39 @@ export const groundwaterData = pgTable(
       table.locationId,
       table.year
     ),
-    // Index for category-based queries (finding safe/critical/over-exploited areas)
-    index("groundwater_data_category_idx").on(table.categoryTotal),
-    // Index for stage of extraction queries (ranking by extraction levels)
-    index("groundwater_data_stage_extraction_idx").on(
-      table.stageOfExtractionTotal
-    ),
-    // Composite index for filtered category queries by year
-    index("groundwater_data_year_category_idx").on(
-      table.year,
-      table.categoryTotal
-    ),
-    // Indexes for common ranking queries
-    index("groundwater_data_rainfall_idx").on(table.rainfallTotal),
-    index("groundwater_data_recharge_idx").on(table.rechargeTotalTotal),
-    index("groundwater_data_extraction_idx").on(table.draftTotalTotal),
-    index("groundwater_data_extractable_idx").on(table.extractableTotal),
   ]
 );
 
-export const groundwaterDataRelations = relations(groundwaterData, ({ one }) => ({
-  location: one(locations, {
-    fields: [groundwaterData.locationId],
-    references: [locations.id],
-  }),
-}));
+export const groundwaterDataRelations = relations(
+  groundwaterData,
+  ({ one }) => ({
+    location: one(locations, {
+      fields: [groundwaterData.locationId],
+      references: [locations.id],
+    }),
+  })
+);
 
 // ==================== CHAT HISTORY SCHEMA ====================
 
-export const messageRoleEnum = pgEnum("message_role", ["user", "assistant", "system"]);
+export const messageRoleEnum = pgEnum("message_role", [
+  "user",
+  "assistant",
+  "system",
+]);
 
-// Conversations table - stores each chat session
-export const conversations = pgTable(
-  "conversations",
-  {
-    id: uuid("id").primaryKey().defaultRandom(),
-    title: text("title").notNull().default("New Chat"),
-    createdAt: timestamp("created_at").defaultNow().notNull(),
-    updatedAt: timestamp("updated_at").defaultNow().notNull(),
-    // For future multi-user support
-    userId: text("user_id").default("default_user"),
-    // Metadata for the conversation
-    metadata: jsonb("metadata"),
-  },
-  (table) => [
-    index("conversations_user_id_idx").on(table.userId),
-    index("conversations_created_at_idx").on(table.createdAt),
-    index("conversations_updated_at_idx").on(table.updatedAt),
-  ]
-);
-
-// Messages table - stores individual messages within conversations
+// Messages table - stores individual messages in the single conversation
 export const messages = pgTable(
   "messages",
   {
     id: uuid("id").primaryKey().defaultRandom(),
-    conversationId: uuid("conversation_id")
-      .notNull()
-      .references(() => conversations.id, { onDelete: "cascade" }),
     role: messageRoleEnum("role").notNull(),
     content: text("content").notNull(),
     // Store visualizations (charts, tables, etc.) as JSON
     visualizations: jsonb("visualizations").$type<object[]>(),
     // Store suggestions for follow-up questions
     suggestions: jsonb("suggestions").$type<string[]>(),
-    // Message order within conversation
+    // Message order in the conversation
     sequenceNumber: integer("sequence_number").notNull(),
     createdAt: timestamp("created_at").defaultNow().notNull(),
     // Token count for context management
@@ -343,21 +335,7 @@ export const messages = pgTable(
     metadata: jsonb("metadata"),
   },
   (table) => [
-    index("messages_conversation_id_idx").on(table.conversationId),
-    index("messages_sequence_idx").on(table.conversationId, table.sequenceNumber),
+    index("messages_sequence_idx").on(table.sequenceNumber),
     index("messages_created_at_idx").on(table.createdAt),
   ]
 );
-
-// Relations for conversations
-export const conversationsRelations = relations(conversations, ({ many }) => ({
-  messages: many(messages),
-}));
-
-// Relations for messages
-export const messagesRelations = relations(messages, ({ one }) => ({
-  conversation: one(conversations, {
-    fields: [messages.conversationId],
-    references: [conversations.id],
-  }),
-}));

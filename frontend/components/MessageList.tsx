@@ -49,7 +49,7 @@ export default function MessageList({
           <div
             className={`max-w-[85%] ${
               message.role === "user"
-                ? "bg-zinc-100 text-zinc-900 rounded-2xl rounded-br-md px-4 py-2.5 w-fit"
+                ? "bg-primary text-white rounded-full rounded-br-none px-4 py-2 w-fit"
                 : "w-full"
             }`}
           >
@@ -79,7 +79,9 @@ export default function MessageList({
                 <MarkdownRenderer
                   content={message.content}
                   className={
-                    message.role === "assistant" ? "text-zinc-200 text-[15px]" : "text-[15px]"
+                    message.role === "assistant"
+                      ? "text-zinc-200 text-[15px]"
+                      : "text-[15px]"
                   }
                 />
                 {message.charts && message.charts.length > 0 && (

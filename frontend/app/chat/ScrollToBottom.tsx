@@ -1,7 +1,7 @@
 "use client";
 
-import { ArrowDown } from "lucide-react";
 import { Button } from "@heroui/button";
+import { ArrowDown01Icon } from "@/components/icons";
 import { motion, AnimatePresence } from "framer-motion";
 
 interface ScrollToBottomProps {
@@ -9,7 +9,10 @@ interface ScrollToBottomProps {
   onClick: () => void;
 }
 
-export default function ScrollToBottom({ visible, onClick }: ScrollToBottomProps) {
+export default function ScrollToBottom({
+  visible,
+  onClick,
+}: ScrollToBottomProps) {
   return (
     <AnimatePresence>
       {visible && (
@@ -27,7 +30,7 @@ export default function ScrollToBottom({ visible, onClick }: ScrollToBottomProps
             onPress={onClick}
             className="bg-zinc-800/90 hover:bg-zinc-700 text-zinc-300 shadow-lg border border-zinc-700/50 backdrop-blur-sm"
           >
-            <ArrowDown size={16} />
+            <ArrowDown01Icon width={16} height={16} />
           </Button>
         </motion.div>
       )}
