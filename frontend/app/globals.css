@@ -4,6 +4,10 @@
 @source '../node_modules/@heroui/theme/dist*.{js,ts,jsx,tsx}';
 @custom-variant dark (&:is(.dark *));
 
+body {
+  padding-top: env(safe-area-inset-top, 24px);
+}
+
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
@@ -29,8 +33,8 @@
   --color-bg-tertiary: #f3f4f6;
 
   /* Background Colors - Dark */
-  --color-dark-primary: var(--color-zinc-900);
-  --color-dark-secondary: var(--color-zinc-950);
+  --color-dark-primary: var(--color-zinc-950);
+  --color-dark-secondary: var(--color-zinc-800);
   --color-dark-tertiary: #27272a;
   --color-dark-card: #1f1f23;
   --color-dark-card-hover: #28282e;

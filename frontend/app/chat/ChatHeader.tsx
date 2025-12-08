@@ -1,11 +1,6 @@
 "use client";
 
-import {
-  DropletIcon,
-  Location01Icon,
-  MapsIcon,
-  Message01Icon,
-} from "@/components/icons";
+import { DropletIcon, MapsIcon, Message01Icon } from "@/components/icons";
 import { Avatar, Button } from "@heroui/react";
 import Link from "next/link";
 
@@ -45,7 +40,6 @@ export default function ChatHeader({ showMap, onToggleMap }: ChatHeaderProps) {
             )
           }
           className="h-8"
-          radius="lg"
         >
           <span className="text-[13px] font-medium">
             {showMap ? "Hide Map" : "Show Map"}

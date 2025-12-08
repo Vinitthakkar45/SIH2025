@@ -1,11 +1,12 @@
 "use client";
 
-import { Skeleton } from "@heroui/react";
+import type { Visualization } from "@/types/visualizations";
+import { Button } from "@heroui/button";
+import { Accordion, AccordionItem, Skeleton } from "@heroui/react";
+import { motion } from "framer-motion";
+import { ChartAverageIcon, Idea01Icon } from "./icons";
 import MarkdownRenderer from "./MarkdownRenderer";
 import VisualizationRenderer from "./VisualizationRenderer";
-import { Button } from "@heroui/button";
-import type { Visualization } from "@/types/visualizations";
-import { motion } from "framer-motion";
 
 export interface Message {
   role: "user" | "assistant";
@@ -47,7 +48,7 @@ export default function MessageList({
             </motion.div>
           )}
           <div
-            className={`max-w-[85%] ${
+            className={`max-w-[85%] space-y-5 ${
               message.role === "user"
                 ? "bg-primary text-white rounded-3xl rounded-br-none px-4 py-2 w-fit"
                 : "w-full"
@@ -70,33 +71,45 @@ export default function MessageList({
                   }
                 />
                 {message.charts && message.charts.length > 0 && (
-                  <motion.div
-                    initial={{ opacity: 0, y: 10 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ delay: 0.2 }}
-                    className="mt-3"
-                  >
-                    <VisualizationRenderer visualizations={message.charts} />
-                  </motion.div>
+                  <Accordion variant="light" className="px-0" isCompact>
+                    <AccordionItem
+                      key="charts"
+                      aria-label="Visualizations"
+                      classNames={{
+                        trigger:
+                          "hover:text-white cursor-pointer hover:bg-zinc-900 px-3 transition-colors rounded-lg mb-2 group",
+                      }}
+                      title={
+                        <div className="text-sm text-zinc-400 font-semibold flex items-center gap-3 group-hover:text-white">
+                          View Charts
+                          <span>
+                            <ChartAverageIcon />
+                          </span>
+                        </div>
+                      }
+                    >
+                      <VisualizationRenderer visualizations={message.charts} />
+                    </AccordionItem>
+                  </Accordion>
                 )}
                 {message.suggestions && message.suggestions.length > 0 && (
                   <motion.div
                     initial={{ opacity: 0, y: 10 }}
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ delay: 0.3 }}
-                    className="mt-4 mb-8"
+                    className="mb-8"
                   >
-                    <p className="text-xs text-zinc-500 mb-3 font-medium">
-                      Suggested questions
-                    </p>
+                    <div className="text-xs text-zinc-500 mb-4 font-semibold pl-2.5 flex items-center gap-2 ">
+                      Suggestions
+                      <Idea01Icon width={17} height={17} />
+                    </div>
                     <div className="flex flex-wrap gap-2">
                       {message.suggestions.map((suggestion, i) => (
                         <Button
                           key={i}
                           onPress={() => onSuggestionClick(suggestion)}
                           variant="flat"
-                          size="sm"
-                          className="text-wrap border-2 border-dashed border-zinc-600 font-light text-zinc-400"
+                          className="text-wrap border-1 border-dashed border-zinc-600 font-light text-zinc-400 text-left justify-start"
                         >
                           {suggestion}
                         </Button>

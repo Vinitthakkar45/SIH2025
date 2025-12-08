@@ -2,7 +2,6 @@ import { Router, Request, Response, type IRouter } from "express";
 import {
   streamGroundwaterChat,
   invokeGroundwaterChat,
-  ChatMessage,
 } from "../services/gwAgent";
 import { generateSuggestions } from "../services/llm";
 import logger from "../utils/logger";

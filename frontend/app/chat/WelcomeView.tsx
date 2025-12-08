@@ -4,11 +4,9 @@ import {
   AnalyticsUpIcon,
   Chart01Icon,
   DropletIcon,
-  Image01Icon,
   Location01Icon,
-  Mic01Icon,
 } from "@/components/icons";
-import { Card, CardBody, Chip } from "@heroui/react";
+import { Card, CardBody } from "@heroui/react";
 import { motion } from "framer-motion";
 
 interface WelcomeViewProps {
@@ -28,7 +26,7 @@ export default function WelcomeView({
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.5 }}
-      className="pt-20 pb-8 px-4"
+      className="pt-12 px-4"
     >
       {/* Greeting */}
       <div className="text-center mb-10">
@@ -50,7 +48,7 @@ export default function WelcomeView({
         </motion.p>
       </div>
       {/* Action Cards */}
-      <motion.div className="grid grid-cols-1 md:grid-cols-2 gap-3 max-w-xl mx-auto mb-6 auto-rows-fr">
+      <motion.div className="grid grid-cols-1 md:grid-cols-2 gap-3 max-w-2xl mx-auto mb-6 auto-rows-fr">
         {[
           {
             icon: <Location01Icon width={22} height={22} />,
@@ -124,23 +122,5 @@ function ActionCard({ icon, title, description, onClick }: ActionCardProps) {
         </p>
       </CardBody>
     </Card>
-  );
-}
-
-interface QuickActionPillProps {
-  icon: React.ReactNode;
-  text: string;
-}
-
-function QuickActionPill({ icon, text }: QuickActionPillProps) {
-  return (
-    <Chip
-      variant="flat"
-      startContent={icon}
-      size="sm"
-      className="bg-white/5 hover:bg-white/10 text-zinc-400 hover:text-zinc-300 cursor-pointer text-[12px] h-7 transition-all"
-    >
-      {text}
-    </Chip>
   );
 }

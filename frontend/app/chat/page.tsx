@@ -1,14 +1,14 @@
 "use client";
 
+import ChatComposer from "@/components/ChatComposer";
+import { Location01Icon } from "@/components/icons";
 import MessageList, { type Message } from "@/components/MessageList";
 import type { Visualization } from "@/types/visualizations";
 import { useEffect, useRef, useState } from "react";
 import ChatHeader from "./ChatHeader";
-import ChatComposer from "@/components/ChatComposer";
-import WelcomeView from "./WelcomeView";
-import ScrollToBottom from "./ScrollToBottom";
 import MapWrapper from "./MapWrapper";
-import { Location01Icon } from "@/components/icons";
+import ScrollToBottom from "./ScrollToBottom";
+import WelcomeView from "./WelcomeView";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001";
 
@@ -29,6 +29,7 @@ export default function ChatPage() {
   });
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const messagesContainerRef = useRef<HTMLDivElement>(null);
+  const abortControllerRef = useRef<AbortController | null>(null);
 
   useEffect(() => {
     const fetchLocation = async (latitude: number, longitude: number) => {
@@ -112,15 +113,19 @@ export default function ChatPage() {
       { role: "assistant", content: "", charts: [], isLoading: true },
     ]);
 
+    // Create new AbortController for this request
+    abortControllerRef.current = new AbortController();
+
     try {
       const response = await fetch(`${API_URL}/api/gw-chat/stream`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           query,
-          chatHistory: messages
-            .filter((m) => m.role !== "system")
-            .map((m) => ({ role: m.role, content: m.content })),
+          chatHistory: messages.map((m) => ({
+            role: m.role,
+            content: m.content,
+          })),
         }),
       });
 
@@ -210,36 +215,45 @@ export default function ChatPage() {
         }
       }
     } catch (error) {
-      console.error("Chat error:", error);
-      setMessages((prev) => {
-        const updated = [...prev];
-        const lastIdx = updated.length - 1;
-        updated[lastIdx] = {
-          role: "assistant",
-          content: "Sorry, I encountered an error. Please try again.",
-          isLoading: false,
-        };
-        return updated;
-      });
+      // Check if error was due to abort
+      if (error instanceof Error && error.name === "AbortError") {
+        setMessages((prev) => {
+          const updated = [...prev];
+          const lastIdx = updated.length - 1;
+          updated[lastIdx] = {
+            ...updated[lastIdx],
+            isLoading: false,
+          };
+          return updated;
+        });
+      } else {
+        console.error("Chat error:", error);
+        setMessages((prev) => {
+          const updated = [...prev];
+          const lastIdx = updated.length - 1;
+          updated[lastIdx] = {
+            role: "assistant",
+            content: "Sorry, I encountered an error. Please try again.",
+            isLoading: false,
+          };
+          return updated;
+        });
+      }
     } finally {
       setIsLoading(false);
+      abortControllerRef.current = null;
     }
   };
 
-  const suggestedQueries = [
-    `What is the groundwater status in ${userLocation.state}?`,
-    `Show historical trend for ${userLocation.district}`,
-    `How has groundwater extraction changed in ${userLocation.state} over the years?`,
-  ];
-
-  const handleNewChat = () => {
-    setMessages([]);
-    setInput("");
+  const handleStop = () => {
+    if (abortControllerRef.current) {
+      abortControllerRef.current.abort();
+    }
   };
 
   return (
-    <div className="flex h-screen bg-zinc-950 overflow-hidden">
-      <div className="flex flex-col flex-1 min-w-0">
+    <div className="flex h-screen bg-dark-primary overflow-hidden">
+      <div className="flex flex-col flex-1 min-w-0 relative">
         <ChatHeader
           onToggleMap={() => setShowMap(!showMap)}
           showMap={showMap}
@@ -274,11 +288,12 @@ export default function ChatPage() {
           }}
         />
 
-        <div className="max-w-2xl mx-auto w-full">
+        <div className="max-w-2xl mx-auto w-full pt-3">
           <ChatComposer
             value={input}
             onChange={setInput}
             onSubmit={handleSubmit}
+            onStop={handleStop}
             isLoading={isLoading}
             placeholder="Ask me anything..."
           />

@@ -3,3 +3,5 @@ data/
 node_modules/
 .turbo/
 /backend/src/db/drizzle/meta/
+.DS_Store
+.idea
