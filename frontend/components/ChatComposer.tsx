@@ -1,8 +1,8 @@
 "use client";
 
 import { Button } from "@heroui/button";
-import { Spinner, Textarea } from "@heroui/react";
-import { useRef, useState } from "react";
+import { Textarea } from "@heroui/react";
+import { useState } from "react";
 import { SentIcon, StopIcon } from "./icons";
 
 interface ChatComposerProps {

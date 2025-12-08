@@ -1,11 +1,6 @@
 "use client";
 
-import {
-  DropletIcon,
-  Location01Icon,
-  MapsIcon,
-  Message01Icon,
-} from "@/components/icons";
+import { DropletIcon, MapsIcon, Message01Icon } from "@/components/icons";
 import { Avatar, Button } from "@heroui/react";
 import Link from "next/link";
 

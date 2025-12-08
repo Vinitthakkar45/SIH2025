@@ -4,7 +4,7 @@ import ChartRenderer from "@/components/ChartRenderer";
 import ChatComposer from "@/components/ChatComposer";
 import { SparklesIcon } from "@/components/icons";
 import MarkdownRenderer from "@/components/MarkdownRenderer";
-import { Button, Chip } from "@heroui/react";
+import { Button } from "@heroui/react";
 import { useState } from "react";
 
 const EXAMPLES = [

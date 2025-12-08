@@ -1,7 +1,6 @@
 "use client";
 
 import { Accordion, AccordionItem } from "@heroui/react";
-import { ArrowDown01Icon } from "./icons";
 
 interface DataAccordionItemProps {
   title: string;

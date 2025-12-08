@@ -4,11 +4,9 @@ import {
   AnalyticsUpIcon,
   Chart01Icon,
   DropletIcon,
-  Image01Icon,
   Location01Icon,
-  Mic01Icon,
 } from "@/components/icons";
-import { Card, CardBody, Chip } from "@heroui/react";
+import { Card, CardBody } from "@heroui/react";
 import { motion } from "framer-motion";
 
 interface WelcomeViewProps {
@@ -124,23 +122,5 @@ function ActionCard({ icon, title, description, onClick }: ActionCardProps) {
         </p>
       </CardBody>
     </Card>
-  );
-}
-
-interface QuickActionPillProps {
-  icon: React.ReactNode;
-  text: string;
-}
-
-function QuickActionPill({ icon, text }: QuickActionPillProps) {
-  return (
-    <Chip
-      variant="flat"
-      startContent={icon}
-      size="sm"
-      className="bg-white/5 hover:bg-white/10 text-zinc-400 hover:text-zinc-300 cursor-pointer text-[12px] h-7 transition-all"
-    >
-      {text}
-    </Chip>
   );
 }

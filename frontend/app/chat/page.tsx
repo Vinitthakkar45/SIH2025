@@ -1,14 +1,14 @@
 "use client";
 
+import ChatComposer from "@/components/ChatComposer";
+import { Location01Icon } from "@/components/icons";
 import MessageList, { type Message } from "@/components/MessageList";
 import type { Visualization } from "@/types/visualizations";
 import { useEffect, useRef, useState } from "react";
 import ChatHeader from "./ChatHeader";
-import ChatComposer from "@/components/ChatComposer";
-import WelcomeView from "./WelcomeView";
-import ScrollToBottom from "./ScrollToBottom";
 import MapWrapper from "./MapWrapper";
-import { Location01Icon } from "@/components/icons";
+import ScrollToBottom from "./ScrollToBottom";
+import WelcomeView from "./WelcomeView";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001";
 
@@ -238,17 +238,6 @@ export default function ChatPage() {
       setIsLoading(false);
       abortControllerRef.current = null;
     }
-  };
-
-  const suggestedQueries = [
-    `What is the groundwater status in ${userLocation.state}?`,
-    `Show historical trend for ${userLocation.district}`,
-    `How has groundwater extraction changed in ${userLocation.state} over the years?`,
-  ];
-
-  const handleNewChat = () => {
-    setMessages([]);
-    setInput("");
   };
 
   const handleStop = () => {
