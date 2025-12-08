@@ -51,21 +51,13 @@ export interface StreamCallbacks {
 /**
  * Generate a response using Gemini
  */
-export async function generateResponse(
-  query: string,
-  context: string,
-  chatHistory: Message[] = []
-): Promise<string> {
+export async function generateResponse(query: string, context: string): Promise<string> {
   const contextMessage = `Context (use ONLY this data):
 ${context}
 
 Question: ${query}`;
 
   const model = gemini.getGenerativeModel({ model: "gemini-2.5-flash" });
-  const history = chatHistory.map((m) => ({
-    role: m.role === "assistant" ? "model" : "user",
-    parts: [{ text: m.content }],
-  }));
 
   const chat = model.startChat({
     history: [
@@ -78,7 +70,6 @@ Question: ${query}`;
           },
         ],
       },
-      ...history,
     ],
     generationConfig: { temperature: 0.3, maxOutputTokens: 2048 },
   });
@@ -90,12 +81,7 @@ Question: ${query}`;
 /**
  * Generate a streaming response using Gemini
  */
-export async function generateStreamingResponse(
-  query: string,
-  context: string,
-  chatHistory: Message[] = [],
-  callbacks: StreamCallbacks
-): Promise<void> {
+export async function generateStreamingResponse(query: string, context: string, callbacks: StreamCallbacks): Promise<void> {
   const contextMessage = `Context (use ONLY this data):
 ${context}
 
@@ -103,10 +89,6 @@ Question: ${query}`;
 
   try {
     const model = gemini.getGenerativeModel({ model: "gemini-2.5-flash" });
-    const history = chatHistory.map((m) => ({
-      role: m.role === "assistant" ? "model" : "user",
-      parts: [{ text: m.content }],
-    }));
 
     const chat = model.startChat({
       history: [
@@ -119,7 +101,6 @@ Question: ${query}`;
             },
           ],
         },
-        ...history,
       ],
       generationConfig: { temperature: 0.3, maxOutputTokens: 2048 },
     });
@@ -138,19 +119,14 @@ Question: ${query}`;
     callbacks.onComplete(fullResponse);
   } catch (error) {
     logger.error({ err: error }, "Streaming response failed");
-    callbacks.onError(
-      error instanceof Error ? error : new Error(String(error))
-    );
+    callbacks.onError(error instanceof Error ? error : new Error(String(error)));
   }
 }
 
 /**
  * Generate suggested follow-up questions
  */
-export async function generateSuggestions(
-  query: string,
-  context: string
-): Promise<string[]> {
+export async function generateSuggestions(query: string, context: string): Promise<string[]> {
   const prompt = `Based on this groundwater data query and context, suggest 3 relevant follow-up questions the user might want to ask. Return only the questions, one per line.
 
 Query: ${query}
