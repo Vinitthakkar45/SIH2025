@@ -8,6 +8,7 @@ import {
   ChartTooltip,
   ChartTooltipContent,
 } from "@/components/ui/chart";
+import { SparklesIcon } from "../icons";
 
 // Sample data for floating charts
 const groundwaterCategoryData = [
@@ -35,20 +36,10 @@ const chartConfig = {
 export default function Hero() {
   return (
     <section className="relative pt-32 pb-20 md:pt-40 md:pb-28 overflow-hidden">
-      {/* Subtle gradient overlay */}
       <div className="absolute inset-0 bg-linear-to-b from-zinc-900/50 to-zinc-950 pointer-events-none"></div>
 
       <div className="relative z-10 max-w-6xl mx-auto px-6">
         <div className="text-center space-y-8">
-          {/* Badge */}
-          <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-zinc-800/50">
-            <span className="text-xs font-medium text-zinc-300">
-              ✨ INGRES AI version 2.0 is here!
-            </span>
-            <span className="text-xs text-primary">Read more →</span>
-          </div>
-
-          {/* Heading */}
           <div className="space-y-6">
             <h1 className="text-5xl md:text-7xl font-bold tracking-tight text-white leading-tight">
               Redefine Analytics
@@ -61,10 +52,9 @@ export default function Hero() {
             </p>
           </div>
 
-          {/* Search Box - styled like Framer template */}
           <div className="max-w-2xl mx-auto">
             <div className="relative">
-              <div className="flex items-center gap-3 px-4 py-3.5 bg-zinc-900 rounded-2xl shadow-xl">
+              <div className="flex items-center gap-3 px-4 py-3.5 bg-zinc-900 rounded-2xl shadow-xl max-w-lg mx-auto">
                 <input
                   type="text"
                   placeholder="What's the groundwater status in my region?"
@@ -72,14 +62,11 @@ export default function Hero() {
                   readOnly
                 />
                 <div className="flex items-center gap-2">
-                  <span className="text-xs text-zinc-400 px-2 py-1 bg-zinc-800 rounded">
-                    INGRES AI
-                  </span>
                   <Button
                     size="sm"
                     color="primary"
                     className="font-medium"
-                    startContent={<span className="text-base">✨</span>}
+                    startContent={<SparklesIcon width={18} height={18} />}
                   >
                     Send
                   </Button>
