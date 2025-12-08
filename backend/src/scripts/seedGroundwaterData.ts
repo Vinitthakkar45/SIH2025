@@ -555,6 +555,8 @@ async function clearDatabase() {
 
 // Cache for location DB IDs by external UUID
 const locationDbIdCache = new Map<string, string>();
+// Cache for location DB IDs by name+parent+type for deduplication
+const locationNameCache = new Map<string, string>();
 
 async function getOrCreateLocation(
   externalId: string,
@@ -566,7 +568,15 @@ async function getOrCreateLocation(
   const cached = locationDbIdCache.get(externalId);
   if (cached) return cached;
 
-  // Check if exists in DB
+  // For STATE, DISTRICT, and TALUK, check if a location with the same name and parent already exists
+  const nameCacheKey = `${type}:${name}:${parentDbId || "null"}`;
+  const cachedByName = locationNameCache.get(nameCacheKey);
+  if (cachedByName) {
+    locationDbIdCache.set(externalId, cachedByName);
+    return cachedByName;
+  }
+
+  // Check if exists in DB by external ID
   const existing = await db
     .select()
     .from(locations)
@@ -575,7 +585,30 @@ async function getOrCreateLocation(
 
   if (existing.length > 0) {
     locationDbIdCache.set(externalId, existing[0].id);
+    locationNameCache.set(nameCacheKey, existing[0].id);
     return existing[0].id;
+  }
+
+  // Check if a location with the same name, type, and parent already exists
+  if (type !== "COUNTRY") {
+    const existingByName = await db
+      .select()
+      .from(locations)
+      .where(eq(locations.name, name))
+      .limit(100);
+
+    const matchingLocation = existingByName.find(
+      (loc) => loc.type === type && loc.parentId === parentDbId
+    );
+
+    if (matchingLocation) {
+      console.log(
+        `  Found existing ${type} by name: ${name} (reusing ID: ${matchingLocation.id})`
+      );
+      locationDbIdCache.set(externalId, matchingLocation.id);
+      locationNameCache.set(nameCacheKey, matchingLocation.id);
+      return matchingLocation.id;
+    }
   }
 
   // Create new location
@@ -590,6 +623,7 @@ async function getOrCreateLocation(
     .returning();
 
   locationDbIdCache.set(externalId, newLocation.id);
+  locationNameCache.set(nameCacheKey, newLocation.id);
   return newLocation.id;
 }
 
