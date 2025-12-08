@@ -2,7 +2,7 @@ import { HealtcareIcon } from "@/components/icons";
 
 export default function Footer() {
   return (
-    <footer className="bg-zinc-950 border-t border-zinc-800 py-12">
+    <footer className="bg-zinc-950 py-12">
       <div className="max-w-6xl mx-auto px-6">
         <div className="flex flex-col md:flex-row justify-between items-center gap-4">
           <p className="text-sm text-zinc-500">

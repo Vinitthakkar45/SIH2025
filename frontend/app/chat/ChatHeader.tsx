@@ -7,6 +7,7 @@ import {
   Message01Icon,
 } from "@/components/icons";
 import { Avatar, Button } from "@heroui/react";
+import Link from "next/link";
 
 interface ChatHeaderProps {
   showMap: boolean;
@@ -15,9 +16,9 @@ interface ChatHeaderProps {
 
 export default function ChatHeader({ showMap, onToggleMap }: ChatHeaderProps) {
   return (
-    <header className="bg-zinc-900 px-3 py-2.5 border-b border-zinc-800/50">
+    <header className="bg-zinc-900 px-3 py-2.5">
       <div className="max-w-5xl mx-auto flex items-center justify-between">
-        <div className="flex items-center gap-2">
+        <Link className="flex items-center gap-2" href={"/"}>
           <Avatar
             icon={<DropletIcon width={16} height={16} />}
             className="w-7 h-7 bg-blue-600 text-white"
@@ -31,7 +32,7 @@ export default function ChatHeader({ showMap, onToggleMap }: ChatHeaderProps) {
               Groundwater Resource Information
             </p>
           </div>
-        </div>
+        </Link>
         <Button
           size="sm"
           onPress={onToggleMap}

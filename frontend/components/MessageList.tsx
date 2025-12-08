@@ -41,7 +41,7 @@ export default function MessageList({
               initial={{ scale: 0 }}
               animate={{ scale: 1 }}
               transition={{ delay: 0.1, type: "spring", stiffness: 200 }}
-              className="w-8 h-8 rounded-full bg-linear-to-br from-white/10 to-white/5 flex items-center justify-center shrink-0 mt-1 border border-white/10"
+              className="w-8 h-8 rounded-full bg-linear-to-br from-white/10 to-white/5 flex items-center justify-center shrink-0 mt-1"
             >
               <span className="text-xl">🇮🇳</span>
             </motion.div>
@@ -111,7 +111,7 @@ export default function MessageList({
                           onPress={() => onSuggestionClick(suggestion)}
                           variant="flat"
                           size="sm"
-                          className="bg-white/5 hover:bg-white/10 text-zinc-300 hover:text-zinc-100 text-[13px] min-h-9 h-auto py-2 font-medium border border-white/10 hover:border-white/20 transition-all whitespace-normal text-left"
+                          className="bg-white/5 hover:bg-white/10 text-zinc-300 hover:text-zinc-100 text-[13px] min-h-9 h-auto py-2 font-medium transition-all whitespace-normal text-left"
                           radius="lg"
                         >
                           {suggestion}

@@ -284,7 +284,7 @@ export default function ChatPage() {
       <div
         className={`${
           showMap ? "w-1/2 opacity-100" : "w-0 opacity-0"
-        } transition-all duration-300 bg-zinc-900 border-l border-zinc-800 overflow-hidden`}
+        } transition-all duration-300 bg-zinc-900 overflow-hidden`}
       >
         {showMap ? (
           <MapWrapper />

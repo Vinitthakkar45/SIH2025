@@ -55,7 +55,7 @@ export default function DataTable({ columns, data }: DataTableProps) {
     <div className="overflow-x-auto">
       <table className="w-full text-sm">
         <thead>
-          <tr className="border-b border-zinc-700">
+          <tr className="">
             {columns.map((col) => (
               <th
                 key={col}
@@ -72,9 +72,7 @@ export default function DataTable({ columns, data }: DataTableProps) {
             return (
               <tr
                 key={idx}
-                className={`border-b border-zinc-800 ${
-                  isTotal ? "font-semibold bg-zinc-800/50" : ""
-                }`}
+                className={`${isTotal ? "font-semibold bg-zinc-800/50" : ""}`}
               >
                 {columns.map((col) => {
                   const normalizedKey = getKeyFromColumn(col);

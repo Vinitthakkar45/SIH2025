@@ -92,38 +92,32 @@ export default function MarkdownRenderer({
 
           // Blockquotes
           blockquote: ({ children }) => (
-            <blockquote className="border-l-4 border-zinc-600 pl-4 my-2 italic text-zinc-300">
+            <blockquote className="pl-4 my-2 italic text-zinc-300">
               {children}
             </blockquote>
           ),
 
           // Horizontal rule
-          hr: () => <hr className="border-zinc-700 my-4" />,
+          hr: () => <hr className="my-4" />,
 
           // Tables
           table: ({ children }) => (
             <div className="overflow-x-auto my-2">
-              <table className="min-w-full border-collapse border border-zinc-700">
-                {children}
-              </table>
+              <table className="min-w-full border-collapse">{children}</table>
             </div>
           ),
           thead: ({ children }) => (
             <thead className="bg-zinc-800">{children}</thead>
           ),
           tbody: ({ children }) => <tbody>{children}</tbody>,
-          tr: ({ children }) => (
-            <tr className="border-b border-zinc-700">{children}</tr>
-          ),
+          tr: ({ children }) => <tr className="">{children}</tr>,
           th: ({ children }) => (
-            <th className="px-4 py-2 text-left text-zinc-100 font-semibold border border-zinc-700">
+            <th className="px-4 py-2 text-left text-zinc-100 font-semibold">
               {children}
             </th>
           ),
           td: ({ children }) => (
-            <td className="px-4 py-2 text-zinc-200 border border-zinc-700">
-              {children}
-            </td>
+            <td className="px-4 py-2 text-zinc-200">{children}</td>
           ),
 
           // Strong and emphasis
