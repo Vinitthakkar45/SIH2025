@@ -12,7 +12,7 @@ export default function Navigation() {
           </div>
           <span className="font-semibold text-base text-white">INGRES AI</span>
         </div>
-        <Link href="/chat">
+        <a href="/chat">
           <Button
             color="primary"
             size="sm"
@@ -21,7 +21,7 @@ export default function Navigation() {
           >
             Get started now
           </Button>
-        </Link>
+        </a>
       </div>
     </nav>
   );

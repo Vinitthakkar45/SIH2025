@@ -1,13 +1,12 @@
 "use client";
 
-import { Button } from "@heroui/button";
-import Link from "next/link";
-import { Cell, Pie, PieChart, Bar, BarChart, XAxis, YAxis } from "recharts";
 import {
   ChartContainer,
   ChartTooltip,
   ChartTooltipContent,
 } from "@/components/ui/chart";
+import { Button } from "@heroui/button";
+import { Bar, BarChart, Cell, Pie, PieChart, XAxis, YAxis } from "recharts";
 import { SparklesIcon } from "../icons";
 
 // Sample data for floating charts
@@ -78,11 +77,11 @@ export default function Hero() {
 
           {/* CTA Buttons */}
           <div className="flex flex-col sm:flex-row items-center justify-center gap-3 pt-4">
-            <Link href="/chat">
+            <a href="/chat">
               <Button color="primary" className="font-medium px-4">
                 Get started now
               </Button>
-            </Link>
+            </a>
           </div>
 
           {/* Social Proof */}

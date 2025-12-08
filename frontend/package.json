@@ -7,7 +7,8 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
-    "clean": "rm -rf .next node_modules"
+    "clean": "rm -rf .next node_modules",
+    "serve":"npx serve@latest out"
   },
   "dependencies": {
     "@fontsource-variable/inter": "^5.2.8",
