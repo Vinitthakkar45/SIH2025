@@ -4,6 +4,8 @@ export interface ChartData {
   tableType?: string;
   title: string;
   description?: string;
+  /** Layman-friendly explanation of what this visualization shows and key insights */
+  explanation?: string;
   data: unknown;
   columns?: string[];
   color?: string;

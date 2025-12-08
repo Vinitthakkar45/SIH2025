@@ -43,7 +43,7 @@ const yearFilterSchema = {
     .describe("Array of specific years."),
 };
 
-export const searchGroundwaterDataTool = tool(
+const searchGroundwaterDataTool = tool(
   async ({
     locationName,
     locationType,
@@ -127,7 +127,7 @@ export const searchGroundwaterDataTool = tool(
   }
 );
 
-export const compareLocationsTool = tool(
+const compareLocationsTool = tool(
   async ({ locationNames, locationType, ...yearParams }) => {
     const type = locationType?.toUpperCase() as LocationType | undefined;
 
@@ -222,7 +222,7 @@ export const compareLocationsTool = tool(
   }
 );
 
-export const getHistoricalDataTool = tool(
+const getHistoricalDataTool = tool(
   async ({ locationName, locationType, ...yearParams }) => {
     const type = locationType.toUpperCase() as LocationType;
     let records = await searchAndGetHistoricalData(locationName, type);
@@ -263,7 +263,7 @@ export const getHistoricalDataTool = tool(
   }
 );
 
-export const getTopLocationsTool = tool(
+const getTopLocationsTool = tool(
   async ({ metric, locationType, order, limit, ...yearParams }) => {
     const type = locationType.toUpperCase() as LocationType;
     const metricLabel = metricToLabel(metric);

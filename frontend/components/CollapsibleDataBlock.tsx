@@ -6,6 +6,7 @@ import { ArrowDown01Icon, ArrowUp01Icon } from "./icons";
 interface CollapsibleDataBlockProps {
   title: string;
   subtitle?: string;
+  explanation?: string;
   defaultOpen?: boolean;
   children: React.ReactNode;
 }
@@ -13,6 +14,7 @@ interface CollapsibleDataBlockProps {
 export default function CollapsibleDataBlock({
   title,
   subtitle,
+  explanation,
   defaultOpen = false,
   children,
 }: CollapsibleDataBlockProps) {
@@ -31,14 +33,24 @@ export default function CollapsibleDataBlock({
           )}
         </div>
         {isOpen ? (
-          <ArrowUp01Icon className="text-zinc-400" size={18} />
+          <ArrowUp01Icon className="text-zinc-400 flex-shrink-0" size={18} />
         ) : (
-          <ArrowDown01Icon className="text-zinc-400" size={18} />
+          <ArrowDown01Icon className="text-zinc-400 flex-shrink-0" size={18} />
         )}
       </button>
 
       {isOpen && (
         <div className="px-4 py-3 border-t border-zinc-700 space-y-3">
+          {explanation && (
+            <div className="bg-zinc-800/50 rounded-md px-3 py-2 border-l-2 border-blue-500">
+              <p className="text-xs text-zinc-300 leading-relaxed">
+                <span className="text-blue-400 font-medium">
+                  💡 What this shows:{" "}
+                </span>
+                {explanation}
+              </p>
+            </div>
+          )}
           {children}
         </div>
       )}

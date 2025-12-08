@@ -27,6 +27,7 @@ export default function VisualizationRenderer({ visualizations }: VisualizationR
           <StatsChart
             title={viz.title}
             data={viz.data as Record<string, unknown>}
+            explanation={viz.explanation}
           />
         </div>
       );
@@ -43,6 +44,7 @@ export default function VisualizationRenderer({ visualizations }: VisualizationR
               ? `Total: ${viz.headerValue.toLocaleString("en-IN")} ham`
               : viz.description
           }
+          explanation={viz.explanation}
           defaultOpen={true}
         >
           <DataTable columns={viz.columns} data={viz.data as TableRow[]} />
@@ -58,6 +60,7 @@ export default function VisualizationRenderer({ visualizations }: VisualizationR
             key={index}
             title={viz.title}
             subtitle={viz.description}
+            explanation={viz.explanation}
             defaultOpen={true}
           >
             <BarChartComponent
@@ -76,6 +79,7 @@ export default function VisualizationRenderer({ visualizations }: VisualizationR
             key={index}
             title={viz.title}
             subtitle={viz.description}
+            explanation={viz.explanation}
             defaultOpen={true}
           >
             <PieChartComponent
@@ -96,6 +100,7 @@ export default function VisualizationRenderer({ visualizations }: VisualizationR
             key={index}
             title={viz.title}
             subtitle={viz.description}
+            explanation={viz.explanation}
             defaultOpen={true}
           >
             <LineChartComponent
@@ -119,6 +124,7 @@ export default function VisualizationRenderer({ visualizations }: VisualizationR
           key={index}
           title={viz.title}
           subtitle={viz.subtitle}
+          explanation={viz.explanation}
           defaultOpen={false}
         >
           <div className="space-y-3">
@@ -137,6 +143,7 @@ export default function VisualizationRenderer({ visualizations }: VisualizationR
           key={index}
           title={viz.title}
           subtitle={viz.subtitle}
+          explanation={viz.explanation}
           defaultOpen={viz.defaultOpen !== false}
         >
           <div className="space-y-3">

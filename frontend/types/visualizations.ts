@@ -57,6 +57,8 @@ export interface Visualization {
   title: string;
   subtitle?: string;
   description?: string;
+  /** Layman-friendly explanation of what this visualization shows and key insights */
+  explanation?: string;
   headerValue?: number;
   year?: string;
   columns?: string[];

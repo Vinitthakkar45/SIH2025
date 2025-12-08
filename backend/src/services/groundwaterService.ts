@@ -7,6 +7,21 @@ import {
   groupRecordsByYear,
 } from "../utils/aggregation";
 import {
+  generateSummaryExplanation,
+  generateRechargeExplanation,
+  generateExtractionPieExplanation,
+  generateWaterBalanceExplanation,
+  getStageExplanation,
+  getCategoryExplanation,
+  generateComparisonExplanation,
+  generateStageComparisonExplanation,
+  generateTrendExplanation,
+  generateRainfallTrendExplanation,
+  generateMultiLineTrendExplanation,
+  generateCategoryDistributionExplanation,
+  generateYoYChangeExplanation,
+} from "../utils/chartExplanations";
+import {
   getAvailableYears,
   getDistrictsOfState,
   getLocationById,
@@ -516,20 +531,24 @@ export function generateChartData(record: GroundwaterRecord): object[] {
   const locationName = record.location.name;
   const visualizations: object[] = [];
 
+  // Prepare summary data for explanation
+  const summaryData = {
+    extractableTotal: data.extractableTotal,
+    extractionTotal: data.draftTotalTotal,
+    rainfall: data.rainfallTotal,
+    rechargeTotal: data.rechargeTotalTotal,
+    naturalDischarges: data.lossTotal,
+    stageOfExtraction: data.stageOfExtractionTotal,
+    category: data.categoryTotal,
+  };
+
   // 1. Summary Stats Card (Key Metrics)
   visualizations.push({
     type: "summary",
     title: `Area of Focus: ${locationName} (${record.location.type})`,
     year: record.year,
-    data: {
-      extractableTotal: data.extractableTotal,
-      extractionTotal: data.draftTotalTotal,
-      rainfall: data.rainfallTotal,
-      rechargeTotal: data.rechargeTotalTotal,
-      naturalDischarges: data.lossTotal,
-      stageOfExtraction: data.stageOfExtractionTotal,
-      category: data.categoryTotal,
-    },
+    data: summaryData,
+    explanation: generateSummaryExplanation(summaryData),
   });
 
   // 2. Ground Water Recharge Table
@@ -587,6 +606,8 @@ export function generateChartData(record: GroundwaterRecord): object[] {
     headerValue: data.rechargeTotalTotal,
     columns: ["Source", "Command", "Non Command", "Total"],
     data: rechargeTableData,
+    explanation:
+      "This table shows where underground water comes from. 'Command' areas have irrigation infrastructure (canals, etc.), while 'Non-Command' areas rely on natural recharge. Rainfall is usually the biggest source of recharge.",
   });
 
   // 3. Natural Discharges Table
@@ -634,6 +655,8 @@ export function generateChartData(record: GroundwaterRecord): object[] {
     headerValue: data.lossTotal,
     columns: ["Source", "Command", "Non Command", "Total"],
     data: dischargesTableData,
+    explanation:
+      "Natural discharge is water that leaves the underground reserves naturally - through streams, evaporation, and plant absorption. This water is 'lost' from the groundwater system but is part of the natural water cycle.",
   });
 
   // 4. Annual Extractable Ground Water Resources Table
@@ -650,6 +673,8 @@ export function generateChartData(record: GroundwaterRecord): object[] {
         total: data.extractableTotal,
       },
     ],
+    explanation:
+      "This is the total amount of underground water that can safely be pumped out each year without depleting the reserves. Think of it as the 'annual water budget' - the amount nature refills each year.",
   });
 
   // 5. Ground Water Extraction Table
@@ -688,6 +713,8 @@ export function generateChartData(record: GroundwaterRecord): object[] {
     headerValue: data.draftTotalTotal,
     columns: ["Source", "Command", "Non Command", "Total"],
     data: extractionTableData,
+    explanation:
+      "This shows how much underground water is actually being pumped out and for what purpose. Irrigation (farming) typically uses the most water, followed by household (domestic) and factory (industrial) use.",
   });
 
   // 6. Recharge Sources Bar Chart
@@ -710,6 +737,10 @@ export function generateChartData(record: GroundwaterRecord): object[] {
       title: `Ground Water Recharge Sources - ${locationName}`,
       description: "Breakdown of ground water recharge by source (ham)",
       data: rechargeChartData,
+      explanation: generateRechargeExplanation(
+        rechargeChartData as Array<{ name: string; value: unknown }>,
+        data.rechargeTotalTotal
+      ),
     });
   }
 
@@ -727,6 +758,9 @@ export function generateChartData(record: GroundwaterRecord): object[] {
       title: `Ground Water Extraction by Use - ${locationName}`,
       description: "Distribution of ground water extraction (ham)",
       data: extractionPieData,
+      explanation: generateExtractionPieExplanation(
+        extractionPieData as Array<{ name: string; value: unknown }>
+      ),
     });
   }
 
@@ -756,22 +790,28 @@ export function generateChartData(record: GroundwaterRecord): object[] {
       title: `Command vs Non-Command Areas - ${locationName}`,
       description: "Comparison between command and non-command areas (ham)",
       data: commandComparisonData,
+      explanation:
+        "Command areas have irrigation infrastructure like canals, while non-command areas rely on direct rainfall and wells. This comparison shows how water availability and usage differ between these two types of regions.",
     });
   }
 
   // 9. Water Balance Overview (Stacked/Comparison)
+  const waterBalanceData = {
+    recharge: data.rechargeTotalTotal,
+    naturalDischarge: data.lossTotal,
+    extractable: data.extractableTotal,
+    extraction: data.draftTotalTotal,
+    availabilityForFuture: data.availabilityFutureTotal,
+  };
   visualizations.push({
     type: "chart",
     chartType: "waterBalance",
     title: `Water Balance Overview - ${locationName}`,
     description: "Overall groundwater balance",
-    data: {
-      recharge: data.rechargeTotalTotal,
-      naturalDischarge: data.lossTotal,
-      extractable: data.extractableTotal,
-      extraction: data.draftTotalTotal,
-      availabilityForFuture: data.availabilityFutureTotal,
-    },
+    data: waterBalanceData,
+    explanation: generateWaterBalanceExplanation(
+      waterBalanceData as Record<string, unknown>
+    ),
   });
 
   // 10. Stage of Extraction Category Status
@@ -806,6 +846,10 @@ export function generateChartData(record: GroundwaterRecord): object[] {
       critical: 90,
       overExploited: 100,
     },
+    explanation:
+      getStageExplanation(stageOfExtraction) +
+      " " +
+      getCategoryExplanation(category),
   });
 
   // 11. Recharge vs Extraction Comparison (Bar Chart)
@@ -823,6 +867,8 @@ export function generateChartData(record: GroundwaterRecord): object[] {
       description:
         "Comparison of recharge, extraction, and natural discharge (ham)",
       data: rechargeVsExtraction,
+      explanation:
+        "This compares water coming in (recharge) versus water going out (extraction + natural discharge). For sustainable water use, recharge should be higher than extraction. If extraction exceeds recharge, water levels will drop over time.",
     });
   }
 
@@ -845,6 +891,15 @@ export function generateChartData(record: GroundwaterRecord): object[] {
       availabilityData.futureAvailability
     )} ham`,
     data: availabilityData,
+    explanation: `Currently using ${availabilityData.utilizationPercent.toFixed(
+      0
+    )}% of available water. ${
+      availabilityData.remainingCapacity > 0
+        ? `There's still ${formatNumber(
+            availabilityData.remainingCapacity
+          )} ham of unused capacity for future needs.`
+        : "All available water is being used - no room for additional extraction."
+    }`,
   });
 
   return visualizations;
@@ -879,6 +934,7 @@ export function generateComparisonChartData(
       "Stage (%)",
     ],
     data: locationsTableData,
+    explanation: `This table compares ${records.length} locations side by side. Look at the 'Stage (%)' column - below 70% is healthy, 70-90% needs attention, above 90% is concerning, and above 100% means water is being used faster than it can be replenished.`,
   });
 
   // 2. Key Metrics Comparison Bar Chart
@@ -899,6 +955,8 @@ export function generateComparisonChartData(
     description:
       "Comparison of recharge, extraction, and extractable resources (ham)",
     data: comparisonData,
+    explanation:
+      "This chart shows three key metrics for each location: recharge (water coming in), extraction (water being used), and extractable (safe limit). Ideally, extraction should be less than both recharge and extractable resources.",
   });
 
   // 3. Rainfall Comparison
@@ -914,6 +972,11 @@ export function generateComparisonChartData(
     description: "Annual rainfall across locations (mm)",
     data: rainfallData,
     color: "hsl(217, 91%, 60%)",
+    explanation: generateComparisonExplanation(
+      rainfallData as Array<{ name: string; value: unknown }>,
+      "Rainfall",
+      "mm"
+    ),
   });
 
   // 4. Stage of Extraction Comparison
@@ -941,6 +1004,9 @@ export function generateComparisonChartData(
     data: stageData,
     threshold: { safe: 70, critical: 90, overExploited: 100 },
     colorByValue: true,
+    explanation: generateStageComparisonExplanation(
+      stageData as Array<{ name: string; value: number; category?: string }>
+    ),
   });
 
   // 5. Total Recharge Comparison
@@ -956,6 +1022,11 @@ export function generateComparisonChartData(
     description: "Annual groundwater recharge across locations (ham)",
     data: rechargeData,
     color: "hsl(142, 71%, 45%)",
+    explanation: generateComparisonExplanation(
+      rechargeData as Array<{ name: string; value: unknown }>,
+      "Groundwater recharge",
+      "ham"
+    ),
   });
 
   // 6. Total Extraction Comparison
@@ -971,6 +1042,11 @@ export function generateComparisonChartData(
     description: "Annual groundwater extraction across locations (ham)",
     data: extractionData,
     color: "hsl(4, 90%, 58%)",
+    explanation: generateComparisonExplanation(
+      extractionData as Array<{ name: string; value: unknown }>,
+      "Water extraction",
+      "ham"
+    ),
   });
 
   // 7. Extractable Resources Comparison
@@ -986,6 +1062,11 @@ export function generateComparisonChartData(
     description: "Annual extractable groundwater resources (ham)",
     data: extractableData,
     color: "hsl(258, 90%, 66%)",
+    explanation: generateComparisonExplanation(
+      extractableData as Array<{ name: string; value: unknown }>,
+      "Extractable water resources",
+      "ham"
+    ),
   });
 
   // 8. Net Groundwater Balance Comparison
@@ -1007,6 +1088,8 @@ export function generateComparisonChartData(
     description: "Net balance: Recharge - Extraction - Natural Discharge (ham)",
     data: balanceData,
     color: "hsl(38, 92%, 50%)",
+    explanation:
+      "Net balance shows if water levels are likely to rise or fall. Positive values (bars going up) mean more water is coming in than going out - good for sustainability. Negative values mean water is being depleted faster than nature can replenish it.",
   });
 
   // 9. Recharge vs Extraction Multi-line Comparison
@@ -1025,6 +1108,8 @@ export function generateComparisonChartData(
     title: "Recharge vs Extraction Direct Comparison",
     description: "Side-by-side comparison of recharge and extraction (ham)",
     data: rechargeVsExtractionData,
+    explanation:
+      "This directly compares how much water is being replenished (recharge) versus how much is being used (extraction) in each location. When extraction bars are higher than recharge bars, that location is using water faster than it's being replaced.",
   });
 
   // 10. Category Distribution by Location
@@ -1045,6 +1130,8 @@ export function generateComparisonChartData(
     title: "Category by Location",
     columns: ["Location", "Category", "Stage (%)"],
     data: locationCategoryData,
+    explanation:
+      "This table shows the water health category for each location. 'Safe' means sustainable usage, 'Semi-Critical' and 'Critical' indicate increasing stress, and 'Over-Exploited' means water is being used faster than it's replenished.",
   });
 
   // Also add the aggregate pie chart
@@ -1056,15 +1143,17 @@ export function generateComparisonChartData(
   }
 
   if (Object.keys(categoryCount).length > 0) {
+    const pieData = Object.entries(categoryCount).map(([name, value]) => ({
+      name,
+      value,
+    }));
     visualizations.push({
       type: "chart",
       chartType: "pie",
       title: "Category Distribution",
       description: "Distribution of locations by groundwater category",
-      data: Object.entries(categoryCount).map(([name, value]) => ({
-        name,
-        value,
-      })),
+      data: pieData,
+      explanation: generateCategoryDistributionExplanation(pieData),
     });
   }
 
@@ -1100,7 +1189,8 @@ export function generateTrendChartData(
       rechargeFromRainfall: Number(data.rechargeRainfallTotal) || 0,
       rechargeFromCanal: Number(data.rechargeCanalTotal) || 0,
       rechargeFromWaterBody: Number(data.rechargeWaterBodyTotal) || 0,
-      rechargeFromArtificial: Number(data.rechargeArtificialStructureTotal) || 0,
+      rechargeFromArtificial:
+        Number(data.rechargeArtificialStructureTotal) || 0,
       rechargeOther:
         (Number(data.rechargeSurfaceIrrigationTotal) || 0) +
         (Number(data.rechargeGwIrrigationTotal) || 0),
@@ -1141,29 +1231,39 @@ export function generateTrendChartData(
       "Category",
     ],
     data: tableData,
+    explanation: `This table shows how groundwater conditions have changed in ${locationName} over ${tableData.length} years. Watch the 'Stage (%)' column - if it's increasing over time, water stress is getting worse. If the category changes from 'Safe' to 'Critical', it's a warning sign.`,
   });
 
+  const extractionTrendData = trendData.map((t) => ({
+    year: t.year,
+    value: t.extraction,
+  }));
   visualizations.push({
     type: "chart",
     chartType: "line",
     title: `Groundwater Extraction Trend - ${locationName}`,
     description: "Historical trend of groundwater extraction (ham)",
-    data: trendData.map((t) => ({
-      year: t.year,
-      value: t.extraction,
-    })),
+    data: extractionTrendData,
+    explanation: generateTrendExplanation(
+      extractionTrendData,
+      "Groundwater extraction"
+    ),
   });
 
+  const stageTrendData = trendData.map((t) => ({
+    year: t.year,
+    value: t.stageOfExtraction,
+  }));
   visualizations.push({
     type: "chart",
     chartType: "line",
     title: `Stage of Extraction Trend - ${locationName}`,
     description: "Historical trend of extraction stage (%)",
-    data: trendData.map((t) => ({
-      year: t.year,
-      value: t.stageOfExtraction,
-    })),
+    data: stageTrendData,
     threshold: { safe: 70, critical: 90, overExploited: 100 },
+    explanation:
+      generateTrendExplanation(stageTrendData, "Stage of extraction") +
+      " Values above the red line (100%) indicate unsustainable water use.",
   });
 
   visualizations.push({
@@ -1176,6 +1276,8 @@ export function generateTrendChartData(
       recharge: t.recharge,
       extraction: t.extraction,
     })),
+    explanation:
+      "This shows the race between water coming in (recharge) and water going out (extraction). When the extraction line is above the recharge line, water levels are likely falling. Ideally, recharge should stay above extraction.",
   });
 
   visualizations.push({
@@ -1191,6 +1293,8 @@ export function generateTrendChartData(
       "artificial structures": t.rechargeFromArtificial,
       "other irrigation": t.rechargeOther,
     })),
+    explanation:
+      "This breaks down where underground water recharge comes from. Rainfall is usually the biggest contributor. If rainfall recharge is declining, it could indicate changing climate patterns or reduced water absorption.",
   });
 
   visualizations.push({
@@ -1205,6 +1309,8 @@ export function generateTrendChartData(
       domestic: t.extractionDomestic,
       industrial: t.extractionIndustrial,
     })),
+    explanation:
+      "This shows who is using the groundwater. Irrigation (farming) typically uses 80-90% of groundwater. If any category is growing rapidly, it may indicate increased demand that needs to be managed.",
   });
 
   visualizations.push({
@@ -1216,17 +1322,21 @@ export function generateTrendChartData(
       year: t.year,
       value: t.extractable,
     })),
+    explanation:
+      "This shows how much water can safely be extracted each year. A declining trend means less water is becoming available - either due to lower rainfall, reduced recharge, or ongoing over-extraction.",
   });
 
+  const rainfallBarData = trendData.map((t) => ({
+    name: t.year,
+    value: t.rainfall,
+  }));
   visualizations.push({
     type: "chart",
     chartType: "bar",
     title: `Rainfall Trend - ${locationName}`,
     description: "Annual rainfall over years (mm)",
-    data: trendData.map((t) => ({
-      name: t.year,
-      value: t.rainfall,
-    })),
+    data: rainfallBarData,
+    explanation: generateRainfallTrendExplanation(rainfallBarData),
   });
 
   // Net Balance Chart (Recharge - Extraction)
@@ -1239,6 +1349,8 @@ export function generateTrendChartData(
       name: t.year,
       value: (t.recharge || 0) - (t.extraction || 0),
     })),
+    explanation:
+      "Positive bars (going up) mean more water is being added than removed that year - good for water levels. Negative bars (going down) mean water is being depleted. Look for patterns - consistent negative values mean ongoing water stress.",
   });
 
   // Sustainability Index Chart (Recharge/Extraction ratio)
@@ -1252,6 +1364,8 @@ export function generateTrendChartData(
       value:
         t.extraction && t.extraction > 0 ? (t.recharge || 0) / t.extraction : 0,
     })),
+    explanation:
+      "This measures sustainability: values above 1.0 mean more water is being recharged than extracted (sustainable). Values below 1.0 mean water is being used faster than it's replenished (unsustainable). Aim for 1.0 or higher.",
   });
 
   // Water Stress Indicator combining extraction and rainfall
@@ -1266,6 +1380,8 @@ export function generateTrendChartData(
       "stage of extraction": t.stageOfExtraction,
       "rainfall index": t.rainfall ? t.rainfall / 1000 : 0, // Scaled for comparison
     })),
+    explanation:
+      "This combines two stress indicators: extraction stage (how much we're using) and rainfall (nature's supply). When extraction is high and rainfall is low, water stress is at its worst. Look for years where these lines diverge.",
   });
 
   visualizations.push({
@@ -1279,6 +1395,8 @@ export function generateTrendChartData(
       extraction: t.extraction,
       discharge: t.naturalDischarge,
     })),
+    explanation:
+      "This shows the complete water picture: recharge (water in), extraction (water pumped out), and natural discharge (water lost to nature). For balance, recharge should exceed extraction plus discharge.",
   });
 
   // Year-over-year changes
@@ -1317,6 +1435,7 @@ export function generateTrendChartData(
       description:
         "Percentage change in extraction and recharge from previous year",
       data: yoyData,
+      explanation: generateYoYChangeExplanation(yoyData),
     });
   }
 
@@ -1337,28 +1456,38 @@ export function generateTrendChartData(
     trendData.reduce((sum, t) => sum + (t.stageOfExtraction || 0), 0) /
     trendData.length;
 
+  const trendSummaryData = {
+    yearsAnalyzed: trendData.length,
+    categoryChanges: categoryChanges.length - 1,
+    currentCategory: latestData.category || "Unknown",
+    initialCategory: earliestData.category || "Unknown",
+    avgStageOfExtraction: Math.round(avgStageOfExtraction * 10) / 10,
+    extractionTrend:
+      latestData.extraction > earliestData.extraction
+        ? "Increasing"
+        : "Decreasing",
+    rechargeTrend:
+      latestData.recharge > earliestData.recharge ? "Increasing" : "Decreasing",
+    overallTrend:
+      latestData.stageOfExtraction > earliestData.stageOfExtraction
+        ? "Worsening"
+        : "Improving",
+  };
+
+  const overallTrendExplanation =
+    trendSummaryData.overallTrend === "Worsening"
+      ? "The overall trend shows increasing water stress over the years. Conservation measures may be needed."
+      : "The overall trend shows improvement - water conditions are getting better or stabilizing.";
+
   visualizations.push({
     type: "stats",
     title: `Trend Summary - ${locationName}`,
-    data: {
-      yearsAnalyzed: trendData.length,
-      categoryChanges: categoryChanges.length - 1,
-      currentCategory: latestData.category || "Unknown",
-      initialCategory: earliestData.category || "Unknown",
-      avgStageOfExtraction: Math.round(avgStageOfExtraction * 10) / 10,
-      extractionTrend:
-        latestData.extraction > earliestData.extraction
-          ? "Increasing"
-          : "Decreasing",
-      rechargeTrend:
-        latestData.recharge > earliestData.recharge
-          ? "Increasing"
-          : "Decreasing",
-      overallTrend:
-        latestData.stageOfExtraction > earliestData.stageOfExtraction
-          ? "Worsening"
-          : "Improving",
-    },
+    data: trendSummaryData,
+    explanation: `Over ${trendData.length} years, the water category changed ${
+      categoryChanges.length - 1
+    } time(s). Currently: ${
+      trendSummaryData.currentCategory
+    }. Extraction is ${trendSummaryData.extractionTrend.toLowerCase()} and recharge is ${trendSummaryData.rechargeTrend.toLowerCase()}. ${overallTrendExplanation}`,
   });
 
   return visualizations;
@@ -1486,6 +1615,7 @@ export function generateHistoricalComparisonChartData(
       "Category",
     ],
     data: tableData,
+    explanation: `This compares ${locationsData.length} locations in ${latestYear}. Look at the 'Stage (%)' column to see which areas are under most water stress. Categories range from 'Safe' (healthy) to 'Over-Exploited' (critical).`,
   });
 
   // 2. Extraction Trends - Multi-location line chart
@@ -1507,6 +1637,10 @@ export function generateHistoricalComparisonChartData(
     description: "Groundwater extraction over years across locations (ham)",
     data: extractionTrendData,
     lines: locationNames,
+    explanation: generateMultiLineTrendExplanation(
+      extractionTrendData as Array<Record<string, unknown>>,
+      locationNames
+    ),
   });
 
   // 3. Stage of Extraction Trends
@@ -1529,6 +1663,8 @@ export function generateHistoricalComparisonChartData(
     data: stageTrendData,
     lines: locationNames,
     threshold: { safe: 70, critical: 90, overExploited: 100 },
+    explanation:
+      "This compares water stress levels across locations over time. Lines above 70% indicate stress, above 90% is critical, and above 100% means unsustainable extraction. Watch for lines that are rising - those areas are getting more stressed.",
   });
 
   // 4. Recharge Trends
@@ -1550,6 +1686,8 @@ export function generateHistoricalComparisonChartData(
     description: "Groundwater recharge over years across locations (ham)",
     data: rechargeTrendData,
     lines: locationNames,
+    explanation:
+      "This compares how much water is being added to underground reserves in each location. Rising lines mean improving recharge; falling lines suggest decreasing water replenishment.",
   });
 
   // 5. Rainfall Trends
@@ -1571,6 +1709,8 @@ export function generateHistoricalComparisonChartData(
     description: "Annual rainfall over years across locations (mm)",
     data: rainfallTrendData,
     lines: locationNames,
+    explanation:
+      "Rainfall directly affects groundwater recharge. Compare how rainfall patterns differ between locations and over time. Locations with declining rainfall may face future water challenges.",
   });
 
   // 6. Extractable Resources Trends
@@ -1592,6 +1732,8 @@ export function generateHistoricalComparisonChartData(
     description: "Available extractable resources over years (ham)",
     data: extractableTrendData,
     lines: locationNames,
+    explanation:
+      "This shows how much water can safely be extracted in each location. Declining lines indicate shrinking water availability - a warning sign for future water security.",
   });
 
   // 7. Net Balance Trends (Recharge - Extraction - Loss)
@@ -1619,6 +1761,8 @@ export function generateHistoricalComparisonChartData(
     description: "Net balance (Recharge - Extraction - Loss) over years (ham)",
     data: balanceTrendData,
     lines: locationNames,
+    explanation:
+      "Positive values mean water levels are likely stable or rising; negative values mean depletion. Compare which locations have consistently positive or negative balances to understand long-term sustainability.",
   });
 
   // 8. Latest Year Bar Comparison - Extraction
@@ -1639,6 +1783,11 @@ export function generateHistoricalComparisonChartData(
     description: "Groundwater extraction in latest year (ham)",
     data: latestExtractionData,
     color: "hsl(4, 90%, 58%)",
+    explanation: generateComparisonExplanation(
+      latestExtractionData as Array<{ name: string; value: unknown }>,
+      "Water extraction",
+      "ham"
+    ),
   });
 
   // 9. Latest Year Bar Comparison - Stage
@@ -1667,6 +1816,13 @@ export function generateHistoricalComparisonChartData(
     description: "Stage of extraction in latest year (%)",
     data: latestStageData,
     colorByValue: true,
+    explanation: generateStageComparisonExplanation(
+      latestStageData as Array<{
+        name: string;
+        value: number;
+        category?: string;
+      }>
+    ),
   });
 
   return visualizations;

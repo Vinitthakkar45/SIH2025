@@ -18,6 +18,12 @@ export const locations = pgTable(
     index("locations_parent_id_idx").on(table.parentId),
     index("locations_type_idx").on(table.type),
     index("locations_external_id_idx").on(table.externalId),
+    // Composite index for faster filtering by type and parent
+    index("locations_type_parent_idx").on(table.type, table.parentId),
+    // Index for name search (for fuzzy matching optimization)
+    index("locations_name_idx").on(table.name),
+    // Composite index for hierarchical queries
+    index("locations_name_type_idx").on(table.name, table.type),
   ]
 );
 
@@ -54,8 +60,12 @@ export const groundwaterData = pgTable(
 
     // Ground Water Recharge (ham)
     rechargeRainfallCommand: doublePrecision("recharge_rainfall_command"),
-    rechargeRainfallNonCommand: doublePrecision("recharge_rainfall_non_command"),
-    rechargeRainfallPoorQuality: doublePrecision("recharge_rainfall_poor_quality"),
+    rechargeRainfallNonCommand: doublePrecision(
+      "recharge_rainfall_non_command"
+    ),
+    rechargeRainfallPoorQuality: doublePrecision(
+      "recharge_rainfall_poor_quality"
+    ),
     rechargeRainfallTotal: doublePrecision("recharge_rainfall_total"),
 
     rechargeCanalCommand: doublePrecision("recharge_canal_command"),
@@ -63,25 +73,51 @@ export const groundwaterData = pgTable(
     rechargeCanalPoorQuality: doublePrecision("recharge_canal_poor_quality"),
     rechargeCanalTotal: doublePrecision("recharge_canal_total"),
 
-    rechargeSurfaceIrrigationCommand: doublePrecision("recharge_surface_irrigation_command"),
-    rechargeSurfaceIrrigationNonCommand: doublePrecision("recharge_surface_irrigation_non_command"),
-    rechargeSurfaceIrrigationPoorQuality: doublePrecision("recharge_surface_irrigation_poor_quality"),
-    rechargeSurfaceIrrigationTotal: doublePrecision("recharge_surface_irrigation_total"),
+    rechargeSurfaceIrrigationCommand: doublePrecision(
+      "recharge_surface_irrigation_command"
+    ),
+    rechargeSurfaceIrrigationNonCommand: doublePrecision(
+      "recharge_surface_irrigation_non_command"
+    ),
+    rechargeSurfaceIrrigationPoorQuality: doublePrecision(
+      "recharge_surface_irrigation_poor_quality"
+    ),
+    rechargeSurfaceIrrigationTotal: doublePrecision(
+      "recharge_surface_irrigation_total"
+    ),
 
-    rechargeGwIrrigationCommand: doublePrecision("recharge_gw_irrigation_command"),
-    rechargeGwIrrigationNonCommand: doublePrecision("recharge_gw_irrigation_non_command"),
-    rechargeGwIrrigationPoorQuality: doublePrecision("recharge_gw_irrigation_poor_quality"),
+    rechargeGwIrrigationCommand: doublePrecision(
+      "recharge_gw_irrigation_command"
+    ),
+    rechargeGwIrrigationNonCommand: doublePrecision(
+      "recharge_gw_irrigation_non_command"
+    ),
+    rechargeGwIrrigationPoorQuality: doublePrecision(
+      "recharge_gw_irrigation_poor_quality"
+    ),
     rechargeGwIrrigationTotal: doublePrecision("recharge_gw_irrigation_total"),
 
     rechargeWaterBodyCommand: doublePrecision("recharge_water_body_command"),
-    rechargeWaterBodyNonCommand: doublePrecision("recharge_water_body_non_command"),
-    rechargeWaterBodyPoorQuality: doublePrecision("recharge_water_body_poor_quality"),
+    rechargeWaterBodyNonCommand: doublePrecision(
+      "recharge_water_body_non_command"
+    ),
+    rechargeWaterBodyPoorQuality: doublePrecision(
+      "recharge_water_body_poor_quality"
+    ),
     rechargeWaterBodyTotal: doublePrecision("recharge_water_body_total"),
 
-    rechargeArtificialStructureCommand: doublePrecision("recharge_artificial_structure_command"),
-    rechargeArtificialStructureNonCommand: doublePrecision("recharge_artificial_structure_non_command"),
-    rechargeArtificialStructurePoorQuality: doublePrecision("recharge_artificial_structure_poor_quality"),
-    rechargeArtificialStructureTotal: doublePrecision("recharge_artificial_structure_total"),
+    rechargeArtificialStructureCommand: doublePrecision(
+      "recharge_artificial_structure_command"
+    ),
+    rechargeArtificialStructureNonCommand: doublePrecision(
+      "recharge_artificial_structure_non_command"
+    ),
+    rechargeArtificialStructurePoorQuality: doublePrecision(
+      "recharge_artificial_structure_poor_quality"
+    ),
+    rechargeArtificialStructureTotal: doublePrecision(
+      "recharge_artificial_structure_total"
+    ),
 
     rechargeTotalCommand: doublePrecision("recharge_total_command"),
     rechargeTotalNonCommand: doublePrecision("recharge_total_non_command"),
@@ -96,12 +132,18 @@ export const groundwaterData = pgTable(
 
     baseflowLateralCommand: doublePrecision("baseflow_lateral_command"),
     baseflowLateralNonCommand: doublePrecision("baseflow_lateral_non_command"),
-    baseflowLateralPoorQuality: doublePrecision("baseflow_lateral_poor_quality"),
+    baseflowLateralPoorQuality: doublePrecision(
+      "baseflow_lateral_poor_quality"
+    ),
     baseflowLateralTotal: doublePrecision("baseflow_lateral_total"),
 
     baseflowVerticalCommand: doublePrecision("baseflow_vertical_command"),
-    baseflowVerticalNonCommand: doublePrecision("baseflow_vertical_non_command"),
-    baseflowVerticalPoorQuality: doublePrecision("baseflow_vertical_poor_quality"),
+    baseflowVerticalNonCommand: doublePrecision(
+      "baseflow_vertical_non_command"
+    ),
+    baseflowVerticalPoorQuality: doublePrecision(
+      "baseflow_vertical_poor_quality"
+    ),
     baseflowVerticalTotal: doublePrecision("baseflow_vertical_total"),
 
     evaporationCommand: doublePrecision("evaporation_command"),
@@ -121,21 +163,35 @@ export const groundwaterData = pgTable(
     extractableTotal: doublePrecision("extractable_total"),
 
     // Total GW Availability
-    totalGwAvailabilityCommand: doublePrecision("total_gw_availability_command"),
-    totalGwAvailabilityNonCommand: doublePrecision("total_gw_availability_non_command"),
-    totalGwAvailabilityPoorQuality: doublePrecision("total_gw_availability_poor_quality"),
+    totalGwAvailabilityCommand: doublePrecision(
+      "total_gw_availability_command"
+    ),
+    totalGwAvailabilityNonCommand: doublePrecision(
+      "total_gw_availability_non_command"
+    ),
+    totalGwAvailabilityPoorQuality: doublePrecision(
+      "total_gw_availability_poor_quality"
+    ),
     totalGwAvailabilityTotal: doublePrecision("total_gw_availability_total"),
 
     // Availability for Future Use
     availabilityFutureCommand: doublePrecision("availability_future_command"),
-    availabilityFutureNonCommand: doublePrecision("availability_future_non_command"),
-    availabilityFuturePoorQuality: doublePrecision("availability_future_poor_quality"),
+    availabilityFutureNonCommand: doublePrecision(
+      "availability_future_non_command"
+    ),
+    availabilityFuturePoorQuality: doublePrecision(
+      "availability_future_poor_quality"
+    ),
     availabilityFutureTotal: doublePrecision("availability_future_total"),
 
     // Ground Water Extraction / Draft (ham)
     draftAgricultureCommand: doublePrecision("draft_agriculture_command"),
-    draftAgricultureNonCommand: doublePrecision("draft_agriculture_non_command"),
-    draftAgriculturePoorQuality: doublePrecision("draft_agriculture_poor_quality"),
+    draftAgricultureNonCommand: doublePrecision(
+      "draft_agriculture_non_command"
+    ),
+    draftAgriculturePoorQuality: doublePrecision(
+      "draft_agriculture_poor_quality"
+    ),
     draftAgricultureTotal: doublePrecision("draft_agriculture_total"),
 
     draftDomesticCommand: doublePrecision("draft_domestic_command"),
@@ -155,33 +211,53 @@ export const groundwaterData = pgTable(
 
     // Stage of Extraction (%)
     stageOfExtractionCommand: doublePrecision("stage_of_extraction_command"),
-    stageOfExtractionNonCommand: doublePrecision("stage_of_extraction_non_command"),
-    stageOfExtractionPoorQuality: doublePrecision("stage_of_extraction_poor_quality"),
+    stageOfExtractionNonCommand: doublePrecision(
+      "stage_of_extraction_non_command"
+    ),
+    stageOfExtractionPoorQuality: doublePrecision(
+      "stage_of_extraction_poor_quality"
+    ),
     stageOfExtractionTotal: doublePrecision("stage_of_extraction_total"),
 
     // GW Allocation
     allocationDomesticCommand: doublePrecision("allocation_domestic_command"),
-    allocationDomesticNonCommand: doublePrecision("allocation_domestic_non_command"),
-    allocationDomesticPoorQuality: doublePrecision("allocation_domestic_poor_quality"),
+    allocationDomesticNonCommand: doublePrecision(
+      "allocation_domestic_non_command"
+    ),
+    allocationDomesticPoorQuality: doublePrecision(
+      "allocation_domestic_poor_quality"
+    ),
     allocationDomesticTotal: doublePrecision("allocation_domestic_total"),
 
     allocationIndustryCommand: doublePrecision("allocation_industry_command"),
-    allocationIndustryNonCommand: doublePrecision("allocation_industry_non_command"),
-    allocationIndustryPoorQuality: doublePrecision("allocation_industry_poor_quality"),
+    allocationIndustryNonCommand: doublePrecision(
+      "allocation_industry_non_command"
+    ),
+    allocationIndustryPoorQuality: doublePrecision(
+      "allocation_industry_poor_quality"
+    ),
     allocationIndustryTotal: doublePrecision("allocation_industry_total"),
 
     allocationTotalCommand: doublePrecision("allocation_total_command"),
     allocationTotalNonCommand: doublePrecision("allocation_total_non_command"),
-    allocationTotalPoorQuality: doublePrecision("allocation_total_poor_quality"),
+    allocationTotalPoorQuality: doublePrecision(
+      "allocation_total_poor_quality"
+    ),
     allocationTotalTotal: doublePrecision("allocation_total_total"),
 
     // Area data
     areaRechargeWorthyTotal: doublePrecision("area_recharge_worthy_total"),
     areaRechargeWorthyCommand: doublePrecision("area_recharge_worthy_command"),
-    areaRechargeWorthyNonCommand: doublePrecision("area_recharge_worthy_non_command"),
-    areaRechargeWorthyPoorQuality: doublePrecision("area_recharge_worthy_poor_quality"),
+    areaRechargeWorthyNonCommand: doublePrecision(
+      "area_recharge_worthy_non_command"
+    ),
+    areaRechargeWorthyPoorQuality: doublePrecision(
+      "area_recharge_worthy_poor_quality"
+    ),
 
-    areaNonRechargeWorthyTotal: doublePrecision("area_non_recharge_worthy_total"),
+    areaNonRechargeWorthyTotal: doublePrecision(
+      "area_non_recharge_worthy_total"
+    ),
     areaTotalTotal: doublePrecision("area_total_total"),
 
     // Report Summary (for aggregated counts at state/district level)
@@ -190,7 +266,26 @@ export const groundwaterData = pgTable(
   (table) => [
     index("groundwater_data_location_id_idx").on(table.locationId),
     index("groundwater_data_year_idx").on(table.year),
-    index("groundwater_data_location_year_idx").on(table.locationId, table.year),
+    index("groundwater_data_location_year_idx").on(
+      table.locationId,
+      table.year
+    ),
+    // Index for category-based queries (finding safe/critical/over-exploited areas)
+    index("groundwater_data_category_idx").on(table.categoryTotal),
+    // Index for stage of extraction queries (ranking by extraction levels)
+    index("groundwater_data_stage_extraction_idx").on(
+      table.stageOfExtractionTotal
+    ),
+    // Composite index for filtered category queries by year
+    index("groundwater_data_year_category_idx").on(
+      table.year,
+      table.categoryTotal
+    ),
+    // Indexes for common ranking queries
+    index("groundwater_data_rainfall_idx").on(table.rainfallTotal),
+    index("groundwater_data_recharge_idx").on(table.rechargeTotalTotal),
+    index("groundwater_data_extraction_idx").on(table.draftTotalTotal),
+    index("groundwater_data_extractable_idx").on(table.extractableTotal),
   ]
 );
 
