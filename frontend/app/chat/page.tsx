@@ -2,14 +2,13 @@
 
 import MessageList, { type Message } from "@/components/MessageList";
 import type { Visualization } from "@/types/visualizations";
-import { useEffect, useRef, useState, useCallback } from "react";
-import Sidebar from "./Sidebar";
+import { useEffect, useRef, useState } from "react";
 import ChatHeader from "./ChatHeader";
-import ChatInput from "./ChatInput";
+import ChatComposer from "@/components/ChatComposer";
 import WelcomeView from "./WelcomeView";
 import ScrollToBottom from "./ScrollToBottom";
 import MapWrapper from "./MapWrapper";
-import { Map as MapIcon } from "lucide-react";
+import { Location01Icon } from "@/components/icons";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001";
 
@@ -23,13 +22,11 @@ export default function ChatPage() {
   const [input, setInput] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [showScrollButton, setShowScrollButton] = useState(false);
-  const [showSidebar, setShowSidebar] = useState(true);
   const [showMap, setShowMap] = useState(false);
   const [userLocation, setUserLocation] = useState<LocationInfo>({
     state: "India",
     district: "India",
   });
-  const [currentConversationId, setCurrentConversationId] = useState<string | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const messagesContainerRef = useRef<HTMLDivElement>(null);
 
@@ -47,7 +44,10 @@ export default function ChatPage() {
         const data = await response.json();
 
         const state = data.principalSubdivision;
-        const district = data.city || data.locality || data.localityInfo?.administrative?.[2]?.name;
+        const district =
+          data.city ||
+          data.locality ||
+          data.localityInfo?.administrative?.[2]?.name;
 
         setUserLocation({ state, district });
       } catch (error) {
@@ -69,42 +69,6 @@ export default function ChatPage() {
     }
   }, []);
 
-  // Load conversation messages when switching conversations
-  const loadConversation = useCallback(async (conversationId: string) => {
-    try {
-      const response = await fetch(`${API_URL}/api/conversations/${conversationId}`);
-      if (response.ok) {
-        const data = await response.json();
-        // Convert stored messages to the format expected by MessageList
-        const loadedMessages: Message[] = data.messages.map(
-          (msg: { role: "user" | "assistant"; content: string; visualizations?: Visualization[]; suggestions?: string[] }) => ({
-            role: msg.role,
-            content: msg.content,
-            charts: msg.visualizations || [],
-            suggestions: msg.suggestions || [],
-            isLoading: false,
-          })
-        );
-        setMessages(loadedMessages);
-        setCurrentConversationId(conversationId);
-      }
-    } catch (error) {
-      console.error("Failed to load conversation:", error);
-    }
-  }, []);
-
-  // Handle selecting a conversation from sidebar
-  const handleSelectConversation = useCallback(
-    (conversationId: string) => {
-      if (conversationId !== currentConversationId) {
-        loadConversation(conversationId);
-      }
-    },
-    [currentConversationId, loadConversation]
-  );
-
-
-
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   };
@@ -112,7 +76,8 @@ export default function ChatPage() {
   const checkScrollPosition = () => {
     if (!messagesContainerRef.current) return;
 
-    const { scrollTop, scrollHeight, clientHeight } = messagesContainerRef.current;
+    const { scrollTop, scrollHeight, clientHeight } =
+      messagesContainerRef.current;
     const isScrollable = scrollHeight > clientHeight;
     const isAtBottom = scrollHeight - scrollTop - clientHeight < 50;
 
@@ -142,16 +107,16 @@ export default function ChatPage() {
     setIsLoading(true);
 
     // Add loading assistant message
-    setMessages((prev) => [...prev, { role: "assistant", content: "", charts: [], isLoading: true }]);
+    setMessages((prev) => [
+      ...prev,
+      { role: "assistant", content: "", charts: [], isLoading: true },
+    ]);
 
     try {
       const response = await fetch(`${API_URL}/api/gw-chat/stream`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          query,
-          conversationId: currentConversationId,
-        }),
+        body: JSON.stringify({ query }),
       });
 
       if (!response.ok) throw new Error("Failed to get response");
@@ -173,12 +138,6 @@ export default function ChatPage() {
           if (line.startsWith("data: ")) {
             try {
               const data = JSON.parse(line.slice(6));
-
-              // Handle conversation ID from server
-              if (data.type === "conversation_id") {
-                setCurrentConversationId(data.conversationId);
-                continue;
-              }
 
               if (data.type === "token") {
                 assistantContent += data.content;
@@ -221,11 +180,6 @@ export default function ChatPage() {
                   return updated;
                 });
               } else if (data.type === "done") {
-                // Update conversation ID if returned
-                if (data.conversationId) {
-                  setCurrentConversationId(data.conversationId);
-                }
-
                 setMessages((prev) => {
                   const updated = [...prev];
                   const lastIdx = updated.length - 1;
@@ -273,32 +227,19 @@ export default function ChatPage() {
     `How has groundwater extraction changed in ${userLocation.state} over the years?`,
   ];
 
-  const handleNewChat = useCallback(() => {
+  const handleNewChat = () => {
     setMessages([]);
-    setCurrentConversationId(null);
     setInput("");
-  }, []);
+  };
 
   return (
     <div className="flex h-screen bg-zinc-950 overflow-hidden">
-      {/* Sidebar */}
-      <Sidebar
-        isOpen={showSidebar}
-        onNewChat={handleNewChat}
-        activeChatId={currentConversationId || undefined}
-        onChatSelect={handleSelectConversation}
-      />
-
-      {/* Main Chat Area */}
       <div className="flex flex-col flex-1 min-w-0">
-        {/* Header */}
         <ChatHeader
-          onToggleSidebar={() => setShowSidebar(!showSidebar)}
           onToggleMap={() => setShowMap(!showMap)}
           showMap={showMap}
         />
 
-        {/* Messages Area */}
         <main
           ref={messagesContainerRef}
           onScroll={handleScroll}
@@ -320,7 +261,6 @@ export default function ChatPage() {
           </div>
         </main>
 
-        {/* Scroll to Bottom Button */}
         <ScrollToBottom
           visible={showScrollButton}
           onClick={() => {
@@ -329,13 +269,15 @@ export default function ChatPage() {
           }}
         />
 
-        {/* Input */}
-        <ChatInput
-          value={input}
-          onChange={setInput}
-          onSubmit={handleSubmit}
-          isLoading={isLoading}
-        />
+        <div className="max-w-2xl mx-auto w-full">
+          <ChatComposer
+            value={input}
+            onChange={setInput}
+            onSubmit={handleSubmit}
+            isLoading={isLoading}
+            placeholder="Ask me anything..."
+          />
+        </div>
       </div>
 
       {/* Map Panel */}
@@ -349,7 +291,11 @@ export default function ChatPage() {
         ) : (
           <div className="flex items-center justify-center h-full text-center text-zinc-400">
             <div>
-              <MapIcon size={48} className="mx-auto mb-4 opacity-50" />
+              <Location01Icon
+                width={48}
+                height={48}
+                className="mx-auto mb-4 opacity-50"
+              />
               <p className="font-medium">Map View</p>
             </div>
           </div>

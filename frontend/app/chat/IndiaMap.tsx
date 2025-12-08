@@ -14,7 +14,7 @@ import {
 } from "leaflet";
 import type { Feature, FeatureCollection, Geometry } from "geojson";
 import "leaflet/dist/leaflet.css";
-import { ChevronLeft, Loader2 } from "lucide-react";
+import { ArrowLeft01Icon, Loading01Icon } from "@/components/icons";
 
 const INDIA_CENTER: LatLngExpression = [22.5937, 78.9629];
 const INDIA_ZOOM = 5;
@@ -49,7 +49,7 @@ function Breadcrumb({ path, onNavigate }: BreadcrumbProps) {
           onClick={() => onNavigate(path.length - 1)}
           className="p-1 hover:bg-gray-700 rounded transition-colors"
         >
-          <ChevronLeft size={16} className="text-gray-300" />
+          <ArrowLeft01Icon width={16} height={16} className="text-gray-300" />
         </button>
       )}
       <div className="text-white text-sm flex items-center gap-1">
@@ -290,7 +290,7 @@ export default function IndiaMap() {
   if (loadingStates) {
     return (
       <div className="w-full h-full flex items-center justify-center bg-gray-900">
-        <Loader2 className="w-8 h-8 animate-spin text-blue-500" />
+        <Loading01Icon className="w-8 h-8 animate-spin text-blue-500" />
       </div>
     );
   }
@@ -325,7 +325,7 @@ export default function IndiaMap() {
 
       {isLevelLoading && (
         <div className="absolute inset-0 bg-gray-900/50 flex items-center justify-center z-[1001]">
-          <Loader2 className="w-8 h-8 animate-spin text-blue-500" />
+          <Loading01Icon className="w-8 h-8 animate-spin text-blue-500" />
         </div>
       )}
 

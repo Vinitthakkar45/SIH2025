@@ -1,14 +1,13 @@
 "use client";
 
 import {
-  Map,
-  TrendingUp,
-  Droplets,
-  BarChart3,
-  Image as ImageIcon,
-  FileText,
-  Mic,
-} from "lucide-react";
+  AnalyticsUpIcon,
+  Chart01Icon,
+  DropletIcon,
+  Image01Icon,
+  Location01Icon,
+  Mic01Icon,
+} from "@/components/icons";
 import { Card, CardBody, Chip } from "@heroui/react";
 import { motion } from "framer-motion";
 
@@ -50,32 +49,29 @@ export default function WelcomeView({
           How can I assist you today?
         </motion.p>
       </div>
-
       {/* Action Cards */}
-      <motion.div
-        className="grid grid-cols-1 md:grid-cols-2 gap-3 max-w-2xl mx-auto mb-6 auto-rows-fr"
-      >
+      <motion.div className="grid grid-cols-1 md:grid-cols-2 gap-3 max-w-xl mx-auto mb-6 auto-rows-fr">
         {[
           {
-            icon: <Map size={22} strokeWidth={2} />,
+            icon: <Location01Icon width={22} height={22} />,
             title: "Regional Analysis",
             description: `Get groundwater status for ${userLocation.state}`,
             query: `What is the groundwater status in ${userLocation.state}?`,
           },
           {
-            icon: <TrendingUp size={22} strokeWidth={2} />,
+            icon: <AnalyticsUpIcon width={22} height={22} />,
             title: "Historical Trends",
             description: `View trends for ${userLocation.district}`,
             query: `Show historical trend for ${userLocation.district}`,
           },
           {
-            icon: <Droplets size={22} strokeWidth={2} />,
+            icon: <DropletIcon width={22} height={22} />,
             title: "Extraction Analysis",
             description: `Analyze extraction changes in ${userLocation.state}`,
             query: `How has groundwater extraction changed in ${userLocation.state} over the years?`,
           },
           {
-            icon: <BarChart3 size={22} strokeWidth={2} />,
+            icon: <Chart01Icon width={22} height={22} />,
             title: "State Comparison",
             description: "Compare data across multiple states",
             query: "Compare groundwater levels across different states",
@@ -86,6 +82,7 @@ export default function WelcomeView({
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.3 + index * 0.1 }}
+            className="w-full"
           >
             <ActionCard
               icon={card.icon}
@@ -95,19 +92,7 @@ export default function WelcomeView({
             />
           </motion.div>
         ))}
-      </motion.div>
-
-      {/* Quick Actions */}
-      <motion.div
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        transition={{ delay: 0.6 }}
-        className="flex flex-wrap justify-center gap-2 max-w-2xl mx-auto"
-      >
-        <QuickActionPill icon={<ImageIcon size={13} />} text="Upload images" />
-        <QuickActionPill icon={<FileText size={13} />} text="Upload files" />
-        <QuickActionPill icon={<Mic size={13} />} text="Voice memo" />
-      </motion.div>
+      </motion.div>{" "}
     </motion.div>
   );
 }
@@ -119,27 +104,24 @@ interface ActionCardProps {
   onClick: () => void;
 }
 
-function ActionCard({
-  icon,
-  title,
-  description,
-  onClick,
-}: ActionCardProps) {
+function ActionCard({ icon, title, description, onClick }: ActionCardProps) {
   return (
     <Card
       isPressable
       onPress={onClick}
-      className="bg-linear-to-br from-zinc-900/50 to-zinc-900/30 border border-white/5 hover:border-white/10 hover:bg-linear-to-br hover:from-zinc-900/70 hover:to-zinc-900/50 transition-all backdrop-blur-sm h-full"
+      className="bg-linear-to-br from-zinc-900/50 to-zinc-900/30 hover:bg-linear-to-br hover:from-zinc-900/70 hover:to-zinc-900/50 transition-all h-full w-full"
       radius="lg"
     >
       <CardBody className="p-6 flex flex-col h-full">
-        <div className="w-11 h-11 rounded-xl bg-linear-to-br from-white/10 to-white/5 flex items-center justify-center mb-4 border border-white/10">
+        <div className="w-11 h-11 rounded-xl bg-linear-to-br from-white/10 to-white/5 flex items-center justify-center mb-4 ">
           <div className="text-zinc-300">{icon}</div>
         </div>
         <h3 className="font-semibold text-zinc-100 mb-2 text-[15px] tracking-tight">
           {title}
         </h3>
-        <p className="text-[13px] text-zinc-500 leading-relaxed">{description}</p>
+        <p className="text-[13px] text-zinc-500 leading-relaxed">
+          {description}
+        </p>
       </CardBody>
     </Card>
   );
