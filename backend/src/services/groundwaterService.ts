@@ -982,10 +982,13 @@ export function generateTrendChartData(
     return {
       year: r.year,
       recharge: data.rechargeTotalTotal,
-      rechargeFromRainfall: data.rechargeFromRainfall,
-      rechargeFromCanal: data.rechargeFromCanal,
-      rechargeFromTanks: data.rechargeFromTanks,
-      rechargeFromOtherSources: data.rechargeFromOtherSources,
+      rechargeFromRainfall: data.rechargeRainfallTotal,
+      rechargeFromCanal: data.rechargeCanalTotal,
+      rechargeFromWaterBody: data.rechargeWaterBodyTotal,
+      rechargeFromArtificial: data.rechargeArtificialStructureTotal,
+      rechargeOther:
+        (data.rechargeSurfaceIrrigationTotal || 0) +
+        (data.rechargeGwIrrigationTotal || 0),
       extraction: data.draftTotalTotal,
       extractionIrrigation: data.draftIrrigationTotal,
       extractionDomestic: data.draftDomesticTotal,
@@ -1069,8 +1072,9 @@ export function generateTrendChartData(
       year: t.year,
       rainfall: t.rechargeFromRainfall,
       canal: t.rechargeFromCanal,
-      tanks: t.rechargeFromTanks,
-      other: t.rechargeFromOtherSources,
+      "water bodies": t.rechargeFromWaterBody,
+      "artificial structures": t.rechargeFromArtificial,
+      "other irrigation": t.rechargeOther,
     })),
   });
 
@@ -1165,22 +1169,28 @@ export function generateTrendChartData(
   // Year-over-year changes
   if (trendData.length > 1) {
     const yoyData: {
-      year: string;
-      extractionChange: number;
-      rechargeChange: number;
+      name: string;
+      extraction: number;
+      recharge: number;
     }[] = [];
     for (let i = 1; i < trendData.length; i++) {
       const prev = trendData[i - 1];
       const curr = trendData[i];
       yoyData.push({
-        year: curr.year,
-        extractionChange:
+        name: curr.year,
+        extraction:
           prev.extraction && prev.extraction > 0
-            ? ((curr.extraction - prev.extraction) / prev.extraction) * 100
+            ? Math.round(
+                ((curr.extraction - prev.extraction) / prev.extraction) *
+                  100 *
+                  10
+              ) / 10
             : 0,
-        rechargeChange:
+        recharge:
           prev.recharge && prev.recharge > 0
-            ? ((curr.recharge - prev.recharge) / prev.recharge) * 100
+            ? Math.round(
+                ((curr.recharge - prev.recharge) / prev.recharge) * 100 * 10
+              ) / 10
             : 0,
       });
     }
@@ -1191,11 +1201,7 @@ export function generateTrendChartData(
       title: `Year-over-Year % Change - ${locationName}`,
       description:
         "Percentage change in extraction and recharge from previous year",
-      data: yoyData.map((d) => ({
-        year: d.year,
-        extraction: d.extractionChange,
-        recharge: d.rechargeChange,
-      })),
+      data: yoyData,
     });
   }
 
