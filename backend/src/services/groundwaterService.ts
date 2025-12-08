@@ -27,6 +27,7 @@ import {
   getLocationById,
   getLocationsByNameAndType,
   getTaluksOfDistrict,
+  LocationRecord,
   searchDistrict,
   searchLocation,
   searchState,
@@ -289,22 +290,29 @@ export async function getHistoricalDataByLocationName(
 
 export async function searchAndGetHistoricalData(
   query: string,
-  locationType: "STATE" | "DISTRICT" | "TALUK"
+  locationType: "STATE" | "DISTRICT" | "TALUK" | undefined
 ): Promise<HistoricalRecord[]> {
   const normalizedQuery = query.replace(/[_-]/g, " ").trim();
 
-  let results: { location: { id: string; name: string } }[];
+  let results: { location: LocationRecord }[];
   if (locationType === "STATE") {
     results = searchState(normalizedQuery);
   } else if (locationType === "DISTRICT") {
     results = searchDistrict(normalizedQuery);
-  } else {
+  } else if (locationType === "TALUK") {
     results = searchTaluk(normalizedQuery);
+  } else {
+    results = searchLocation(normalizedQuery);
   }
 
   if (results.length === 0) return [];
 
   const bestMatch = results[0];
+
+  if (!locationType) {
+    locationType = bestMatch.location.type as "STATE" | "DISTRICT" | "TALUK";
+  }
+
   return getHistoricalDataByLocationName(bestMatch.location.name, locationType);
 }
 

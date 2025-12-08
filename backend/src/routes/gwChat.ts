@@ -5,11 +5,6 @@ import {
   ChatMessage,
 } from "../services/gwAgent";
 import { generateSuggestions } from "../services/llm";
-import {
-  addMessage,
-  updateMessage,
-  getTrimmedChatHistory,
-} from "../services/chatHistory";
 import logger from "../utils/logger";
 
 const router: IRouter = Router();
@@ -27,26 +22,15 @@ router.post("/", async (req: Request, res: Response) => {
       return;
     }
 
-    // Get trimmed chat history from database
-    const effectiveChatHistory: ChatMessage[] = await getTrimmedChatHistory();
-
-    // Store user message
-    await addMessage("user", query);
-
     logger.info(
-      { query, historyLength: effectiveChatHistory.length },
+      { query, historyLength: chatHistory.length },
       "Chat request received"
     );
 
     const { response, charts } = await invokeGroundwaterChat(
       query,
-      effectiveChatHistory
+      chatHistory
     );
-
-    // Store assistant response with charts
-    await addMessage("assistant", response, {
-      visualizations: charts,
-    });
 
     logger.info({ chartsCount: charts.length }, "Chat response generated");
 
@@ -66,18 +50,12 @@ router.post("/", async (req: Request, res: Response) => {
  */
 router.post("/stream", async (req: Request, res: Response) => {
   try {
-    const { query } = req.body;
+    const { query, chatHistory = [] } = req.body;
 
     if (!query || typeof query !== "string") {
       res.status(400).json({ error: "Missing or invalid 'query' field" });
       return;
     }
-
-    // Get trimmed chat history from database
-    const chatHistory = await getTrimmedChatHistory();
-
-    // Store user message
-    await addMessage("user", query);
 
     logger.info(
       { query, historyLength: chatHistory.length },
@@ -89,9 +67,8 @@ router.post("/stream", async (req: Request, res: Response) => {
     res.setHeader("Cache-Control", "no-cache");
     res.setHeader("Connection", "keep-alive");
 
-    // Track accumulated data for storing
+    // Track accumulated charts
     const charts: object[] = [];
-    let assistantMessageId: string | null = null;
 
     await streamGroundwaterChat(query, chatHistory, {
       onToken: async (token) => {
@@ -153,21 +130,6 @@ router.post("/stream", async (req: Request, res: Response) => {
           );
         } catch (error) {
           console.error("Failed to generate suggestions:", error);
-        }
-
-        // Store assistant message with all accumulated data
-        try {
-          const storedMessage = await addMessage("assistant", fullResponse, {
-            visualizations: charts,
-            suggestions,
-          });
-          assistantMessageId = storedMessage.id;
-          logger.debug(
-            { messageId: assistantMessageId },
-            "Stored assistant message"
-          );
-        } catch (error) {
-          logger.error({ err: error }, "Failed to store assistant message");
         }
 
         res.write(`data: ${JSON.stringify({ type: "done" })}\n\n`);

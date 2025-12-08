@@ -299,7 +299,7 @@ EXAMPLES:
 const getHistoricalDataTool = tool(
   async ({ locationName, locationType, ...yearParams }) => {
     const type = locationType?.toUpperCase() as LocationType | undefined;
-    let records = await searchAndGetHistoricalData(locationName, type!);
+    let records = await searchAndGetHistoricalData(locationName, type);
     if (records.length === 0) {
       return JSON.stringify({
         found: false,
