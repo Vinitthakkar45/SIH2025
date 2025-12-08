@@ -1,3 +1,4 @@
+"use i18n";
 "use client";
 
 import { Accordion, AccordionItem } from "@heroui/react";
@@ -40,7 +41,7 @@ export default function DataAccordion({
               <div className="absolute left-2 top-2 h-[80%] w-1 bg-primary rounded-full" />
               <p className="text-xs text-zinc-300 leading-relaxed">
                 <span className="text-primary font-medium">
-                  💡 What this shows:{" "}
+                  💡 What this shows:
                 </span>
                 {explanation}
               </p>

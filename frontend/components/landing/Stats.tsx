@@ -1,3 +1,5 @@
+"use i18n";
+
 const stats = [
   { value: <>6,000+</>, label: <>Blocks Covered</> },
   { value: <>28</>, label: <>States & 8 UTs</> },

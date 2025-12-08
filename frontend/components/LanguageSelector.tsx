@@ -4,7 +4,7 @@ import { ALL_LOCALES } from "@/lib/locales";
 import type { Selection } from "@heroui/react";
 import { Select, SelectItem } from "@heroui/react";
 import Cookies from "js-cookie";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 
 const LANGUAGE_NAMES: Record<
   string,
@@ -31,9 +31,21 @@ export default function LanguageSelector({
   className = "",
   variant = "flat",
 }: LanguageSelectorProps) {
+  // Use consistent default for SSR, sync from cookie on client
   const [currentLocale, setCurrentLocale] = useState(() => {
-    return Cookies.get("lingo-locale") || "en";
+    // Initialize with cookie value on client, default to "en" on server
+    if (typeof window !== "undefined") {
+      return Cookies.get("lingo-locale") || "en";
+    }
+    return "en";
   });
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    // Mark component as mounted
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    setMounted(true);
+  }, []);
 
   const handleLocaleChange = (keys: Selection) => {
     const selected = Array.from(keys)[0] as string;
@@ -46,6 +58,53 @@ export default function LanguageSelector({
 
     window.location.reload();
   };
+
+  // Prevent hydration mismatch by not rendering until mounted
+  if (!mounted) {
+    return (
+      <Select
+        aria-label="Select language"
+        selectedKeys={["en"]}
+        size={size}
+        variant={variant}
+        className={`${className} w-fit min-w-40 dark`}
+        classNames={{
+          value: "text-[13px] font-medium",
+        }}
+        isDisabled
+        disallowEmptySelection
+        renderValue={() => {
+          const lang = LANGUAGE_NAMES["en"];
+          return (
+            <div className="flex items-center gap-1.5">
+              <span>{lang.flag}</span>
+              <span>{lang.native}</span>
+            </div>
+          );
+        }}
+      >
+        {ALL_LOCALES.map((locale) => {
+          const lang = LANGUAGE_NAMES[locale];
+          if (!lang) return null;
+
+          return (
+            <SelectItem
+              key={locale}
+              textValue={`${lang.flag} ${lang.native} (${lang.english})`}
+            >
+              <div className="flex items-center gap-3">
+                <span className="text-xl">{lang.flag}</span>
+                <div>
+                  <div className="text-sm font-medium">{lang.native}</div>
+                  <div className="text-xs text-zinc-500">{lang.english}</div>
+                </div>
+              </div>
+            </SelectItem>
+          );
+        })}
+      </Select>
+    );
+  }
 
   return (
     <Select

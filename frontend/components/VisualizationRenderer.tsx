@@ -10,9 +10,9 @@ import BarChartComponent from "./charts/BarChartComponent";
 import LineChartComponent from "./charts/LineChartComponent";
 import PieChartComponent from "./charts/PieChartComponent";
 import StatsChart from "./charts/StatsChart";
+import ViewChartTitle from "./charts/ViewChartsTitle";
 import DataAccordion from "./DataAccordion";
 import DataTable from "./DataTable";
-import { ChartAverageIcon } from "./icons";
 
 interface VisualizationRendererProps {
   visualizations: Visualization[];
@@ -70,7 +70,7 @@ export default function VisualizationRenderer({
     return { tabularContent, chartContent };
   };
 
-  const { tabularContent, chartContent } = separateContent(visualizations);
+  const { chartContent } = separateContent(visualizations);
 
   const renderSingleVisualization = (
     viz: Visualization,
@@ -231,64 +231,28 @@ export default function VisualizationRenderer({
   };
 
   return (
-    <Accordion variant="shadow" isCompact>
-      <AccordionItem
-        key="data"
-        aria-label="Groundwater Data Analysis"
-        classNames={{
-          trigger: "bg-zinc-900 cursor-pointer rounded-xl",
-        }}
-        title={
-          <div className="text-sm font-semibold">
-            📊 Groundwater Data Analysis
-          </div>
-        }
-        subtitle={`${tabularContent.length + chartContent.length} items`}
-      >
-        <div className="space-y-3 pt-2">
-          {/* Tables & Stats - Visible by default */}
-          {tabularContent.length > 0 && (
-            <div className="space-y-3">
-              {tabularContent.map((viz, idx) => renderVisualization(viz, idx))}
-            </div>
-          )}
-
-          {/* Charts - Hidden in nested accordion */}
-          {chartContent.length > 0 && (
-            <div className="flex justify-center">
-              <Accordion variant="bordered" isCompact className="w-full">
-                <AccordionItem
-                  key="charts"
-                  aria-label="View Charts & Visualizations"
-                  classNames={{
-                    trigger:
-                      "bg-zinc-800/50 cursor-pointer rounded-xl hover:bg-zinc-800 transition-colors",
-                    content: "pt-3",
-                  }}
-                  title={
-                    <div className="text-sm font-semibold flex items-center justify-center gap-2">
-                      <ChartAverageIcon width={18} height={18} />
-                      View Charts & Visualizations
-                    </div>
-                  }
-                  subtitle={
-                    <div className="text-center text-xs">
-                      {chartContent.length} chart
-                      {chartContent.length !== 1 ? "s" : ""} available
-                    </div>
-                  }
-                >
-                  <div className="space-y-3">
-                    {chartContent.map((viz, idx) =>
-                      renderSingleVisualization(viz, idx, false)
-                    )}
-                  </div>
-                </AccordionItem>
-              </Accordion>
-            </div>
-          )}
+    <>
+      {chartContent.length > 0 && (
+        <div className="flex justify-center border-t-zinc-800 border-t-1 pt-6 mt-10">
+          <Accordion variant="light" className="px-0 " isCompact>
+            <AccordionItem
+              key={"charts"}
+              aria-label={"Visualizations"}
+              classNames={{
+                trigger:
+                  "hover:text-white cursor-pointer hover:bg-zinc-900 px-3 transition-colors rounded-lg group mb-2",
+              }}
+              title={<ViewChartTitle />}
+            >
+              <div className="space-y-3">
+                {chartContent.map((viz, idx) =>
+                  renderSingleVisualization(viz, idx, false)
+                )}
+              </div>
+            </AccordionItem>
+          </Accordion>
         </div>
-      </AccordionItem>
-    </Accordion>
+      )}
+    </>
   );
 }

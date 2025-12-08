@@ -1,3 +1,5 @@
+"use i18n";
+
 import { CheckmarkCircle01Icon } from "@/components/icons";
 
 const dataSources = [

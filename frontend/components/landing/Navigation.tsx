@@ -1,3 +1,6 @@
+"use client";
+"use i18n";
+
 import { DropletIcon, MessageIcon } from "@/components/icons";
 import { Button } from "@heroui/button";
 import LanguageSelector from "@/components/LanguageSelector";

@@ -1,3 +1,5 @@
+"use i18n";
+
 import { HealtcareIcon } from "@/components/icons";
 
 export default function Footer() {

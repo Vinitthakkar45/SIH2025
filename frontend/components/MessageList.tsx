@@ -1,10 +1,11 @@
 "use client";
+"use i18n";
 
 import type { Visualization } from "@/types/visualizations";
 import { Button } from "@heroui/button";
-import { Accordion, AccordionItem, Skeleton } from "@heroui/react";
+import { Skeleton } from "@heroui/react";
 import { motion } from "framer-motion";
-import { ChartAverageIcon, Idea01Icon } from "./icons";
+import { Idea01Icon } from "./icons";
 import MarkdownRenderer from "./MarkdownRenderer";
 import VisualizationRenderer from "./VisualizationRenderer";
 
@@ -71,26 +72,7 @@ export default function MessageList({
                   }
                 />
                 {message.charts && message.charts.length > 0 && (
-                  <Accordion variant="light" className="px-0" isCompact>
-                    <AccordionItem
-                      key="charts"
-                      aria-label="Visualizations"
-                      classNames={{
-                        trigger:
-                          "hover:text-white cursor-pointer hover:bg-zinc-900 px-3 transition-colors rounded-lg mb-2 group",
-                      }}
-                      title={
-                        <div className="text-sm text-zinc-400 font-semibold flex items-center gap-3 group-hover:text-white">
-                          <>View Charts</>
-                          <span>
-                            <ChartAverageIcon />
-                          </span>
-                        </div>
-                      }
-                    >
-                      <VisualizationRenderer visualizations={message.charts} />
-                    </AccordionItem>
-                  </Accordion>
+                  <VisualizationRenderer visualizations={message.charts} />
                 )}
                 {message.suggestions && message.suggestions.length > 0 && (
                   <motion.div

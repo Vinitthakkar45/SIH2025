@@ -1,3 +1,5 @@
+"use i18n";
+
 const useCases = [
   {
     title: <>Researchers & Scientists</>,

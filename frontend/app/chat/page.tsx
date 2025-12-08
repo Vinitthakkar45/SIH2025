@@ -1,4 +1,5 @@
 "use client";
+"use i18n";
 
 import ChatComposer from "@/components/ChatComposer";
 import { Location01Icon } from "@/components/icons";

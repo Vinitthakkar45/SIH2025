@@ -1,4 +1,5 @@
 "use client";
+"use i18n";
 
 import { Button } from "@heroui/button";
 import { Textarea } from "@heroui/react";
@@ -74,7 +75,12 @@ export default function ChatComposer({
             }
             startContent={
               isLoading ? (
-                <StopIcon color="white" size="sm" />
+                <StopIcon
+                  color="white"
+                  width={22}
+                  height={22}
+                  className="min-w-5"
+                />
               ) : (
                 <SentIcon width={22} height={22} className="min-w-5" />
               )

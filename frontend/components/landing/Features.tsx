@@ -1,3 +1,5 @@
+"use i18n";
+
 import {
   ActivityIcon,
   BarChartIcon,

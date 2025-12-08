@@ -1,4 +1,5 @@
 "use client";
+"use i18n";
 
 import { DropletIcon, MapsIcon, Message01Icon } from "@/components/icons";
 import { Avatar, Button } from "@heroui/react";
@@ -37,15 +38,15 @@ export default function ChatHeader({ showMap, onToggleMap }: ChatHeaderProps) {
             color={showMap ? "default" : "primary"}
             startContent={
               showMap ? (
-                <Message01Icon className="min-w-10" width={15} height={15} />
+                <Message01Icon className="min-w-4" width={15} height={15} />
               ) : (
-                <MapsIcon width={15} height={15} className="min-w-10" />
+                <MapsIcon width={15} height={15} className="min-w-4" />
               )
             }
             className="h-8"
           >
             <span className="text-xs font-medium">
-              {showMap ? "Hide Map" : "Show Map"}
+              {showMap ? <>Hide Map</> : <>Show Map</>}
             </span>
           </Button>
         </div>

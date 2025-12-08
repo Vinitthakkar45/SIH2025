@@ -1,3 +1,4 @@
+"use i18n";
 "use client";
 
 import {
@@ -42,14 +43,19 @@ export default function Hero() {
         <div className="text-center space-y-8">
           <div className="space-y-6">
             <h1 className="text-5xl md:text-7xl font-bold tracking-tight text-white leading-tight">
-              Unlock India&apos;s
+              <>Unlock India&apos;s</>
               <br />
-              Groundwater <span className="text-primary">Intelligence</span>
+              <>Groundwater</>{" "}
+              <span className="text-primary">
+                <>Intelligence</>
+              </span>
             </h1>
             <p className="text-lg md:text-xl text-zinc-400 max-w-2xl mx-auto leading-relaxed">
-              Transform complex hydrogeological data into actionable insights
-              with AI-powered analytics for sustainable water resource
-              management
+              <>
+                Transform complex hydrogeological data into actionable insights
+                with AI-powered analytics for sustainable water resource
+                management
+              </>
             </p>
           </div>
 
@@ -57,7 +63,7 @@ export default function Hero() {
             <div className="relative">
               <div className="flex items-center gap-3 px-4 py-3.5 bg-zinc-900 rounded-2xl shadow-xl max-w-lg mx-auto">
                 <span className="flex-1 text-zinc-500 text-sm">
-                  What&apos;s the groundwater status in my region?
+                  <>What&apos;s the groundwater status in my region?</>
                 </span>
                 <div className="flex items-center gap-2">
                   <Button
@@ -66,7 +72,7 @@ export default function Hero() {
                     className="font-medium"
                     startContent={<SparklesIcon width={18} height={18} />}
                   >
-                    Send
+                    <>Send</>
                   </Button>
                 </div>
               </div>
@@ -77,7 +83,7 @@ export default function Hero() {
           <div className="flex flex-col sm:flex-row items-center justify-center gap-3 pt-4">
             <Link href="/chat">
               <Button color="primary" className="font-medium px-4">
-                Get started now
+                <>Get started now</>
               </Button>
             </Link>
           </div>
@@ -92,7 +98,9 @@ export default function Hero() {
                   </span>
                 ))}
               </span>
-              <span>Trusted by researchers and policymakers</span>
+              <span>
+                <>Trusted by researchers and policymakers</>
+              </span>
             </div>
           </div>
         </div>

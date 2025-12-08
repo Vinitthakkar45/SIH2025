@@ -1,3 +1,5 @@
+"use i18n";
+
 import "@fontsource-variable/inter";
 import { LingoProvider, loadDictionary } from "lingo.dev/react/rsc";
 import type { Metadata } from "next";
@@ -27,13 +29,16 @@ export default function RootLayout({
 }>) {
   return (
     <LingoProvider loadDictionary={(locale) => loadDictionary(locale)}>
-      <html lang="en">
-        <meta
-          name="viewport"
-          content="viewport-fit=cover, width=device-width, initial-scale=1.0, minimum-scale=1.0, maximum-scale=1.0, user-scalable=no"
-        />
+      <html lang="en" suppressHydrationWarning>
+        <head>
+          <meta
+            name="viewport"
+            content="viewport-fit=cover, width=device-width, initial-scale=1.0, minimum-scale=1.0, maximum-scale=1.0, user-scalable=no"
+          />
+        </head>
         <body
           className={`${geistSans.variable} ${geistMono.variable} antialiased`}
+          suppressHydrationWarning
         >
           <HeroUiClientProvider>{children}</HeroUiClientProvider>
         </body>

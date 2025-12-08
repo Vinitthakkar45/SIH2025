@@ -14,14 +14,16 @@ const nextConfig: NextConfig = {
 
 export default lingoCompiler.next({
   sourceRoot: "app",
-  lingoDir: "lingo",
   sourceLocale: SOURCE_LOCALE,
   targetLocales: [...TARGET_LOCALES],
+  useDirective: true, // when true, use i18n in files.
   rsc: true,
-  useDirective: false,
   debug: true,
   // models: "lingo.dev",
   models: {
-    "*:*": "ollama:llama3.1:8b",
+    "*:*": "mistral:mistral-large-latest",
+    // "*:*": "ollama:llama3.1:8b",
+    // "*:*": "groq:llama-3.1-8b-instant",
+    // "*:*": "google:gemini-2.0-flash",
   },
 })(nextConfig);
