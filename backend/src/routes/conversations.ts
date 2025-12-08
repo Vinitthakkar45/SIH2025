@@ -1,5 +1,5 @@
 import { Router, Request, Response, type IRouter } from "express";
-import { createConversation, getConversations, getConversation, deleteConversation, updateConversationTitle } from "../services/chatHistory";
+import { createConversation, getConversations, getConversation } from "../services/chatHistory";
 import logger from "../utils/logger";
 
 const router: IRouter = Router();
@@ -67,50 +67,6 @@ router.get("/:id", async (req: Request, res: Response) => {
   } catch (error) {
     logger.error({ err: error, conversationId: req.params.id }, "Failed to get conversation");
     res.status(500).json({ error: "Failed to get conversation" });
-  }
-});
-
-/**
- * PATCH /api/conversations/:id
- * Update conversation title
- */
-router.patch("/:id", async (req: Request, res: Response) => {
-  try {
-    const { id } = req.params;
-    const { title } = req.body;
-
-    if (!title || typeof title !== "string") {
-      res.status(400).json({ error: "Missing or invalid 'title' field" });
-      return;
-    }
-
-    await updateConversationTitle(id, title);
-
-    logger.info({ conversationId: id, title }, "Updated conversation title");
-
-    res.json({ success: true });
-  } catch (error) {
-    logger.error({ err: error, conversationId: req.params.id }, "Failed to update conversation");
-    res.status(500).json({ error: "Failed to update conversation" });
-  }
-});
-
-/**
- * DELETE /api/conversations/:id
- * Delete a conversation and all its messages
- */
-router.delete("/:id", async (req: Request, res: Response) => {
-  try {
-    const { id } = req.params;
-
-    await deleteConversation(id);
-
-    logger.info({ conversationId: id }, "Deleted conversation");
-
-    res.json({ success: true });
-  } catch (error) {
-    logger.error({ err: error, conversationId: req.params.id }, "Failed to delete conversation");
-    res.status(500).json({ error: "Failed to delete conversation" });
   }
 });
 

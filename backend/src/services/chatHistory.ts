@@ -288,21 +288,6 @@ export async function getTrimmedChatHistory(conversationId: string, maxTokens: n
 }
 
 /**
- * Delete a conversation and all its messages
- */
-export async function deleteConversation(conversationId: string): Promise<void> {
-  await db.delete(conversations).where(eq(conversations.id, conversationId));
-  logger.info({ conversationId }, "Deleted conversation");
-}
-
-/**
- * Update conversation title
- */
-export async function updateConversationTitle(conversationId: string, title: string): Promise<void> {
-  await db.update(conversations).set({ title, updatedAt: new Date() }).where(eq(conversations.id, conversationId));
-}
-
-/**
  * Get the next sequence number for a conversation
  */
 export async function getNextSequenceNumber(conversationId: string): Promise<number> {

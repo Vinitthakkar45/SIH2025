@@ -2,13 +2,10 @@
 
 import { useState, useEffect } from "react";
 import { Button } from "@heroui/button";
-import { Tooltip } from "@heroui/tooltip";
 import { ScrollShadow } from "@heroui/scroll-shadow";
 import {
   Add01Icon as PlusIcon,
   Message01Icon as MessageIcon,
-  Delete01Icon as TrashIcon,
-  Edit01Icon as EditIcon,
   ArrowLeft01Icon as ChevronLeftIcon,
   ArrowRight01Icon as ChevronRightIcon,
   DropletIcon,
@@ -27,7 +24,6 @@ interface ChatSidebarProps {
   currentConversationId: string | null;
   onSelectConversation: (conversationId: string) => void;
   onNewChat: () => void;
-  onDeleteConversation?: (conversationId: string) => void;
   isCollapsed?: boolean;
   onToggleCollapse?: () => void;
   className?: string;
@@ -37,7 +33,6 @@ export default function ChatSidebar({
   currentConversationId,
   onSelectConversation,
   onNewChat,
-  onDeleteConversation,
   isCollapsed: controlledCollapsed,
   onToggleCollapse,
   className = "",
@@ -49,9 +44,6 @@ export default function ChatSidebar({
   // Use controlled state if provided, otherwise use internal state
   const isCollapsed = controlledCollapsed !== undefined ? controlledCollapsed : internalCollapsed;
   const toggleCollapse = onToggleCollapse || (() => setInternalCollapsed(!internalCollapsed));
-  const [editingId, setEditingId] = useState<string | null>(null);
-  const [editTitle, setEditTitle] = useState("");
-  const [hoveredId, setHoveredId] = useState<string | null>(null);
 
   // Fetch conversations on mount
   useEffect(() => {
@@ -77,53 +69,6 @@ export default function ChatSidebar({
     onNewChat();
     // Refresh the list after creating new chat
     setTimeout(fetchConversations, 500);
-  };
-
-  const handleDelete = async (e: React.MouseEvent, conversationId: string) => {
-    e.stopPropagation();
-    try {
-      const response = await fetch(`${API_URL}/api/conversations/${conversationId}`, {
-        method: "DELETE",
-      });
-      if (response.ok) {
-        setConversations((prev) => prev.filter((c) => c.id !== conversationId));
-        if (currentConversationId === conversationId) {
-          onNewChat();
-        }
-        onDeleteConversation?.(conversationId);
-      }
-    } catch (error) {
-      console.error("Failed to delete conversation:", error);
-    }
-  };
-
-  const handleStartEdit = (e: React.MouseEvent, conversation: Conversation) => {
-    e.stopPropagation();
-    setEditingId(conversation.id);
-    setEditTitle(conversation.title);
-  };
-
-  const handleSaveEdit = async (conversationId: string) => {
-    if (!editTitle.trim()) {
-      setEditingId(null);
-      return;
-    }
-
-    try {
-      const response = await fetch(`${API_URL}/api/conversations/${conversationId}`, {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ title: editTitle }),
-      });
-
-      if (response.ok) {
-        setConversations((prev) => prev.map((c) => (c.id === conversationId ? { ...c, title: editTitle } : c)));
-      }
-    } catch (error) {
-      console.error("Failed to update conversation title:", error);
-    } finally {
-      setEditingId(null);
-    }
   };
 
   const formatDate = (dateString: string) => {
@@ -241,55 +186,12 @@ export default function ChatSidebar({
                           ? "bg-zinc-700/50 text-zinc-100"
                           : "hover:bg-zinc-800/50 text-zinc-400 hover:text-zinc-300"
                       }`}
-                      onClick={() => onSelectConversation(conversation.id)}
-                      onMouseEnter={() => setHoveredId(conversation.id)}
-                      onMouseLeave={() => setHoveredId(null)}>
+                      onClick={() => onSelectConversation(conversation.id)}>
                       <MessageIcon
                         size={14}
                         className={`shrink-0 ${currentConversationId === conversation.id ? "text-zinc-300" : "text-zinc-600"}`}
                       />
-
-                      {editingId === conversation.id ? (
-                        <input
-                          type="text"
-                          value={editTitle}
-                          onChange={(e) => setEditTitle(e.target.value)}
-                          onBlur={() => handleSaveEdit(conversation.id)}
-                          onKeyDown={(e) => {
-                            if (e.key === "Enter") handleSaveEdit(conversation.id);
-                            if (e.key === "Escape") setEditingId(null);
-                          }}
-                          className="flex-1 bg-zinc-800 text-zinc-100 text-xs px-2 py-1 rounded border border-zinc-700 focus:outline-none focus:border-primary"
-                          autoFocus
-                          onClick={(e) => e.stopPropagation()}
-                          placeholder="Enter chat title"
-                          aria-label="Edit conversation title"
-                        />
-                      ) : (
-                        <span className="flex-1 text-xs truncate">{conversation.title}</span>
-                      )}
-
-                      {/* Action buttons - show on hover */}
-                      {hoveredId === conversation.id && editingId !== conversation.id && (
-                        <div className="flex items-center gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity">
-                          <Button
-                            isIconOnly
-                            size="sm"
-                            variant="light"
-                            className="min-w-5 w-5 h-5"
-                            onPress={(e) => handleStartEdit(e as unknown as React.MouseEvent, conversation)}>
-                            <EditIcon size={12} className="text-zinc-500 hover:text-zinc-300" />
-                          </Button>
-                          <Button
-                            isIconOnly
-                            size="sm"
-                            variant="light"
-                            className="min-w-5 w-5 h-5"
-                            onPress={(e) => handleDelete(e as unknown as React.MouseEvent, conversation.id)}>
-                            <TrashIcon size={12} className="text-zinc-500 hover:text-red-400" />
-                          </Button>
-                        </div>
-                      )}
+                      <span className="flex-1 text-xs truncate">{conversation.title}</span>
                     </div>
                   ))}
                 </div>
