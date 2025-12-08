@@ -1,16 +1,5 @@
-import {
-  HumanMessage,
-  AIMessage,
-  SystemMessage,
-  BaseMessage,
-  ToolMessage,
-} from "@langchain/core/messages";
-import {
-  StateGraph,
-  MessagesAnnotation,
-  START,
-  END,
-} from "@langchain/langgraph";
+import { HumanMessage, AIMessage, SystemMessage, BaseMessage, ToolMessage } from "@langchain/core/messages";
+import { StateGraph, MessagesAnnotation, START, END } from "@langchain/langgraph";
 import { ToolNode } from "@langchain/langgraph/prebuilt";
 import { allTools } from "../gwTools";
 import logger from "../../utils/logger";
@@ -18,10 +7,32 @@ import { processToolResult } from "../toolResultHandlers";
 import { SYSTEM_PROMPT, createModel } from "./config";
 import { trimMessagesToFit } from "./trimmer";
 import { ChatMessage, convertChatHistory, filterSystemMessages } from "./messages";
+import type { Visualization, TextSummary } from "../../types/responses";
+import { generateSummaryFromToolResult } from "../../utils/summaryGenerator";
 
 export { ChatMessage };
 
+/**
+ * Callbacks for streaming structured data to the client
+ */
 export interface StreamCallbacks {
+  /** Called when a visualization/data container is ready */
+  onData: (visualizations: Visualization[], summary?: TextSummary) => void;
+  /** Called when a tool is invoked */
+  onToolCall: (toolName: string, args: object) => void;
+  /** Called when a tool returns result (for progress indication) */
+  onToolResult: (toolName: string, found: boolean, summary?: string) => void;
+  /** Called when processing is complete */
+  onComplete: () => void;
+  /** Called on error */
+  onError: (error: Error) => void;
+}
+
+/**
+ * Legacy callbacks - kept for backward compatibility
+ * @deprecated Use StreamCallbacks instead
+ */
+export interface LegacyStreamCallbacks {
   onToken: (token: string) => void;
   onChart: (chart: object) => void;
   onToolCall: (toolName: string, args: object) => void;
@@ -34,9 +45,7 @@ export function createGroundwaterAgent() {
   const model = createModel();
   const toolNode = new ToolNode(allTools);
 
-  function shouldContinue(
-    state: typeof MessagesAnnotation.State
-  ): "tools" | typeof END {
+  function shouldContinue(state: typeof MessagesAnnotation.State): "tools" | typeof END {
     const messages = state.messages;
     const lastMessage = messages[messages.length - 1] as AIMessage;
 
@@ -62,41 +71,41 @@ export function createGroundwaterAgent() {
   return workflow.compile();
 }
 
-export async function streamGroundwaterChat(
-  query: string,
-  chatHistory: ChatMessage[] = [],
-  callbacks: StreamCallbacks
-): Promise<void> {
+/**
+ * Stream groundwater chat with STRUCTURED data output (NO LLM text generation)
+ *
+ * Flow:
+ * 1. LLM extracts parameters via tool calls
+ * 2. Tools return structured data
+ * 3. Data is processed into visualizations
+ * 4. Visualizations are sent to client
+ * 5. NO final LLM call for text generation
+ *
+ * Note: Uses invoke instead of stream since we don't need token streaming anymore.
+ * The "streaming" is now about sending visualizations as they're processed.
+ */
+export async function streamGroundwaterChat(query: string, chatHistory: ChatMessage[] = [], callbacks: StreamCallbacks): Promise<void> {
   const agent = createGroundwaterAgent();
 
-  // Filter out system messages from history, always add fresh system prompt
   const filteredHistory = filterSystemMessages(chatHistory);
-  const messages: BaseMessage[] = [
-    new SystemMessage(SYSTEM_PROMPT),
-    ...convertChatHistory(filteredHistory),
-    new HumanMessage(query),
-  ];
+  const messages: BaseMessage[] = [new SystemMessage(SYSTEM_PROMPT), ...convertChatHistory(filteredHistory), new HumanMessage(query)];
 
-  let fullResponse = "";
+  // Collect all visualizations and summaries from tool results
+  const allVisualizations: Visualization[] = [];
+  const allSummaries: TextSummary[] = [];
 
   try {
-    logger.debug("Starting agent stream");
-    const stream = await agent.stream(
-      { messages },
-      { streamMode: "messages" }
-    );
+    logger.debug("Starting structured agent (invoke mode)");
 
-    for await (const chunk of stream) {
-      const [message] = chunk;
+    // Use invoke instead of stream - we don't need token streaming anymore
+    // This avoids Gemini streaming compatibility issues
+    const result = await agent.invoke({ messages });
 
+    // Process all messages from the result
+    for (const message of result.messages) {
+      // Report tool calls (for logging/debugging)
       if (message._getType() === "ai") {
         const aiMessage = message as AIMessage;
-
-        if (aiMessage.content && typeof aiMessage.content === "string") {
-          callbacks.onToken(aiMessage.content);
-          fullResponse += aiMessage.content;
-        }
-
         if (aiMessage.tool_calls?.length) {
           for (const toolCall of aiMessage.tool_calls) {
             callbacks.onToolCall(toolCall.name, toolCall.args);
@@ -104,62 +113,115 @@ export async function streamGroundwaterChat(
         }
       }
 
+      // Process tool results
       if (message._getType() === "tool") {
         const toolMessage = message as ToolMessage;
         const toolName = toolMessage.name ?? "unknown";
-        callbacks.onToolResult(toolName, toolMessage.content as string);
+        const resultJson = toolMessage.content as string;
 
-        await processToolResult(
-          toolName,
-          toolMessage.content as string,
-          callbacks.onChart
-        );
+        // Parse tool result for progress reporting
+        try {
+          const parsed = JSON.parse(resultJson);
+          callbacks.onToolResult(toolName, parsed.found ?? false, parsed.textSummary?.substring(0, 200));
+
+          // Generate deterministic summary from tool result
+          const summary = generateSummaryFromToolResult(toolName, parsed);
+          if (summary) {
+            allSummaries.push(summary);
+          }
+        } catch {
+          callbacks.onToolResult(toolName, false);
+        }
+
+        // Process tool result into visualizations
+        await processToolResult(toolName, resultJson, (chart: object) => {
+          // Collect visualization
+          allVisualizations.push(chart as Visualization);
+          // Send each visualization as it's generated
+          const summary = allSummaries[allSummaries.length - 1];
+          callbacks.onData([chart as Visualization], summary);
+        });
       }
     }
 
-    logger.debug("Agent stream completed");
-    callbacks.onComplete(fullResponse);
+    logger.debug({ visualizationsCount: allVisualizations.length }, "Structured invocation completed");
+    callbacks.onComplete();
   } catch (error) {
-    logger.error({ err: error }, "Agent stream failed");
+    logger.error({ err: error }, "Structured agent failed");
     callbacks.onError(error as Error);
   }
 }
 
-export async function invokeGroundwaterChat(
-  query: string,
-  chatHistory: ChatMessage[] = []
-): Promise<{ response: string; charts: object[] }> {
+/**
+ * Legacy streaming function - wraps new structured approach
+ * @deprecated Use streamGroundwaterChat with StreamCallbacks
+ */
+export async function streamGroundwaterChatLegacy(query: string, chatHistory: ChatMessage[] = [], callbacks: LegacyStreamCallbacks): Promise<void> {
+  return streamGroundwaterChat(query, chatHistory, {
+    onData: (visualizations, summary) => {
+      for (const viz of visualizations) {
+        callbacks.onChart(viz);
+      }
+    },
+    onToolCall: callbacks.onToolCall,
+    onToolResult: (toolName, found, summaryText) => {
+      callbacks.onToolResult(toolName, JSON.stringify({ found, textSummary: summaryText }));
+    },
+    onComplete: () => callbacks.onComplete(""),
+    onError: callbacks.onError,
+  });
+}
+
+/**
+ * Structured response from groundwater chat
+ */
+export interface StructuredChatResponse {
+  visualizations: Visualization[];
+  summary?: TextSummary;
+}
+
+/**
+ * Invoke groundwater chat and get structured response (non-streaming)
+ * NO LLM text generation - only tool extraction + structured data
+ */
+export async function invokeGroundwaterChat(query: string, chatHistory: ChatMessage[] = []): Promise<StructuredChatResponse> {
   const agent = createGroundwaterAgent();
 
-  // Filter out system messages from history, always add fresh system prompt
   const filteredHistory = filterSystemMessages(chatHistory);
-  const messages: BaseMessage[] = [
-    new SystemMessage(SYSTEM_PROMPT),
-    ...convertChatHistory(filteredHistory),
-    new HumanMessage(query),
-  ];
+  const messages: BaseMessage[] = [new SystemMessage(SYSTEM_PROMPT), ...convertChatHistory(filteredHistory), new HumanMessage(query)];
 
-  logger.debug("Invoking agent");
+  logger.debug("Invoking structured agent");
   const result = await agent.invoke({ messages });
 
-  const lastMessage = result.messages[result.messages.length - 1] as AIMessage;
-  const response =
-    typeof lastMessage.content === "string" ? lastMessage.content : "";
+  const visualizations: Visualization[] = [];
+  let lastSummary: TextSummary | undefined;
 
-  const charts: object[] = [];
+  // Process all tool messages to extract visualizations
   for (const msg of result.messages) {
     if (msg._getType() === "tool") {
+      const toolMessage = msg as ToolMessage;
+      const toolName = toolMessage.name ?? "unknown";
+      const resultJson = toolMessage.content as string;
+
       try {
-        const toolResult = JSON.parse((msg as ToolMessage).content as string);
-        if (toolResult.charts) {
-          charts.push(...toolResult.charts);
+        const parsed = JSON.parse(resultJson);
+
+        // Generate summary from last tool result
+        const summary = generateSummaryFromToolResult(toolName, parsed);
+        if (summary) {
+          lastSummary = summary;
         }
       } catch {
         // Not JSON
       }
+
+      // Process tool result into visualizations
+      await processToolResult(toolName, resultJson, (chart: object) => {
+        visualizations.push(chart as Visualization);
+      });
     }
   }
 
-  logger.debug({ chartsCount: charts.length }, "Agent invocation completed");
-  return { response, charts };
+  logger.debug({ visualizationsCount: visualizations.length }, "Structured invocation completed");
+  return { visualizations, summary: lastSummary };
 }

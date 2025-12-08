@@ -4,7 +4,7 @@
 import ChatComposer from "@/components/ChatComposer";
 import { Location01Icon } from "@/components/icons";
 import MessageList, { type Message } from "@/components/MessageList";
-import type { Visualization } from "@/types/visualizations";
+import type { Visualization, TextSummary } from "@/types/visualizations";
 import { useEffect, useRef, useState } from "react";
 import ChatHeader from "./ChatHeader";
 import MapWrapper from "./MapWrapper";
@@ -16,6 +16,13 @@ const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001";
 interface LocationInfo {
   state: string;
   district: string;
+}
+
+/**
+ * Check if an SSE data event is a visualization type
+ */
+function isVisualizationType(type: string): boolean {
+  return ["chart", "stats", "table", "summary", "trend_summary", "data_container", "collapsible"].includes(type);
 }
 
 export default function ChatPage() {
@@ -46,10 +53,7 @@ export default function ChatPage() {
         const data = await response.json();
 
         const state = data.principalSubdivision;
-        const district =
-          data.city ||
-          data.locality ||
-          data.localityInfo?.administrative?.[2]?.name;
+        const district = data.city || data.locality || data.localityInfo?.administrative?.[2]?.name;
 
         setUserLocation({ state, district });
       } catch (error) {
@@ -76,8 +80,7 @@ export default function ChatPage() {
   const checkScrollPosition = () => {
     if (!messagesContainerRef.current) return;
 
-    const { scrollTop, scrollHeight, clientHeight } =
-      messagesContainerRef.current;
+    const { scrollTop, scrollHeight, clientHeight } = messagesContainerRef.current;
     const isScrollable = scrollHeight > clientHeight;
     const isAtBottom = scrollHeight - scrollTop - clientHeight < 50;
 
@@ -96,8 +99,11 @@ export default function ChatPage() {
     }
   }, [messages, showScrollButton]);
 
+  /**
+   * Handle chat submission with STRUCTURED data response
+   * NO LLM text processing - data is rendered directly
+   */
   const handleSubmit = async (query: string) => {
-    console.log("test");
     if (!query.trim() || isLoading) return;
 
     const userMessage: Message = { role: "user", content: query };
@@ -105,10 +111,8 @@ export default function ChatPage() {
     setInput("");
     setIsLoading(true);
 
-    setMessages((prev) => [
-      ...prev,
-      { role: "assistant", content: "", charts: [], isLoading: true },
-    ]);
+    // Add loading assistant message
+    setMessages((prev) => [...prev, { role: "assistant", content: "", charts: [], isLoading: true }]);
 
     abortControllerRef.current = new AbortController();
 
@@ -123,6 +127,7 @@ export default function ChatPage() {
             content: m.content,
           })),
         }),
+        signal: abortControllerRef.current.signal,
       });
 
       if (!response.ok) throw new Error("Failed to get response");
@@ -130,8 +135,10 @@ export default function ChatPage() {
       const reader = response.body?.getReader();
       const decoder = new TextDecoder();
 
-      let assistantContent = "";
+      // Collect visualizations - NO text content from LLM
       const charts: Visualization[] = [];
+      let summary: TextSummary | undefined;
+      let activeTool: string | undefined;
 
       while (reader) {
         const { done, value } = await reader.read();
@@ -145,37 +152,64 @@ export default function ChatPage() {
             try {
               const data = JSON.parse(line.slice(6));
 
-              if (data.type === "token") {
-                assistantContent += data.content;
+              // Handle tool call - show progress
+              if (data.type === "tool_call") {
+                activeTool = data.tool;
                 setMessages((prev) => {
                   const updated = [...prev];
                   const lastIdx = updated.length - 1;
                   updated[lastIdx] = {
                     ...updated[lastIdx],
-                    content: assistantContent,
-                    isLoading: false,
+                    activeTool,
+                    isLoading: true,
                   };
                   return updated;
                 });
-              } else if (
-                data.type === "chart" ||
-                data.type === "stats" ||
-                data.type === "table" ||
-                data.type === "summary" ||
-                data.type === "trend_summary" ||
-                data.type === "data_container"
-              ) {
-                charts.push(data);
+              }
+              // Handle tool result - update progress
+              else if (data.type === "tool_result") {
+                // Tool completed, clear active tool
+                activeTool = undefined;
+              }
+              // Handle structured data events
+              else if (data.type === "data" && data.visualizations) {
+                // New SSE data format
+                for (const viz of data.visualizations) {
+                  charts.push(viz);
+                }
+                if (data.summary) {
+                  summary = data.summary;
+                }
                 setMessages((prev) => {
                   const updated = [...prev];
                   const lastIdx = updated.length - 1;
                   updated[lastIdx] = {
                     ...updated[lastIdx],
                     charts: [...charts],
+                    summary,
+                    isLoading: false,
+                    activeTool: undefined,
                   };
                   return updated;
                 });
-              } else if (data.type === "suggestions") {
+              }
+              // Handle legacy visualization format (backward compatibility)
+              else if (isVisualizationType(data.type)) {
+                charts.push(data as Visualization);
+                setMessages((prev) => {
+                  const updated = [...prev];
+                  const lastIdx = updated.length - 1;
+                  updated[lastIdx] = {
+                    ...updated[lastIdx],
+                    charts: [...charts],
+                    isLoading: false,
+                    activeTool: undefined,
+                  };
+                  return updated;
+                });
+              }
+              // Handle suggestions
+              else if (data.type === "suggestions") {
                 setMessages((prev) => {
                   const updated = [...prev];
                   const lastIdx = updated.length - 1;
@@ -185,14 +219,22 @@ export default function ChatPage() {
                   };
                   return updated;
                 });
-              } else if (data.type === "done") {
+              }
+              // Handle completion
+              else if (data.type === "done") {
                 setMessages((prev) => {
                   const updated = [...prev];
                   const lastIdx = updated.length - 1;
-                  updated[lastIdx] = { ...updated[lastIdx], isLoading: false };
+                  updated[lastIdx] = {
+                    ...updated[lastIdx],
+                    isLoading: false,
+                    activeTool: undefined,
+                  };
                   return updated;
                 });
-              } else if (data.type === "error") {
+              }
+              // Handle errors
+              else if (data.type === "error") {
                 setMessages((prev) => {
                   const updated = [...prev];
                   const lastIdx = updated.length - 1;
@@ -204,6 +246,7 @@ export default function ChatPage() {
                   return updated;
                 });
               }
+              // NOTE: We intentionally ignore "token" events - no LLM text
             } catch {
               // Ignore parse errors for incomplete chunks
             }
@@ -249,27 +292,14 @@ export default function ChatPage() {
   return (
     <div className="flex h-screen bg-dark-primary overflow-hidden">
       <div className="flex flex-col flex-1 min-w-0 relative">
-        <ChatHeader
-          onToggleMap={() => setShowMap(!showMap)}
-          showMap={showMap}
-        />
+        <ChatHeader onToggleMap={() => setShowMap(!showMap)} showMap={showMap} />
 
-        <main
-          ref={messagesContainerRef}
-          onScroll={handleScroll}
-          className="flex-1 overflow-y-auto"
-        >
+        <main ref={messagesContainerRef} onScroll={handleScroll} className="flex-1 overflow-y-auto">
           <div className="max-w-4xl mx-auto px-6 py-8 space-y-6">
             {messages.length === 0 ? (
-              <WelcomeView
-                onQueryClick={handleSubmit}
-                userLocation={userLocation}
-              />
+              <WelcomeView onQueryClick={handleSubmit} userLocation={userLocation} />
             ) : (
-              <MessageList
-                messages={messages}
-                onSuggestionClick={handleSubmit}
-              />
+              <MessageList messages={messages} onSuggestionClick={handleSubmit} />
             )}
             <div ref={messagesEndRef} />
           </div>
@@ -296,21 +326,13 @@ export default function ChatPage() {
       </div>
 
       {/* Map Panel */}
-      <div
-        className={`${
-          showMap ? "w-1/2 opacity-100" : "w-0 opacity-0"
-        } transition-all duration-300 bg-zinc-900 overflow-hidden`}
-      >
+      <div className={`${showMap ? "w-1/2 opacity-100" : "w-0 opacity-0"} transition-all duration-300 bg-zinc-900 overflow-hidden`}>
         {showMap ? (
           <MapWrapper />
         ) : (
           <div className="flex items-center justify-center h-full text-center text-zinc-400">
             <div>
-              <Location01Icon
-                width={48}
-                height={48}
-                className="mx-auto mb-4 opacity-50"
-              />
+              <Location01Icon width={48} height={48} className="mx-auto mb-4 opacity-50" />
               <p className="font-medium">Map View</p>
             </div>
           </div>

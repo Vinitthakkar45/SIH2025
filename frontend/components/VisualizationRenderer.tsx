@@ -1,10 +1,7 @@
 "use client";
 
-import type {
-  ChartDataItem,
-  TableRow,
-  Visualization,
-} from "@/types/visualizations";
+import type { ChartDataItem, TableRow, Visualization } from "@/types/visualizations";
+import { isNullish } from "@/types/visualizations";
 import { Accordion, AccordionItem } from "@heroui/react";
 import BarChartComponent from "./charts/BarChartComponent";
 import LineChartComponent from "./charts/LineChartComponent";
@@ -18,9 +15,30 @@ interface VisualizationRendererProps {
   visualizations: Visualization[];
 }
 
-export default function VisualizationRenderer({
-  visualizations,
-}: VisualizationRendererProps) {
+/**
+ * Filter out chart data items with null/undefined values
+ */
+function filterValidChartData(data: ChartDataItem[] | undefined): ChartDataItem[] {
+  if (!data) return [];
+  return data.filter((item) => {
+    // Keep item if it has at least name and one non-null numeric value
+    if (!item.name) return false;
+    return !isNullish(item.value) || !isNullish(item.command) || !isNullish(item.nonCommand);
+  });
+}
+
+/**
+ * Filter out table rows with all null values
+ */
+function filterValidTableData(data: TableRow[] | undefined): TableRow[] {
+  if (!data) return [];
+  return data.filter((row) => {
+    // Keep row if at least one value is non-null
+    return Object.values(row).some((val) => !isNullish(val) && val !== "N/A" && val !== "");
+  });
+}
+
+export default function VisualizationRenderer({ visualizations }: VisualizationRendererProps) {
   if (!visualizations || visualizations.length === 0) return null;
 
   // Flatten data_container visualizations first
@@ -47,11 +65,7 @@ export default function VisualizationRenderer({
     const flatViz = flattenVisualizations(vizList);
 
     flatViz.forEach((viz) => {
-      if (
-        viz.type === "table" ||
-        viz.type === "stats" ||
-        viz.type === "summary"
-      ) {
+      if (viz.type === "table" || viz.type === "stats" || viz.type === "summary") {
         tabularContent.push(viz);
       } else if (viz.type === "chart") {
         chartContent.push(viz);
@@ -72,13 +86,12 @@ export default function VisualizationRenderer({
 
   const { chartContent } = separateContent(visualizations);
 
-  const renderSingleVisualization = (
-    viz: Visualization,
-    index: number,
-    isNested: boolean = false
-  ) => {
+  const renderSingleVisualization = (viz: Visualization, index: number, isNested: boolean = false) => {
     // Stats/Summary Cards - Now collapsible
     if (viz.type === "stats" || viz.type === "summary") {
+      // Skip if no data
+      if (!viz.data) return null;
+
       return (
         <DataAccordion
           key={index}
@@ -86,33 +99,29 @@ export default function VisualizationRenderer({
           subtitle={viz.description}
           explanation={viz.explanation}
           defaultOpen={true}
-          variant={isNested ? "light" : "shadow"}
-        >
-          <StatsChart
-            title=""
-            data={viz.data as Record<string, unknown>}
-            explanation=""
-          />
+          variant={isNested ? "light" : "shadow"}>
+          <StatsChart title="" data={viz.data as Record<string, unknown>} explanation="" />
         </DataAccordion>
       );
     }
 
     // Tables
     if (viz.type === "table" && viz.columns && viz.data) {
+      // Filter out rows with all null values
+      const filteredData = filterValidTableData(viz.data as TableRow[]);
+
+      // Skip rendering if no valid data
+      if (filteredData.length === 0) return null;
+
       return (
         <DataAccordion
           key={index}
           title={viz.title}
-          subtitle={
-            viz.headerValue
-              ? `Total: ${viz.headerValue.toLocaleString("en-IN")} ham`
-              : viz.description
-          }
+          subtitle={viz.headerValue ? `Total: ${viz.headerValue.toLocaleString("en-IN")} ham` : viz.description}
           explanation={viz.explanation}
           defaultOpen={true}
-          variant={isNested ? "light" : "shadow"}
-        >
-          <DataTable columns={viz.columns} data={viz.data as TableRow[]} />
+          variant={isNested ? "light" : "shadow"}>
+          <DataTable columns={viz.columns} data={filteredData} />
         </DataAccordion>
       );
     }
@@ -120,6 +129,12 @@ export default function VisualizationRenderer({
     // Charts
     if (viz.type === "chart" && viz.data) {
       if (viz.chartType === "bar" || viz.chartType === "grouped_bar") {
+        // Filter out items with null values
+        const filteredData = filterValidChartData(viz.data as ChartDataItem[]);
+
+        // Skip rendering if no valid data
+        if (filteredData.length === 0) return null;
+
         return (
           <DataAccordion
             key={index}
@@ -127,19 +142,19 @@ export default function VisualizationRenderer({
             subtitle={viz.description}
             explanation={viz.explanation}
             defaultOpen={true}
-            variant={isNested ? "light" : "shadow"}
-          >
-            <BarChartComponent
-              title=""
-              data={viz.data as ChartDataItem[]}
-              color={viz.color}
-              colorByValue={viz.colorByValue}
-            />
+            variant={isNested ? "light" : "shadow"}>
+            <BarChartComponent title="" data={filteredData} color={viz.color} colorByValue={viz.colorByValue} />
           </DataAccordion>
         );
       }
 
       if (viz.chartType === "pie") {
+        // Filter out pie data with null values
+        const pieData = (viz.data as { name: string; value: number }[]).filter((item) => !isNullish(item.value) && item.value > 0);
+
+        // Skip if no valid pie data
+        if (pieData.length === 0) return null;
+
         return (
           <DataAccordion
             key={index}
@@ -147,21 +162,24 @@ export default function VisualizationRenderer({
             subtitle={viz.description}
             explanation={viz.explanation}
             defaultOpen={true}
-            variant={isNested ? "light" : "shadow"}
-          >
-            <PieChartComponent
-              title=""
-              data={viz.data as { name: string; value: number }[]}
-            />
+            variant={isNested ? "light" : "shadow"}>
+            <PieChartComponent title="" data={pieData} />
           </DataAccordion>
         );
       }
 
-      if (
-        viz.chartType === "line" ||
-        viz.chartType === "multi_line" ||
-        viz.chartType === "area"
-      ) {
+      if (viz.chartType === "line" || viz.chartType === "multi_line" || viz.chartType === "area") {
+        // Filter line data - keep rows that have at least one non-null numeric value
+        const lineData = (viz.data as Record<string, unknown>[]).filter((row) => {
+          return Object.entries(row).some(([key, val]) => {
+            if (key === "year" || key === "name" || key === "date") return false;
+            return typeof val === "number" && !isNaN(val);
+          });
+        });
+
+        // Skip if no valid data
+        if (lineData.length === 0) return null;
+
         return (
           <DataAccordion
             key={index}
@@ -169,13 +187,8 @@ export default function VisualizationRenderer({
             subtitle={viz.description}
             explanation={viz.explanation}
             defaultOpen={true}
-            variant={isNested ? "light" : "shadow"}
-          >
-            <LineChartComponent
-              title=""
-              data={viz.data as Record<string, unknown>[]}
-              chartType={viz.chartType}
-            />
+            variant={isNested ? "light" : "shadow"}>
+            <LineChartComponent title="" data={lineData} chartType={viz.chartType} />
           </DataAccordion>
         );
       }
@@ -188,17 +201,10 @@ export default function VisualizationRenderer({
     // Data container - outer collapsible that contains all visualizations
     if (viz.type === "data_container" && viz.visualizations) {
       return (
-        <DataAccordion
-          key={index}
-          title={viz.title}
-          subtitle={viz.subtitle}
-          explanation={viz.explanation}
-          defaultOpen={false}
-        >
+        <DataAccordion key={index} title={viz.title} subtitle={viz.subtitle} explanation={viz.explanation} defaultOpen={false}>
           <div className="space-y-3">
             {viz.visualizations.map((innerViz, idx) =>
-              innerViz.type === "collapsible" ||
-              innerViz.type === "data_container"
+              innerViz.type === "collapsible" || innerViz.type === "data_container"
                 ? renderVisualization(innerViz, idx)
                 : renderSingleVisualization(innerViz, idx, true)
             )}
@@ -210,18 +216,8 @@ export default function VisualizationRenderer({
     // Collapsible type - nested visualizations in a collapsible block
     if (viz.type === "collapsible" && viz.children) {
       return (
-        <DataAccordion
-          key={index}
-          title={viz.title}
-          subtitle={viz.subtitle}
-          explanation={viz.explanation}
-          defaultOpen={viz.defaultOpen !== false}
-        >
-          <div className="space-y-3">
-            {viz.children.map((child: Visualization, idx: number) =>
-              renderSingleVisualization(child, idx, true)
-            )}
-          </div>
+        <DataAccordion key={index} title={viz.title} subtitle={viz.subtitle} explanation={viz.explanation} defaultOpen={viz.defaultOpen !== false}>
+          <div className="space-y-3">{viz.children.map((child: Visualization, idx: number) => renderSingleVisualization(child, idx, true))}</div>
         </DataAccordion>
       );
     }
@@ -239,16 +235,10 @@ export default function VisualizationRenderer({
               key={"charts"}
               aria-label={"Visualizations"}
               classNames={{
-                trigger:
-                  "hover:text-white cursor-pointer hover:bg-zinc-900 px-3 transition-colors rounded-lg group mb-2",
+                trigger: "hover:text-white cursor-pointer hover:bg-zinc-900 px-3 transition-colors rounded-lg group mb-2",
               }}
-              title={<ViewChartTitle />}
-            >
-              <div className="space-y-3">
-                {chartContent.map((viz, idx) =>
-                  renderSingleVisualization(viz, idx, false)
-                )}
-              </div>
+              title={<ViewChartTitle />}>
+              <div className="space-y-3">{chartContent.map((viz, idx) => renderSingleVisualization(viz, idx, false))}</div>
             </AccordionItem>
           </Accordion>
         </div>

@@ -1,16 +1,21 @@
 import { Router, Request, Response, type IRouter } from "express";
-import {
-  streamGroundwaterChat,
-  invokeGroundwaterChat,
-} from "../services/gwAgent";
+import { streamGroundwaterChat, invokeGroundwaterChat } from "../services/gwAgent";
 import { generateSuggestions } from "../services/llm";
 import logger from "../utils/logger";
+import type { Visualization, TextSummary, SSEEvent } from "../types/responses";
 
 const router: IRouter = Router();
 
 /**
+ * Helper to send SSE event
+ */
+function sendSSE(res: Response, event: SSEEvent): void {
+  res.write(`data: ${JSON.stringify(event)}\n\n`);
+}
+
+/**
  * POST /api/gw-chat
- * Non-streaming groundwater chat endpoint
+ * Non-streaming groundwater chat endpoint - returns STRUCTURED data only
  */
 router.post("/", async (req: Request, res: Response) => {
   try {
@@ -21,21 +26,16 @@ router.post("/", async (req: Request, res: Response) => {
       return;
     }
 
-    logger.info(
-      { query, historyLength: chatHistory.length },
-      "Chat request received"
-    );
+    logger.info({ query, historyLength: chatHistory.length }, "Chat request received");
 
-    const { response, charts } = await invokeGroundwaterChat(
-      query,
-      chatHistory
-    );
+    const { visualizations, summary } = await invokeGroundwaterChat(query, chatHistory);
 
-    logger.info({ chartsCount: charts.length }, "Chat response generated");
+    logger.info({ visualizationsCount: visualizations.length }, "Chat response generated");
 
+    // Return structured response - NO LLM-generated text
     res.json({
-      response,
-      charts,
+      visualizations,
+      summary,
     });
   } catch (error) {
     logger.error({ err: error, query: req.body.query }, "Chat request failed");
@@ -45,7 +45,8 @@ router.post("/", async (req: Request, res: Response) => {
 
 /**
  * POST /api/gw-chat/stream
- * Streaming groundwater chat endpoint with SSE
+ * Streaming groundwater chat endpoint with SSE - returns STRUCTURED data only
+ * NO LLM-generated text tokens are streamed
  */
 router.post("/stream", async (req: Request, res: Response) => {
   try {
@@ -56,97 +57,72 @@ router.post("/stream", async (req: Request, res: Response) => {
       return;
     }
 
-    logger.info(
-      { query, historyLength: chatHistory.length },
-      "Stream request received"
-    );
+    logger.info({ query, historyLength: chatHistory.length }, "Stream request received");
 
     // Set up SSE headers
     res.setHeader("Content-Type", "text/event-stream");
     res.setHeader("Cache-Control", "no-cache");
     res.setHeader("Connection", "keep-alive");
 
-    // Track accumulated charts
-    const charts: object[] = [];
+    // Track all visualizations for suggestion generation
+    const allVisualizations: Visualization[] = [];
+    let lastSummary: TextSummary | undefined;
 
     await streamGroundwaterChat(query, chatHistory, {
-      onToken: async (token) => {
-        res.write(
-          `data: ${JSON.stringify({ type: "token", content: token })}\n\n`
-        );
-      },
-      onChart: (chart) => {
-        logger.debug(
-          { chartType: (chart as { type?: string }).type, chart },
-          "Streaming chart to client"
-        );
-        charts.push(chart);
-        res.write(`data: ${JSON.stringify(chart)}\n\n`);
+      onData: (visualizations, summary) => {
+        // Stream each visualization as structured data
+        for (const viz of visualizations) {
+          allVisualizations.push(viz);
+          // Send visualization directly - frontend renders it
+          sendSSE(res, { type: "data" as const, visualizations: [viz], summary });
+          // Also send in legacy format for backward compatibility
+          res.write(`data: ${JSON.stringify(viz)}\n\n`);
+        }
+        if (summary) {
+          lastSummary = summary;
+        }
       },
       onToolCall: (toolName, args) => {
         logger.debug({ tool: toolName, args }, "Tool invoked");
-        res.write(
-          `data: ${JSON.stringify({
-            type: "tool_call",
-            tool: toolName,
-            args,
-          })}\n\n`
-        );
+        sendSSE(res, {
+          type: "tool_call",
+          tool: toolName,
+          args: args as Record<string, unknown>,
+        });
       },
-      onToolResult: (toolName, result) => {
-        // Parse result to extract useful info without sending raw data
-        try {
-          const parsed = JSON.parse(result);
-          res.write(
-            `data: ${JSON.stringify({
-              type: "tool_result",
-              tool: toolName,
-              found: parsed.found,
-              summary: parsed.textSummary?.substring(0, 200) + "..." || null,
-            })}\n\n`
-          );
-        } catch {
-          res.write(
-            `data: ${JSON.stringify({
-              type: "tool_result",
-              tool: toolName,
-            })}\n\n`
-          );
-        }
+      onToolResult: (toolName, found, summaryText) => {
+        logger.debug({ tool: toolName, found }, "Tool result received");
+        sendSSE(res, {
+          type: "tool_result",
+          tool: toolName,
+          found,
+          summary: summaryText,
+        });
       },
-      onComplete: async (fullResponse) => {
-        logger.info(
-          { responseLength: fullResponse.length },
-          "Stream completed"
-        );
+      onComplete: async () => {
+        logger.info({ visualizationsCount: allVisualizations.length }, "Stream completed");
 
-        // Generate suggestions based on the query and response
+        // Generate suggestions based on the query and summary
         let suggestions: string[] = [];
         try {
-          suggestions = await generateSuggestions(query, fullResponse);
-          res.write(
-            `data: ${JSON.stringify({ type: "suggestions", suggestions })}\n\n`
-          );
+          const context = lastSummary ? `${lastSummary.title}. ${lastSummary.insights?.join(". ") || ""}` : query;
+          suggestions = await generateSuggestions(query, context);
+          sendSSE(res, { type: "suggestions", suggestions });
         } catch (error) {
-          console.error("Failed to generate suggestions:", error);
+          logger.error({ err: error }, "Failed to generate suggestions");
         }
 
-        res.write(`data: ${JSON.stringify({ type: "done" })}\n\n`);
+        sendSSE(res, { type: "done" });
         res.end();
       },
       onError: (error) => {
         logger.error({ err: error, query: req.body.query }, "Stream error");
-        res.write(
-          `data: ${JSON.stringify({ type: "error", error: error.message })}\n\n`
-        );
+        sendSSE(res, { type: "error", error: error.message });
         res.end();
       },
     });
   } catch (error) {
-    logger.error(
-      { err: error, query: req.body.query },
-      "Stream request failed"
-    );
+    logger.error({ err: error, query: req.body.query }, "Stream request failed");
     res.status(500).json({ error: "Failed to start streaming" });
   }
 });
@@ -168,17 +144,11 @@ router.post("/suggestions", async (req: Request, res: Response) => {
 
     const suggestions = await generateSuggestions(query, context);
 
-    logger.info(
-      { suggestionsCount: suggestions.length },
-      "Suggestions generated"
-    );
+    logger.info({ suggestionsCount: suggestions.length }, "Suggestions generated");
 
     res.json({ suggestions });
   } catch (error) {
-    logger.error(
-      { err: error, query: req.body.query },
-      "Suggestions request failed"
-    );
+    logger.error({ err: error, query: req.body.query }, "Suggestions request failed");
     res.status(500).json({ error: "Failed to generate suggestions" });
   }
 });
