@@ -96,6 +96,7 @@ export default function ChatPage() {
   }, [messages, showScrollButton]);
 
   const handleSubmit = async (query: string) => {
+    console.log("test");
     if (!query.trim() || isLoading) return;
 
     const userMessage: Message = { role: "user", content: query };

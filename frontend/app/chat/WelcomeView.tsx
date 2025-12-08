@@ -7,7 +7,6 @@ import {
   Location01Icon,
 } from "@/components/icons";
 import { Card, CardBody } from "@heroui/react";
-import { motion } from "framer-motion";
 
 interface WelcomeViewProps {
   onQueryClick: (query: string) => void;
@@ -58,14 +57,13 @@ export default function WelcomeView({
             query: "Compare groundwater levels across different states",
           },
         ].map((card, index) => (
-          <div key={index} className="w-full">
-            <ActionCard
-              icon={card.icon}
-              title={card.title}
-              description={card.description}
-              onClick={() => onQueryClick(card.query)}
-            />
-          </div>
+          <ActionCard
+            icon={card.icon}
+            title={card.title}
+            key={index}
+            description={card.description}
+            onClick={() => onQueryClick(card.query)}
+          />
         ))}
       </div>
     </>

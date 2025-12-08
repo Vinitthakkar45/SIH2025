@@ -19,11 +19,11 @@ const groundwaterCategoryData = [
 ];
 
 const depthTrendData = [
-  { year: <>2020</>, depth: 12.5 },
-  { year: <>2021</>, depth: 13.2 },
-  { year: <>2022</>, depth: 14.1 },
-  { year: <>2023</>, depth: 15.8 },
-  { year: <>2024</>, depth: 16.3 },
+  { year: "2020", depth: 12.5 },
+  { year: "2021", depth: 13.2 },
+  { year: "2022", depth: 14.1 },
+  { year: "2023", depth: 15.8 },
+  { year: "2024", depth: 16.3 },
 ];
 
 const chartConfig = {

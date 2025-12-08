@@ -41,7 +41,7 @@ async function fetchJson<T>(url: string, body: object): Promise<T> {
   if (!response.ok) {
     throw new Error(`HTTP error! status: ${response.status}`);
   }
-  return response.json();
+  return response.json() as Promise<T>;
 }
 
 interface StateInfo {

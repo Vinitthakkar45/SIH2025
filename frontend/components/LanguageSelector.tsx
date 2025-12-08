@@ -1,8 +1,10 @@
 "use client";
 
-import { useLingoLocale, setLingoLocale } from "lingo.dev/react/client";
-import { Select, SelectItem } from "@heroui/react";
 import { ALL_LOCALES } from "@/lib/locales";
+import type { Selection } from "@heroui/react";
+import { Select, SelectItem } from "@heroui/react";
+import Cookies from "js-cookie";
+import { useState } from "react";
 
 const LANGUAGE_NAMES: Record<
   string,
@@ -29,23 +31,31 @@ export default function LanguageSelector({
   className = "",
   variant = "flat",
 }: LanguageSelectorProps) {
-  const currentLocale = useLingoLocale();
+  const [currentLocale, setCurrentLocale] = useState(() => {
+    return Cookies.get("lingo-locale") || "en";
+  });
+
+  const handleLocaleChange = (keys: Selection) => {
+    const selected = Array.from(keys)[0] as string;
+    if (!selected) return;
+
+    // Write to the lingo-locale cookie
+    Cookies.set("lingo-locale", selected, { path: "/" });
+
+    setCurrentLocale(selected);
+
+    window.location.reload();
+  };
 
   return (
     <Select
       aria-label="Select language"
       selectedKeys={currentLocale ? [currentLocale] : []}
-      onSelectionChange={(keys) => {
-        const selected = Array.from(keys)[0];
-        if (selected) {
-          setLingoLocale(selected as string);
-        }
-      }}
+      onSelectionChange={handleLocaleChange}
       size={size}
       variant={variant}
-      className={className}
+      className={`${className} w-fit min-w-40 dark`}
       classNames={{
-        trigger: "min-w-[140px] h-8",
         value: "text-[13px] font-medium",
       }}
       disallowEmptySelection
