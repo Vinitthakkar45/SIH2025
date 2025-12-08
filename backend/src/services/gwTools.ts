@@ -28,19 +28,27 @@ const yearFilterSchema = {
   year: z
     .string()
     .optional()
-    .describe("Year (format: YYYY-YYYY). Defaults to 2024-2025."),
+    .describe(
+      "Specific year to query. Format: YYYY-YYYY (e.g., '2024-2025', '2020-2021'). Available: 2016-2017 to 2024-2025. Defaults to 2024-2025 if not specified."
+    ),
   fromYear: z
     .string()
     .optional()
-    .describe("Start year for range filter (format: YYYY-YYYY)."),
+    .describe(
+      "Start year for historical range. Format: YYYY-YYYY. Use with toYear for trends/historical analysis."
+    ),
   toYear: z
     .string()
     .optional()
-    .describe("End year for range filter (format: YYYY-YYYY)."),
+    .describe(
+      "End year for historical range. Format: YYYY-YYYY. Use with fromYear for trends/historical analysis."
+    ),
   specificYears: z
     .array(z.string())
     .optional()
-    .describe("Array of specific years."),
+    .describe(
+      "Array of specific non-consecutive years. Format: ['2016-2017', '2020-2021', '2024-2025']. Use when comparing specific years that are not sequential."
+    ),
 };
 
 const searchGroundwaterDataTool = tool(
@@ -111,17 +119,52 @@ const searchGroundwaterDataTool = tool(
   },
   {
     name: "search_groundwater_data",
-    description: `Search location and get groundwater data. Years: 2016-2017 to 2024-2025 (default: 2024-2025). Use year filters for trends.`,
+    description: `PRIMARY TOOL for getting groundwater data for ANY single location (state, district, or taluk).
+
+WHEN TO USE:
+- User asks about a specific place: "Tell me about Karnataka", "What's the water situation in Bangalore Urban", "How is groundwater in Tumkur taluk"
+- User wants current year data (default: 2024-2025)
+- User wants data for a specific year or year range for ONE location
+
+DO NOT USE WHEN:
+- User wants to compare multiple locations → use compare_locations instead
+- User asks "which state has highest/lowest..." → use get_top_locations instead
+- User wants to see all districts in a state → use list_locations instead
+
+HOW IT WORKS:
+- Just provide the location name - fuzzy search auto-detects if it's a state, district, or taluk
+- No need to specify locationType when not known - it will be inferred automatically
+- Available years: 2016-2017 to 2024-2025 (defaults to 2024-2025)
+- Don't explicitly ask for location type - just provide location name without type and it will be inferred automatically using fuzzy matching
+
+EXAMPLES:
+- "Karnataka" → searches states, finds Karnataka
+- "Bangalore Urban" → searches districts, finds Bangalore Urban in Karnataka
+- "Tumkur" → could be district or taluk, fuzzy search finds best match`,
     schema: z.object({
       locationName: z
         .string()
-        .describe("Location name (state, district, or taluk)."),
-      locationType: z.enum(["state", "district", "taluk"]).optional(),
-      stateName: z.string().optional().describe("Parent state for districts."),
+        .describe(
+          "Name of the location to search. Can be a state (e.g., 'Karnataka', 'Tamil Nadu'), district (e.g., 'Bangalore Urban', 'Chennai'), or taluk (e.g., 'Tumkur', 'Kolar'). Fuzzy matching is applied - no need to specify the type."
+        ),
+      locationType: z
+        .enum(["state", "district", "taluk"])
+        .optional()
+        .describe(
+          "OPTIONAL - Leave empty to auto-detect. Only specify if you need to disambiguate (e.g., when a name exists at multiple levels)."
+        ),
+      stateName: z
+        .string()
+        .optional()
+        .describe(
+          "OPTIONAL - Parent state name. Only needed to disambiguate districts with same name in different states."
+        ),
       districtName: z
         .string()
         .optional()
-        .describe("Parent district for taluks."),
+        .describe(
+          "OPTIONAL - Parent district name. Only needed to disambiguate taluks with same name."
+        ),
       ...yearFilterSchema,
     }),
   }
@@ -213,10 +256,41 @@ const compareLocationsTool = tool(
   },
   {
     name: "compare_locations",
-    description: `Compare 2-10 locations side-by-side. Use year filters for multi-year comparison.`,
+    description: `COMPARISON TOOL for comparing groundwater data between 2-10 locations side-by-side.
+
+WHEN TO USE:
+- User wants to compare specific places: "Compare Karnataka and Tamil Nadu", "How does Bangalore compare to Chennai"
+- User mentions multiple locations and wants to see differences
+- User asks "which is better between X and Y" (specific locations named)
+
+DO NOT USE WHEN:
+- User asks about just ONE location → use search_groundwater_data instead
+- User asks "which state has the highest..." without naming specific locations → use get_top_locations instead
+- User wants to explore what locations exist → use list_locations instead
+
+HOW IT WORKS:
+- Provide 2-10 location names - fuzzy search auto-detects their types
+- All locations should ideally be at the same level (all states, or all districts, etc.) for meaningful comparison
+- Returns side-by-side data for all specified locations
+
+EXAMPLES:
+- Compare states: ["Karnataka", "Tamil Nadu", "Kerala"]
+- Compare districts: ["Bangalore Urban", "Chennai", "Hyderabad"]
+- Compare over time: Add fromYear/toYear to see how comparison changed`,
     schema: z.object({
-      locationNames: z.array(z.string()).min(2).max(10),
-      locationType: z.enum(["state", "district", "taluk"]).optional(),
+      locationNames: z
+        .array(z.string())
+        .min(2)
+        .max(10)
+        .describe(
+          "Array of 2-10 location names to compare. Fuzzy matching finds each location automatically. Example: ['Karnataka', 'Tamil Nadu'] or ['Bangalore Urban', 'Chennai', 'Mumbai']"
+        ),
+      locationType: z
+        .enum(["state", "district", "taluk"])
+        .optional()
+        .describe(
+          "OPTIONAL - Leave empty to auto-detect. Only specify if all locations are at the same level and you want to ensure correct matching."
+        ),
       ...yearFilterSchema,
     }),
   }
@@ -224,8 +298,8 @@ const compareLocationsTool = tool(
 
 const getHistoricalDataTool = tool(
   async ({ locationName, locationType, ...yearParams }) => {
-    const type = locationType.toUpperCase() as LocationType;
-    let records = await searchAndGetHistoricalData(locationName, type);
+    const type = locationType?.toUpperCase() as LocationType | undefined;
+    let records = await searchAndGetHistoricalData(locationName, type!);
     if (records.length === 0) {
       return JSON.stringify({
         found: false,
@@ -252,13 +326,60 @@ const getHistoricalDataTool = tool(
   },
   {
     name: "get_historical_data",
-    description: `Get multi-year historical trends for a location.`,
+    description: `TREND/HISTORY TOOL for analyzing how groundwater conditions changed over time for a SINGLE location.
+
+WHEN TO USE:
+- User asks about trends: "How has Karnataka's water situation changed?", "Show me the trend for Bangalore"
+- User asks about historical data: "What was the extraction rate in 2018?", "Show me data from 2016 to 2020"
+- User wants to see patterns over multiple years for ONE location
+
+DO NOT USE WHEN:
+- User just wants current data → use search_groundwater_data instead
+- User wants to compare multiple locations → use compare_locations (which also supports year filters)
+- User asks "which states improved the most" → use get_top_locations with year filters
+
+HOW IT WORKS:
+- Provide location name - fuzzy search auto-detects type
+- Returns data for all available years (2016-2017 to 2024-2025) or filtered range
+- Shows year-over-year changes and trends
+
+YEAR FILTERING:
+- fromYear + toYear: Get data in range (e.g., "2018-2019" to "2022-2023")
+- specificYears: Get exact years (e.g., ["2016-2017", "2020-2021", "2024-2025"])
+
+EXAMPLES:
+- "How has Karnataka changed over the years" → locationName: "Karnataka"
+- "Bangalore water trend from 2018 to 2022" → locationName: "Bangalore Urban", fromYear: "2018-2019", toYear: "2022-2023"`,
     schema: z.object({
-      locationName: z.string(),
-      locationType: z.enum(["state", "district", "taluk"]),
-      fromYear: z.string().optional(),
-      toYear: z.string().optional(),
-      specificYears: z.array(z.string()).optional(),
+      locationName: z
+        .string()
+        .describe(
+          "Name of the location to get historical data for. Fuzzy matching auto-detects if it's a state, district, or taluk."
+        ),
+      locationType: z
+        .enum(["state", "district", "taluk"])
+        .optional()
+        .describe(
+          "OPTIONAL - Leave empty to auto-detect. Only specify if needed to disambiguate."
+        ),
+      fromYear: z
+        .string()
+        .optional()
+        .describe(
+          "Start year for range filter. Format: YYYY-YYYY (e.g., '2018-2019'). If not specified, starts from earliest available."
+        ),
+      toYear: z
+        .string()
+        .optional()
+        .describe(
+          "End year for range filter. Format: YYYY-YYYY (e.g., '2022-2023'). If not specified, goes to latest available."
+        ),
+      specificYears: z
+        .array(z.string())
+        .optional()
+        .describe(
+          "Array of specific years to fetch. Format: ['2016-2017', '2020-2021']. Use this for non-consecutive years."
+        ),
     }),
   }
 );
@@ -393,14 +514,66 @@ const getTopLocationsTool = tool(
   },
   {
     name: "get_top_locations",
-    description: `Get ranked locations by metric. Metrics: ${VALID_METRICS.join(
-      ", "
-    )}`,
+    description: `RANKING TOOL for finding best/worst performing locations by any metric. Use for "which state has highest/lowest..." questions.
+
+WHEN TO USE:
+- User asks ranking questions: "Which state has the highest extraction?", "Top 5 districts with lowest rainfall"
+- User asks about best/worst: "Which areas are over-exploited?", "Safest districts for water"
+- User wants leaderboard-style data without naming specific locations
+- User asks "where is groundwater situation best/worst"
+
+DO NOT USE WHEN:
+- User names specific locations to look up → use search_groundwater_data
+- User names specific locations to compare → use compare_locations
+- User asks about a specific place's data → use search_groundwater_data
+
+AVAILABLE METRICS (what to rank by):
+- rainfall: Annual rainfall in mm
+- recharge: Total groundwater recharge (how much water goes into ground) in MCM
+- extraction: Total groundwater draft/extraction (how much pumped out) in MCM
+- stage_of_extraction: Extraction as % of recharge (below 70% = safe, above 100% = over-exploited)
+- extractable_resources: Net groundwater available for use in MCM
+
+LOCATION TYPES:
+- state: Rank all 36 states/UTs in India
+- district: Rank all ~750 districts
+- taluk: Rank all ~6000+ taluks
+
+ORDER:
+- desc: Highest first (for "most", "highest", "top")
+- asc: Lowest first (for "least", "lowest", "bottom")
+
+EXAMPLES:
+- "Which states use the most groundwater?" → metric: "extraction", locationType: "state", order: "desc"
+- "Top 10 over-exploited districts" → metric: "stage_of_extraction", locationType: "district", order: "desc", limit: 10
+- "States with best water situation" → metric: "stage_of_extraction", locationType: "state", order: "asc" (lowest extraction % = safest)`,
     schema: z.object({
-      metric: z.enum(VALID_METRICS as [string, ...string[]]),
-      locationType: z.enum(["state", "district", "taluk"]),
-      order: z.enum(["asc", "desc"]).default("desc"),
-      limit: z.number().min(1).max(20).default(10),
+      metric: z
+        .enum(VALID_METRICS as [string, ...string[]])
+        .describe(
+          `The metric to rank by. Options: ${VALID_METRICS.join(
+            ", "
+          )}. Use 'stage_of_extraction' for water stress/health questions, 'extraction' for usage questions, 'recharge' for replenishment questions, 'rainfall' for precipitation questions.`
+        ),
+      locationType: z
+        .enum(["state", "district", "taluk"])
+        .describe(
+          "Level at which to rank. Use 'state' for broad national picture, 'district' for regional analysis, 'taluk' for local granularity."
+        ),
+      order: z
+        .enum(["asc", "desc"])
+        .default("desc")
+        .describe(
+          "Sort order. 'desc' for highest/most/worst first. 'asc' for lowest/least/best first. Default: desc."
+        ),
+      limit: z
+        .number()
+        .min(1)
+        .max(20)
+        .default(10)
+        .describe(
+          "Number of results to return (1-20). Default: 10. Use lower for quick overview, higher for comprehensive list."
+        ),
       ...yearFilterSchema,
     }),
   }
@@ -451,10 +624,43 @@ const listLocationsTool = tool(
   },
   {
     name: "list_locations",
-    description: `List all child locations under a parent. Hierarchy: India → States → Districts → Taluks`,
+    description: `EXPLORATION TOOL for discovering what locations exist in the database. Use to show hierarchy or enumerate child locations.
+
+WHEN TO USE:
+- User asks "What districts are in Karnataka?", "Show me all states", "List taluks in Bangalore Urban"
+- User wants to explore/browse locations before asking about specific data
+- User needs to know valid location names to query
+- User asks about administrative divisions or hierarchy
+
+DO NOT USE WHEN:
+- User asks for groundwater DATA about a location → use search_groundwater_data
+- User wants to compare locations → use compare_locations
+- User wants rankings → use get_top_locations
+
+HIERARCHY (India's administrative structure):
+- India (country) → 36 States/UTs → ~750 Districts → ~6000+ Taluks/Tehsils/Mandals
+
+HOW TO USE:
+- For all states: locationType: "state" (no parentName needed)
+- For districts in a state: locationType: "district", parentName: "Karnataka"
+- For taluks in a district: locationType: "taluk", parentName: "Bangalore Urban"
+
+EXAMPLES:
+- "What are all the states?" → locationType: "state"
+- "Districts in Tamil Nadu" → locationType: "district", parentName: "Tamil Nadu"
+- "Taluks in Mysore district" → locationType: "taluk", parentName: "Mysore"`,
     schema: z.object({
-      locationType: z.enum(["state", "district", "taluk"]),
-      parentName: z.string().optional(),
+      locationType: z
+        .enum(["state", "district", "taluk"])
+        .describe(
+          "What type of locations to list. 'state' lists all 36 states/UTs. 'district' lists districts in a state. 'taluk' lists taluks in a district."
+        ),
+      parentName: z
+        .string()
+        .optional()
+        .describe(
+          "Parent location name. Required for district (provide state name) and taluk (provide district name). Not needed for state."
+        ),
     }),
   }
 );
