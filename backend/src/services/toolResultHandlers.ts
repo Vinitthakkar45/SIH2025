@@ -402,10 +402,12 @@ export async function handleGetTopLocations(
     extraction: number;
   }>;
 
+  // Count categories, filtering out null/undefined
   const categoryCounts: Record<string, number> = {};
   data.forEach((d) => {
-    if (d.category && d.category !== "null") {
-      categoryCounts[d.category] = (categoryCounts[d.category] || 0) + 1;
+    const cat = String(d.category || "").trim();
+    if (cat && cat !== "null" && cat !== "undefined" && cat !== "") {
+      categoryCounts[cat] = (categoryCounts[cat] || 0) + 1;
     }
   });
 
@@ -416,68 +418,70 @@ export async function handleGetTopLocations(
     return "hsl(142, 71%, 45%)";
   };
 
+  const rankingTableChildren = [
+    {
+      type: "table",
+      tableType: "ranking",
+      title: `${metricLabel} Rankings`,
+      columns: ["Rank", "Name", `${metricLabel} (${metricUnit})`, "Category"],
+      data: data.map((d) => ({
+        Rank: d.rank,
+        Name: d.name,
+        [`${metricLabel} (${metricUnit})`]: Number(d.value || 0).toFixed(2),
+        Category: d.category || "N/A",
+      })),
+    },
+    {
+      type: "chart",
+      chartType: "bar",
+      title: metricLabel,
+      description: result.order === "desc" ? "Highest values" : "Lowest values",
+      data: data.map((d) => ({ name: d.name, value: Number(d.value || 0) })),
+    },
+  ];
+
+  const categoryAnalysisChildren = [
+    {
+      type: "chart",
+      chartType: "bar",
+      title: "Stage of Extraction",
+      description: "Extraction %",
+      data: data.map((d) => ({
+        name: d.name,
+        value: Number(d.stageOfExtraction) || 0,
+        fill: getStageColor(Number(d.stageOfExtraction) || 0),
+      })),
+      colorByValue: true,
+      threshold: { safe: 70, critical: 90, overExploited: 100 },
+    },
+  ];
+
+  // Only add pie chart if we have valid categories
+  if (Object.keys(categoryCounts).length > 0) {
+    categoryAnalysisChildren.push({
+      type: "chart",
+      chartType: "pie",
+      title: "Category Distribution",
+      description: "By groundwater category",
+      data: Object.entries(categoryCounts).map(([name, value]) => ({
+        name,
+        value,
+      })),
+    } as any);
+  }
+
   const visualizations = [
     {
       type: "collapsible",
       title: `Top ${limit} ${locationType}s by ${metricLabel} (${year})`,
       defaultOpen: true,
-      children: [
-        {
-          type: "table",
-          tableType: "ranking",
-          title: `${metricLabel} Rankings`,
-          columns: [
-            "Rank",
-            "Name",
-            `${metricLabel} (${metricUnit})`,
-            "Category",
-          ],
-          data: data.map((d) => ({
-            rank: d.rank,
-            name: d.name,
-            value: Number(d.value).toFixed(2),
-            category: d.category,
-          })),
-        },
-        {
-          type: "chart",
-          chartType: "bar",
-          title: metricLabel,
-          description:
-            result.order === "desc" ? "Highest values" : "Lowest values",
-          data: data.map((d) => ({ name: d.name, value: d.value })),
-        },
-      ],
+      children: rankingTableChildren,
     },
     {
       type: "collapsible",
       title: "Category & Stage Analysis",
       defaultOpen: false,
-      children: [
-        {
-          type: "chart",
-          chartType: "bar",
-          title: "Stage of Extraction",
-          description: "Extraction %",
-          data: data.map((d) => ({
-            name: d.name,
-            value: Number(d.stageOfExtraction) || 0,
-            fill: getStageColor(Number(d.stageOfExtraction) || 0),
-          })),
-          colorByValue: true,
-          threshold: { safe: 70, critical: 90, overExploited: 100 },
-        },
-        {
-          type: "chart",
-          chartType: "pie",
-          title: "Category Distribution",
-          description: "By groundwater category",
-          data: Object.entries(categoryCounts).map(([name, value]) => ({
-            name,
-            value,
-          })),
-        },
-      ],
+      children: categoryAnalysisChildren,
     },
   ];
 
@@ -492,408 +496,6 @@ export async function handleGetTopLocations(
     subtitle: `Year: ${year}`,
     visualizations,
   });
-}
-
-export async function handleGetCategorySummary(
-  result: ToolResult,
-  onChart: ChartCallback
-): Promise<void> {
-  if (!result.found) return;
-
-  const locationType = result.locationType as string;
-
-  if (result.isHistorical && result.categoryTrendData) {
-    const yearsAnalyzed = result.yearsAnalyzed as string[];
-    const categoryTrendData = result.categoryTrendData as Array<{
-      year: string;
-      safe: number;
-      semiCritical: number;
-      critical: number;
-      overExploited: number;
-    }>;
-    const latestCategoryCounts = result.latestCategoryCounts as Record<
-      string,
-      number
-    >;
-
-    const yearRange =
-      yearsAnalyzed.length > 1
-        ? `${yearsAnalyzed[0]} to ${yearsAnalyzed[yearsAnalyzed.length - 1]}`
-        : yearsAnalyzed[0];
-
-    const visualizations = [
-      {
-        type: "collapsible",
-        title: `Category Summary - ${locationType}s (${yearRange})`,
-        defaultOpen: true,
-        children: [
-          {
-            type: "table",
-            tableType: "categoryTrend",
-            title: "Category Distribution Over Years",
-            columns: [
-              "Year",
-              "Safe",
-              "Semi-Critical",
-              "Critical",
-              "Over-Exploited",
-            ],
-            data: categoryTrendData,
-          },
-          {
-            type: "chart",
-            chartType: "pie",
-            title: `Current Distribution (${
-              yearsAnalyzed[yearsAnalyzed.length - 1]
-            })`,
-            description: `${locationType}s by category`,
-            data: Object.entries(latestCategoryCounts).map(([name, value]) => ({
-              name,
-              value,
-            })),
-          },
-        ],
-      },
-      {
-        type: "collapsible",
-        title: "Category Trend Analysis",
-        defaultOpen: false,
-        children: [
-          {
-            type: "chart",
-            chartType: "multi_line",
-            title: "Safe vs Critical Trend",
-            description: "Over time",
-            data: categoryTrendData.map((d) => ({
-              year: d.year,
-              safe: d.safe,
-              "critical + over-exploited": d.critical + d.overExploited,
-            })),
-          },
-        ],
-      },
-    ];
-
-    onChart({
-      type: "data_container",
-      title: `Category Summary - ${locationType}s`,
-      subtitle: `Historical analysis: ${yearRange}`,
-      visualizations,
-    });
-    return;
-  }
-
-  const year = result.year as string;
-  const categoryCounts = result.categoryCounts as Record<string, number>;
-  const aggregateStats = result.aggregateStats as Record<string, unknown>;
-
-  const categoryData = Object.entries(categoryCounts).map(([name, value]) => ({
-    name,
-    value,
-  }));
-  const total = categoryData.reduce((sum, c) => sum + c.value, 0);
-
-  const visualizations = [
-    {
-      type: "collapsible",
-      title: `Category Summary - ${locationType}s (${year})`,
-      defaultOpen: true,
-      children: [
-        {
-          type: "chart",
-          chartType: "pie",
-          title: `${locationType} Category Distribution`,
-          description: "By groundwater category",
-          data: categoryData,
-        },
-        {
-          type: "table",
-          tableType: "categorySummary",
-          title: "Category Breakdown",
-          columns: ["Category", "Count", "Percentage"],
-          data: categoryData.map((c) => ({
-            ...c,
-            percentage: total ? Math.round((c.value / total) * 1000) / 10 : 0,
-          })),
-        },
-      ],
-    },
-    {
-      type: "collapsible",
-      title: "Aggregate Statistics",
-      defaultOpen: false,
-      children: [
-        {
-          type: "stats",
-          title: "National/Regional Aggregates",
-          data: aggregateStats,
-        },
-      ],
-    },
-  ];
-
-  logger.debug(
-    { visualizationsCount: visualizations.length },
-    "Generated visualizations for get_category_summary"
-  );
-
-  onChart({
-    type: "data_container",
-    title: `Category Summary - ${locationType}s`,
-    subtitle: `Year: ${year}`,
-    visualizations,
-  });
-}
-
-export async function handleGetLocationDetails(
-  result: ToolResult,
-  onChart: ChartCallback
-): Promise<void> {
-  if (!result.found) return;
-
-  const locationName = result.locationName as string;
-  const locationId = result.locationId as string;
-  const year = result.year as string;
-
-  if (result.isHistorical && result.trendData) {
-    const yearsAvailable = result.yearsAvailable as string[];
-    const trendData = result.trendData as Array<{
-      year: string;
-      rainfall: number;
-      recharge: number;
-      extraction: number;
-      stageOfExtraction: number;
-      category: string;
-      netBalance: number;
-    }>;
-    const changeAnalysis = result.changeAnalysis as {
-      extractionChange: string;
-      rechargeChange: string;
-      overallTrend: string;
-    };
-
-    const yearRange =
-      yearsAvailable.length > 1
-        ? `${yearsAvailable[0]} to ${yearsAvailable[yearsAvailable.length - 1]}`
-        : yearsAvailable[0];
-
-    const visualizations = [
-      {
-        type: "collapsible",
-        title: `${locationName} - Historical Overview`,
-        defaultOpen: true,
-        children: [
-          {
-            type: "table",
-            tableType: "historicalDetails",
-            title: "Year-wise Data",
-            columns: [
-              "Year",
-              "Rainfall",
-              "Recharge",
-              "Extraction",
-              "Stage",
-              "Category",
-            ],
-            data: trendData,
-          },
-        ],
-      },
-      {
-        type: "collapsible",
-        title: "Trend Analysis",
-        defaultOpen: false,
-        children: [
-          {
-            type: "chart",
-            chartType: "multi_line",
-            title: "Recharge vs Extraction",
-            description: "Over years (ham)",
-            data: trendData.map((t) => ({
-              year: t.year,
-              recharge: t.recharge,
-              extraction: t.extraction,
-            })),
-          },
-          {
-            type: "chart",
-            chartType: "line",
-            title: "Stage of Extraction",
-            description: "Over years (%)",
-            data: trendData.map((t) => ({
-              year: t.year,
-              value: t.stageOfExtraction,
-            })),
-            threshold: { safe: 70, critical: 90, overExploited: 100 },
-          },
-        ],
-      },
-      {
-        type: "collapsible",
-        title: "Sustainability Metrics",
-        defaultOpen: false,
-        children: [
-          {
-            type: "chart",
-            chartType: "line",
-            title: "Net Balance",
-            description: "Recharge - Extraction",
-            data: trendData.map((t) => ({ year: t.year, value: t.netBalance })),
-          },
-          {
-            type: "stats",
-            title: "Change Analysis",
-            data: changeAnalysis,
-          },
-        ],
-      },
-    ];
-
-    logger.debug(
-      { visualizationsCount: visualizations.length },
-      "Generated visualizations for get_location_details (historical)"
-    );
-
-    onChart({
-      type: "data_container",
-      title: `Historical Trends - ${locationName}`,
-      subtitle: `${yearsAvailable.length} years of data: ${yearRange}`,
-      locationId,
-      locationName,
-      visualizations,
-    });
-    return;
-  }
-
-  if (result.childrenCount && result.childrenData) {
-    const parent = result.parent as {
-      locationName: string;
-      locationId: string;
-    };
-    const childrenData = result.childrenData as Array<{
-      name: string;
-      category: string;
-      extractable: number;
-      extraction: number;
-      stageOfExtraction: number;
-    }>;
-
-    const categoryCounts: Record<string, number> = {};
-    childrenData.forEach((d) => {
-      if (d.category && d.category !== "null") {
-        categoryCounts[d.category] = (categoryCounts[d.category] || 0) + 1;
-      }
-    });
-
-    const fullRecord = await getGroundwaterDataByLocationId(locationId, year);
-    const parentVisualizations = fullRecord
-      ? generateChartData(fullRecord)
-      : [];
-
-    const visualizations = [
-      {
-        type: "collapsible",
-        title: `${parent.locationName} Overview (${year})`,
-        defaultOpen: true,
-        children: parentVisualizations,
-      },
-      {
-        type: "collapsible",
-        title: `Child Locations (${childrenData.length})`,
-        defaultOpen: false,
-        children: [
-          {
-            type: "table",
-            tableType: "children",
-            title: "Breakdown",
-            columns: ["Name", "Category", "Extractable", "Extraction", "Stage"],
-            data: childrenData,
-          },
-          {
-            type: "chart",
-            chartType: "bar",
-            title: "Top 10 by Extraction",
-            description: "ham",
-            data: childrenData
-              .sort(
-                (a, b) =>
-                  (Number(b.extraction) || 0) - (Number(a.extraction) || 0)
-              )
-              .slice(0, 10)
-              .map((c) => ({ name: c.name, value: c.extraction })),
-            color: "hsl(4, 90%, 58%)",
-          },
-          {
-            type: "chart",
-            chartType: "pie",
-            title: "Category Distribution",
-            description: "By category",
-            data: Object.entries(categoryCounts).map(([name, value]) => ({
-              name,
-              value,
-            })),
-          },
-        ],
-      },
-    ];
-
-    logger.debug(
-      { visualizationsCount: visualizations.length },
-      "Generated visualizations for get_location_details (with children)"
-    );
-
-    onChart({
-      type: "data_container",
-      title: `${locationName} Details`,
-      subtitle: `Year: ${year} • ${childrenData.length} child locations`,
-      locationId,
-      locationName,
-      visualizations,
-    });
-    return;
-  }
-
-  const fullRecord = await getGroundwaterDataByLocationId(locationId, year);
-  if (!fullRecord) {
-    logger.warn({ locationId }, "Failed to fetch full record");
-    return;
-  }
-
-  const visualizations = generateChartData(fullRecord);
-
-  logger.debug(
-    { visualizationsCount: visualizations.length },
-    "Generated visualizations for get_location_details (single)"
-  );
-
-  onChart({
-    type: "data_container",
-    title: `Groundwater Data - ${locationName}`,
-    subtitle: `Year: ${year}`,
-    locationId,
-    locationName,
-    year,
-    visualizations: [
-      {
-        type: "collapsible",
-        title: `${locationName} Details (${year})`,
-        defaultOpen: true,
-        children: visualizations,
-      },
-    ],
-  });
-}
-
-export async function handleLegacyCharts(
-  result: ToolResult,
-  onChart: ChartCallback
-): Promise<void> {
-  if (!result.charts) return;
-
-  const charts = result.charts as object[];
-  for (const chart of charts) {
-    onChart(chart);
-  }
 }
 
 export async function processToolResult(
@@ -920,18 +522,6 @@ export async function processToolResult(
       case "get_top_locations":
         await handleGetTopLocations(result, onChart);
         break;
-
-      case "get_category_summary":
-        await handleGetCategorySummary(result, onChart);
-        break;
-
-      case "get_location_details":
-        await handleGetLocationDetails(result, onChart);
-        break;
-
-      default:
-        // Handle legacy charts in tool result
-        await handleLegacyCharts(result, onChart);
     }
   } catch (error) {
     logger.debug({ error, toolName }, "Failed to parse tool result");
