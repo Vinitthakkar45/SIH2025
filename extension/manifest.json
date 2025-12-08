@@ -1,0 +1,41 @@
+{
+  "manifest_version": 3,
+  "name": "INGRES AI ChatBot",
+  "version": "1.0.0",
+  "description": "AI-powered virtual assistant for INGRES - India Ground Water Resource Estimation System. Get instant insights on groundwater data.",
+  "permissions": ["activeTab", "storage"],
+  "host_permissions": ["https://ingres.iith.ac.in/*", "http://localhost:3001/*"],
+  "icons": {
+    "16": "public/icons/icon16.png",
+    "32": "public/icons/icon32.png",
+    "48": "public/icons/icon48.png",
+    "128": "public/icons/icon128.png"
+  },
+  "action": {
+    "default_popup": "src/popup/index.html",
+    "default_icon": {
+      "16": "public/icons/icon16.png",
+      "32": "public/icons/icon32.png",
+      "48": "public/icons/icon48.png",
+      "128": "public/icons/icon128.png"
+    },
+    "default_title": "INGRES AI ChatBot"
+  },
+  "content_scripts": [
+    {
+      "matches": ["https://ingres.iith.ac.in/*"],
+      "js": ["src/content/index.tsx"],
+      "run_at": "document_idle"
+    }
+  ],
+  "background": {
+    "service_worker": "src/background/index.ts",
+    "type": "module"
+  },
+  "web_accessible_resources": [
+    {
+      "resources": ["assets/*", "public/icons/*"],
+      "matches": ["https://ingres.iith.ac.in/*"]
+    }
+  ]
+}

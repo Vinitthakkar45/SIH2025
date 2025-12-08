@@ -1,0 +1,116 @@
+"use client";
+
+import { Bar, BarChart, CartesianGrid, Legend, XAxis, YAxis } from "recharts";
+import {
+  ChartConfig,
+  ChartContainer,
+  ChartTooltip,
+  ChartTooltipContent,
+} from "@/components/ui/chart";
+
+interface BarChartComponentProps {
+  title: string;
+  description?: string;
+  data: Record<string, unknown>[];
+}
+
+const COLORS = [
+  "hsl(217, 91%, 60%)",
+  "hsl(142, 71%, 45%)",
+  "hsl(38, 92%, 50%)",
+  "hsl(4, 90%, 58%)",
+  "hsl(258, 90%, 66%)",
+  "hsl(330, 81%, 60%)",
+];
+
+export default function BarChartComponent({
+  title,
+  description,
+  data,
+}: BarChartComponentProps) {
+  // Build chart config dynamically
+  const chartConfig: ChartConfig = {};
+
+  if (!data || data.length === 0) {
+    return (
+      <div className="bg-zinc-800 rounded-lg p-4 my-2">
+        <h4 className="font-semibold text-zinc-100 mb-1">{title}</h4>
+        {description && (
+          <p className="text-sm text-zinc-400 mb-3">{description}</p>
+        )}
+        <p className="text-zinc-500 text-center py-8">No data available</p>
+      </div>
+    );
+  }
+
+  // Debug: log the data to see its structure
+  console.log("Bar chart data:", data);
+
+  // Find the key used for names (could be "name", "Name", "Source", etc.)
+  const firstItem = data[0];
+  const nameKey =
+    Object.keys(firstItem).find(
+      (k) =>
+        k.toLowerCase() === "name" ||
+        k.toLowerCase() === "source" ||
+        k === "category"
+    ) || "name";
+
+  const dataKeys = Object.keys(firstItem).filter(
+    (k) => k !== nameKey && typeof firstItem[k] === "number"
+  );
+
+  console.log("Name key:", nameKey, "Data keys:", dataKeys);
+
+  dataKeys.forEach((key, i) => {
+    chartConfig[key] = {
+      label: key.charAt(0).toUpperCase() + key.slice(1),
+      color: COLORS[i % COLORS.length],
+    };
+  });
+
+  return (
+    <div className="bg-zinc-800 rounded-lg p-4 my-2">
+      <h4 className="font-semibold text-zinc-100 mb-1">{title}</h4>
+      {description && (
+        <p className="text-sm text-zinc-400 mb-3">{description}</p>
+      )}
+      <ChartContainer config={chartConfig} className="h-[250px] w-full">
+        <BarChart
+          data={data}
+          margin={{ top: 5, right: 20, left: 10, bottom: 5 }}
+        >
+          <CartesianGrid strokeDasharray="0" stroke="#3f3f46" strokeWidth={0} />
+          <XAxis
+            dataKey={nameKey}
+            tick={{ fontSize: 12, fill: "#a1a1aa" }}
+            stroke="#52525b"
+            strokeWidth={0}
+            axisLine={false}
+            tickLine={false}
+          />
+          <YAxis
+            tick={{ fontSize: 12, fill: "#a1a1aa" }}
+            stroke="#52525b"
+            strokeWidth={0}
+            axisLine={false}
+            tickLine={false}
+          />
+          <ChartTooltip
+            content={<ChartTooltipContent indicator="line" />}
+            cursor={false}
+          />
+          <Legend wrapperStyle={{ color: "#a1a1aa" }} iconType="circle" />
+          {dataKeys.map((key, i) => (
+            <Bar
+              key={key}
+              dataKey={key}
+              fill={COLORS[i % COLORS.length]}
+              radius={[4, 4, 0, 0]}
+            />
+          ))}
+        </BarChart>
+      </ChartContainer>
+    </div>
+  );
+}

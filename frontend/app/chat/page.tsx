@@ -1,33 +1,19 @@
 "use client";
 
-import { useState, useRef, useEffect } from "react";
+import ChartRenderer from "@/components/ChartRenderer";
+import ChatComposer from "@/components/ChatComposer";
 import {
-  Map,
-  MessageSquare,
-  Send,
-  Loader2,
-  ChevronDown,
-  ChevronUp,
-} from "lucide-react";
-import {
-  BarChart,
-  Bar,
-  PieChart,
-  Pie,
-  Cell,
-  XAxis,
-  YAxis,
-  CartesianGrid,
-  Tooltip,
-  Legend,
-  ResponsiveContainer,
-  LineChart,
-  Line,
-  AreaChart,
-  Area,
-} from "recharts";
-import { MapProvider } from "./MapContext";
-import MapWrapper from "./MapWrapper";
+  ArrowDown02Icon,
+  DropletIcon,
+  MapsIcon,
+  MessageIcon,
+  SparklesIcon,
+} from "@/components/icons";
+import MarkdownRenderer from "@/components/MarkdownRenderer";
+import { Button } from "@heroui/button";
+import { Skeleton } from "@heroui/react";
+import Link from "next/link";
+import { useEffect, useRef, useState } from "react";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001";
 
@@ -99,670 +85,10 @@ interface Visualization {
 interface Message {
   role: "user" | "assistant";
   content: string;
-  charts?: Visualization[];
+  charts?: ChartData[];
+  suggestions?: string[];
   isLoading?: boolean;
   suggestions?: string[];
-}
-
-const COLORS = [
-  "#3b82f6",
-  "#10b981",
-  "#f59e0b",
-  "#ef4444",
-  "#8b5cf6",
-  "#ec4899",
-];
-
-const CATEGORY_COLORS: Record<string, string> = {
-  safe: "#10b981",
-  semi_critical: "#f59e0b",
-  critical: "#f97316",
-  over_exploited: "#ef4444",
-  salinity: "#8b5cf6",
-  hilly_area: "#6b7280",
-  no_data: "#9ca3af",
-  Safe: "#10b981",
-  "Semi-Critical": "#f59e0b",
-  Critical: "#f97316",
-  "Over-Exploited": "#ef4444",
-};
-
-function formatNumber(value: unknown): string {
-  if (value === null || value === undefined) return "-";
-  const num = Number(value);
-  if (isNaN(num)) return "-";
-  return num.toLocaleString("en-IN", { maximumFractionDigits: 2 });
-}
-
-function SummaryCard({ viz }: { viz: Visualization }) {
-  const data = viz.data as SummaryData;
-  return (
-    <div className="bg-gradient-to-br from-blue-900 to-blue-950 rounded-lg p-4 my-2 text-white">
-      <div className="flex justify-between items-start mb-4">
-        <div>
-          <h4 className="font-semibold text-lg">{viz.title}</h4>
-          {viz.year && (
-            <p className="text-blue-300 text-sm">YEAR: {viz.year}</p>
-          )}
-        </div>
-        {data.category && (
-          <span
-            className="px-3 py-1 rounded-full text-xs font-medium"
-            style={{
-              backgroundColor: CATEGORY_COLORS[data.category] || "#6b7280",
-            }}
-          >
-            {data.category}
-          </span>
-        )}
-      </div>
-
-      <div className="grid grid-cols-2 gap-4">
-        <div className="bg-blue-800/50 rounded-lg p-3">
-          <p className="text-blue-300 text-xs">
-            Annual Extractable Ground Water Resources (ham)
-          </p>
-          <p className="text-2xl font-bold text-cyan-400">
-            {formatNumber(data.extractableTotal)}
-          </p>
-        </div>
-        <div className="bg-blue-800/50 rounded-lg p-3">
-          <p className="text-blue-300 text-xs">
-            Ground Water Extraction for all uses (ham)
-          </p>
-          <p className="text-2xl font-bold text-cyan-400">
-            {formatNumber(data.extractionTotal)}
-          </p>
-        </div>
-      </div>
-
-      <div className="mt-4 space-y-2 text-sm">
-        <div className="flex justify-between">
-          <span className="text-blue-300">Rainfall (mm)</span>
-          <span className="text-cyan-400">{formatNumber(data.rainfall)}</span>
-        </div>
-        <div className="flex justify-between">
-          <span className="text-blue-300">Ground Water Recharge (ham)</span>
-          <span className="text-cyan-400">
-            {formatNumber(data.rechargeTotal)}
-          </span>
-        </div>
-        <div className="flex justify-between">
-          <span className="text-blue-300">Natural Discharges (ham)</span>
-          <span className="text-cyan-400">
-            {formatNumber(data.naturalDischarges)}
-          </span>
-        </div>
-        {data.stageOfExtraction !== undefined && (
-          <div className="flex justify-between">
-            <span className="text-blue-300">Stage of Extraction</span>
-            <span
-              className={`font-medium ${
-                (data.stageOfExtraction ?? 0) > 100
-                  ? "text-red-400"
-                  : (data.stageOfExtraction ?? 0) > 90
-                  ? "text-orange-400"
-                  : (data.stageOfExtraction ?? 0) > 70
-                  ? "text-yellow-400"
-                  : "text-green-400"
-              }`}
-            >
-              {formatNumber(data.stageOfExtraction)}%
-            </span>
-          </div>
-        )}
-      </div>
-    </div>
-  );
-}
-
-function CollapsibleTable({ viz }: { viz: Visualization }) {
-  const [isOpen, setIsOpen] = useState(false);
-  const data = viz.data as TableRow[];
-
-  return (
-    <div className="bg-gray-900 rounded-lg my-2 overflow-hidden border border-gray-700">
-      <button
-        onClick={() => setIsOpen(!isOpen)}
-        className="w-full px-4 py-3 flex items-center justify-between hover:bg-gray-800 transition-colors"
-      >
-        <div className="flex items-center gap-2">
-          <span className="text-gray-300 text-sm">{viz.title}</span>
-          {viz.headerValue !== undefined && (
-            <span className="text-cyan-400 font-medium">
-              : {formatNumber(viz.headerValue)}
-            </span>
-          )}
-        </div>
-        {isOpen ? (
-          <ChevronUp size={18} className="text-gray-400" />
-        ) : (
-          <ChevronDown size={18} className="text-gray-400" />
-        )}
-      </button>
-
-      {isOpen && (
-        <div className="overflow-x-auto">
-          <table className="w-full text-sm">
-            <thead className="bg-gray-800">
-              <tr>
-                {viz.columns?.map((col) => (
-                  <th
-                    key={col}
-                    className="px-4 py-2 text-left text-gray-400 font-medium"
-                  >
-                    {col}
-                  </th>
-                ))}
-              </tr>
-            </thead>
-            <tbody>
-              {data.map((row, idx) => (
-                <tr
-                  key={idx}
-                  className={`border-t border-gray-700 ${
-                    row.source === "Total" ? "bg-gray-800 font-medium" : ""
-                  }`}
-                >
-                  {viz.tableType === "extractable" ? (
-                    <>
-                      <td className="px-4 py-2 text-gray-300">
-                        {formatNumber(row.command)}
-                      </td>
-                      <td className="px-4 py-2 text-gray-300">
-                        {formatNumber(row.nonCommand)}
-                      </td>
-                      <td className="px-4 py-2 text-cyan-400">
-                        {formatNumber(row.total)}
-                      </td>
-                    </>
-                  ) : viz.tableType === "locations" ? (
-                    <>
-                      <td className="px-4 py-2 text-gray-300">{row.name}</td>
-                      <td className="px-4 py-2 text-gray-300">
-                        {formatNumber(row.rainfall)}
-                      </td>
-                      <td className="px-4 py-2 text-gray-300">
-                        {formatNumber(row.extractable)}
-                      </td>
-                      <td className="px-4 py-2 text-gray-300">
-                        {formatNumber(row.extraction)}
-                      </td>
-                      <td className="px-4 py-2 text-gray-300">
-                        {formatNumber(row.stageOfExtraction)}
-                      </td>
-                    </>
-                  ) : viz.tableType === "trend" ? (
-                    <>
-                      <td className="px-4 py-2 text-gray-300 font-medium">
-                        {String(row.year)}
-                      </td>
-                      <td className="px-4 py-2 text-gray-300">
-                        {formatNumber(row.rainfall)}
-                      </td>
-                      <td className="px-4 py-2 text-gray-300">
-                        {formatNumber(row.recharge)}
-                      </td>
-                      <td className="px-4 py-2 text-gray-300">
-                        {formatNumber(row.extractable)}
-                      </td>
-                      <td className="px-4 py-2 text-gray-300">
-                        {formatNumber(row.extraction)}
-                      </td>
-                      <td className="px-4 py-2 text-gray-300">
-                        {formatNumber(row.stageOfExtraction)}
-                      </td>
-                      <td className="px-4 py-2">
-                        <span
-                          className="px-2 py-1 rounded text-xs"
-                          style={{
-                            backgroundColor:
-                              CATEGORY_COLORS[String(row.category)] ||
-                              "#6b7280",
-                          }}
-                        >
-                          {String(row.category || "N/A")}
-                        </span>
-                      </td>
-                    </>
-                  ) : (
-                    <>
-                      <td className="px-4 py-2 text-gray-300">{row.source}</td>
-                      <td className="px-4 py-2 text-gray-300">
-                        {formatNumber(row.command)}
-                      </td>
-                      <td className="px-4 py-2 text-gray-300">
-                        {formatNumber(row.nonCommand)}
-                      </td>
-                      <td className="px-4 py-2 text-cyan-400">
-                        {formatNumber(row.total)}
-                      </td>
-                    </>
-                  )}
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      )}
-    </div>
-  );
-}
-
-function WaterBalanceChart({ viz }: { viz: Visualization }) {
-  const data = viz.data as WaterBalanceData;
-  const chartData = [
-    { name: "Recharge", value: data.recharge || 0 },
-    { name: "Natural Discharge", value: data.naturalDischarge || 0 },
-    { name: "Extractable", value: data.extractable || 0 },
-    { name: "Extraction", value: data.extraction || 0 },
-  ];
-
-  return (
-    <div className="bg-gray-50 dark:bg-gray-900 rounded-lg p-4 my-2">
-      <h4 className="font-semibold text-gray-900 dark:text-white mb-1">
-        {viz.title}
-      </h4>
-      {viz.description && (
-        <p className="text-sm text-gray-500 dark:text-gray-400 mb-3">
-          {viz.description}
-        </p>
-      )}
-      <ResponsiveContainer width="100%" height={200}>
-        <BarChart
-          data={chartData}
-          layout="vertical"
-          margin={{ top: 5, right: 20, left: 80, bottom: 5 }}
-        >
-          <CartesianGrid strokeDasharray="3 3" className="opacity-30" />
-          <XAxis type="number" tick={{ fontSize: 12 }} />
-          <YAxis type="category" dataKey="name" tick={{ fontSize: 12 }} />
-          <Tooltip formatter={(value) => formatNumber(value)} />
-          <Bar dataKey="value" fill="#3b82f6" />
-        </BarChart>
-      </ResponsiveContainer>
-    </div>
-  );
-}
-
-function GroupedBarChart({ viz }: { viz: Visualization }) {
-  const data = viz.data as ChartDataItem[];
-  const keys = data[0]
-    ? Object.keys(data[0]).filter((k) => k !== "name" && k !== "category")
-    : [];
-
-  return (
-    <div className="bg-gray-50 dark:bg-gray-900 rounded-lg p-4 my-2">
-      <h4 className="font-semibold text-gray-900 dark:text-white mb-1">
-        {viz.title}
-      </h4>
-      {viz.description && (
-        <p className="text-sm text-gray-500 dark:text-gray-400 mb-3">
-          {viz.description}
-        </p>
-      )}
-      <ResponsiveContainer width="100%" height={280}>
-        <BarChart
-          data={data}
-          margin={{ top: 5, right: 20, left: 10, bottom: 5 }}
-        >
-          <CartesianGrid strokeDasharray="3 3" className="opacity-30" />
-          <XAxis dataKey="name" tick={{ fontSize: 11 }} angle={-20} />
-          <YAxis tick={{ fontSize: 12 }} />
-          <Tooltip formatter={(value) => formatNumber(value)} />
-          <Legend />
-          {keys.map((key, i) => (
-            <Bar key={key} dataKey={key} fill={COLORS[i % COLORS.length]} />
-          ))}
-        </BarChart>
-      </ResponsiveContainer>
-    </div>
-  );
-}
-
-function SimpleBarChart({ viz }: { viz: Visualization }) {
-  const data = viz.data as ChartDataItem[];
-  return (
-    <div className="bg-gray-50 dark:bg-gray-900 rounded-lg p-4 my-2">
-      <h4 className="font-semibold text-gray-900 dark:text-white mb-1">
-        {viz.title}
-      </h4>
-      {viz.description && (
-        <p className="text-sm text-gray-500 dark:text-gray-400 mb-3">
-          {viz.description}
-        </p>
-      )}
-      <ResponsiveContainer width="100%" height={250}>
-        <BarChart
-          data={data}
-          margin={{ top: 5, right: 20, left: 10, bottom: 5 }}
-        >
-          <CartesianGrid strokeDasharray="3 3" className="opacity-30" />
-          <XAxis dataKey="name" tick={{ fontSize: 11 }} angle={-15} />
-          <YAxis tick={{ fontSize: 12 }} />
-          <Tooltip formatter={(value) => formatNumber(value)} />
-          <Bar dataKey="value" fill="#3b82f6">
-            {data.map((entry, index) => (
-              <Cell
-                key={index}
-                fill={
-                  entry.category
-                    ? CATEGORY_COLORS[String(entry.category)] ||
-                      COLORS[index % COLORS.length]
-                    : COLORS[index % COLORS.length]
-                }
-              />
-            ))}
-          </Bar>
-        </BarChart>
-      </ResponsiveContainer>
-    </div>
-  );
-}
-
-function SimplePieChart({ viz }: { viz: Visualization }) {
-  const data = viz.data as ChartDataItem[];
-  return (
-    <div className="bg-gray-50 dark:bg-gray-900 rounded-lg p-4 my-2">
-      <h4 className="font-semibold text-gray-900 dark:text-white mb-1">
-        {viz.title}
-      </h4>
-      {viz.description && (
-        <p className="text-sm text-gray-500 dark:text-gray-400 mb-3">
-          {viz.description}
-        </p>
-      )}
-      <ResponsiveContainer width="100%" height={250}>
-        <PieChart>
-          <Pie
-            data={data}
-            dataKey="value"
-            nameKey="name"
-            cx="50%"
-            cy="50%"
-            outerRadius={80}
-            label={({ name, percent }) =>
-              `${name} (${((percent ?? 0) * 100).toFixed(0)}%)`
-            }
-          >
-            {data.map((entry, index) => (
-              <Cell
-                key={entry.name}
-                fill={
-                  CATEGORY_COLORS[entry.name] || COLORS[index % COLORS.length]
-                }
-              />
-            ))}
-          </Pie>
-          <Tooltip formatter={(value) => formatNumber(value)} />
-          <Legend />
-        </PieChart>
-      </ResponsiveContainer>
-    </div>
-  );
-}
-
-function StatsCard({ viz }: { viz: Visualization }) {
-  const stats = viz.data as Record<string, unknown>;
-  return (
-    <div className="bg-gray-50 dark:bg-gray-900 rounded-lg p-4 my-2">
-      <h4 className="font-semibold text-gray-900 dark:text-white mb-3">
-        {viz.title}
-      </h4>
-      <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
-        {Object.entries(stats).map(([key, value]) => {
-          if (key === "history" && Array.isArray(value)) {
-            return (
-              <div
-                key={key}
-                className="col-span-full bg-white dark:bg-gray-800 p-3 rounded-lg"
-              >
-                <p className="text-xs text-gray-500 dark:text-gray-400 mb-2">
-                  Category History
-                </p>
-                <div className="flex flex-wrap gap-2">
-                  {(value as { year: string; category: string }[]).map(
-                    (item, i) => (
-                      <span
-                        key={i}
-                        className="px-2 py-1 text-xs rounded-full"
-                        style={{
-                          backgroundColor:
-                            CATEGORY_COLORS[item.category] || "#6b7280",
-                        }}
-                      >
-                        {item.year}: {item.category}
-                      </span>
-                    )
-                  )}
-                </div>
-              </div>
-            );
-          }
-          return (
-            <div key={key} className="bg-white dark:bg-gray-800 p-3 rounded-lg">
-              <p className="text-xs text-gray-500 dark:text-gray-400 capitalize">
-                {key.replace(/([A-Z])/g, " $1").trim()}
-              </p>
-              <p className="text-lg font-semibold text-gray-900 dark:text-white">
-                {typeof value === "number"
-                  ? formatNumber(value)
-                  : String(value)}
-              </p>
-            </div>
-          );
-        })}
-      </div>
-    </div>
-  );
-}
-
-function TrendSummaryCard({ viz }: { viz: Visualization }) {
-  return (
-    <div className="bg-gradient-to-br from-purple-900 to-purple-950 rounded-lg p-4 my-2 text-white">
-      <h4 className="font-semibold text-lg mb-3">{viz.title}</h4>
-      <div className="grid grid-cols-3 gap-4">
-        <div className="bg-purple-800/50 rounded-lg p-3 text-center">
-          <p className="text-purple-300 text-xs">Data Points</p>
-          <p className="text-2xl font-bold text-cyan-400">{viz.dataPoints}</p>
-        </div>
-        <div className="bg-purple-800/50 rounded-lg p-3 text-center">
-          <p className="text-purple-300 text-xs">From</p>
-          <p className="text-lg font-bold text-cyan-400">{viz.earliestYear}</p>
-        </div>
-        <div className="bg-purple-800/50 rounded-lg p-3 text-center">
-          <p className="text-purple-300 text-xs">To</p>
-          <p className="text-lg font-bold text-cyan-400">{viz.latestYear}</p>
-        </div>
-      </div>
-      {viz.years && (
-        <div className="mt-3 flex flex-wrap gap-2">
-          {viz.years.map((year) => (
-            <span
-              key={year}
-              className="px-2 py-1 bg-purple-700/50 rounded text-xs"
-            >
-              {year}
-            </span>
-          ))}
-        </div>
-      )}
-    </div>
-  );
-}
-
-function LineChartViz({ viz }: { viz: Visualization }) {
-  const data = viz.data as ChartDataItem[];
-  return (
-    <div className="bg-gray-50 dark:bg-gray-900 rounded-lg p-4 my-2">
-      <h4 className="font-semibold text-gray-900 dark:text-white mb-1">
-        {viz.title}
-      </h4>
-      {viz.description && (
-        <p className="text-sm text-gray-500 dark:text-gray-400 mb-3">
-          {viz.description}
-        </p>
-      )}
-      <ResponsiveContainer width="100%" height={250}>
-        <LineChart
-          data={data}
-          margin={{ top: 5, right: 20, left: 10, bottom: 5 }}
-        >
-          <CartesianGrid strokeDasharray="3 3" className="opacity-30" />
-          <XAxis dataKey="year" tick={{ fontSize: 11 }} />
-          <YAxis tick={{ fontSize: 12 }} />
-          <Tooltip formatter={(value) => formatNumber(value)} />
-          <Line
-            type="monotone"
-            dataKey="value"
-            stroke="#3b82f6"
-            strokeWidth={2}
-            dot={{ fill: "#3b82f6", r: 4 }}
-          />
-          {viz.threshold && (
-            <>
-              <Line
-                type="monotone"
-                dataKey={() => viz.threshold!.safe}
-                stroke="#10b981"
-                strokeDasharray="5 5"
-                dot={false}
-                name="Safe Threshold"
-              />
-              <Line
-                type="monotone"
-                dataKey={() => viz.threshold!.critical}
-                stroke="#f59e0b"
-                strokeDasharray="5 5"
-                dot={false}
-                name="Critical Threshold"
-              />
-            </>
-          )}
-        </LineChart>
-      </ResponsiveContainer>
-    </div>
-  );
-}
-
-function MultiLineChart({ viz }: { viz: Visualization }) {
-  const data = viz.data as ChartDataItem[];
-  const keys = data[0]
-    ? Object.keys(data[0]).filter((k) => k !== "year" && k !== "name")
-    : [];
-
-  return (
-    <div className="bg-gray-50 dark:bg-gray-900 rounded-lg p-4 my-2">
-      <h4 className="font-semibold text-gray-900 dark:text-white mb-1">
-        {viz.title}
-      </h4>
-      {viz.description && (
-        <p className="text-sm text-gray-500 dark:text-gray-400 mb-3">
-          {viz.description}
-        </p>
-      )}
-      <ResponsiveContainer width="100%" height={280}>
-        <LineChart
-          data={data}
-          margin={{ top: 5, right: 20, left: 10, bottom: 5 }}
-        >
-          <CartesianGrid strokeDasharray="3 3" className="opacity-30" />
-          <XAxis dataKey="year" tick={{ fontSize: 11 }} />
-          <YAxis tick={{ fontSize: 12 }} />
-          <Tooltip formatter={(value) => formatNumber(value)} />
-          <Legend />
-          {keys.map((key, i) => (
-            <Line
-              key={key}
-              type="monotone"
-              dataKey={key}
-              stroke={COLORS[i % COLORS.length]}
-              strokeWidth={2}
-              dot={{ fill: COLORS[i % COLORS.length], r: 4 }}
-            />
-          ))}
-        </LineChart>
-      </ResponsiveContainer>
-    </div>
-  );
-}
-
-function AreaChartViz({ viz }: { viz: Visualization }) {
-  const data = viz.data as ChartDataItem[];
-  return (
-    <div className="bg-gray-50 dark:bg-gray-900 rounded-lg p-4 my-2">
-      <h4 className="font-semibold text-gray-900 dark:text-white mb-1">
-        {viz.title}
-      </h4>
-      {viz.description && (
-        <p className="text-sm text-gray-500 dark:text-gray-400 mb-3">
-          {viz.description}
-        </p>
-      )}
-      <ResponsiveContainer width="100%" height={250}>
-        <AreaChart
-          data={data}
-          margin={{ top: 5, right: 20, left: 10, bottom: 5 }}
-        >
-          <CartesianGrid strokeDasharray="3 3" className="opacity-30" />
-          <XAxis dataKey="year" tick={{ fontSize: 11 }} />
-          <YAxis tick={{ fontSize: 12 }} />
-          <Tooltip formatter={(value) => formatNumber(value)} />
-          <Area
-            type="monotone"
-            dataKey="value"
-            stroke="#10b981"
-            fill="#10b981"
-            fillOpacity={0.3}
-          />
-        </AreaChart>
-      </ResponsiveContainer>
-    </div>
-  );
-}
-
-function VisualizationRenderer({ viz }: { viz: Visualization }) {
-  if (viz.type === "summary") {
-    return <SummaryCard viz={viz} />;
-  }
-
-  if (viz.type === "trend_summary") {
-    return <TrendSummaryCard viz={viz} />;
-  }
-
-  if (viz.type === "table") {
-    return <CollapsibleTable viz={viz} />;
-  }
-
-  if (viz.type === "stats") {
-    return <StatsCard viz={viz} />;
-  }
-
-  if (viz.type === "chart") {
-    if (viz.chartType === "waterBalance") {
-      return <WaterBalanceChart viz={viz} />;
-    }
-    if (viz.chartType === "grouped_bar") {
-      return <GroupedBarChart viz={viz} />;
-    }
-    if (viz.chartType === "pie") {
-      return <SimplePieChart viz={viz} />;
-    }
-    if (viz.chartType === "bar") {
-      return <SimpleBarChart viz={viz} />;
-    }
-    if (viz.chartType === "line") {
-      return <LineChartViz viz={viz} />;
-    }
-    if (viz.chartType === "multi_line") {
-      return <MultiLineChart viz={viz} />;
-    }
-    if (viz.chartType === "area") {
-      return <AreaChartViz viz={viz} />;
-    }
-  }
-
-  return null;
 }
 
 export default function ChatPage() {
@@ -770,14 +96,37 @@ export default function ChatPage() {
   const [input, setInput] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [showMap, setShowMap] = useState(false);
+  const [showScrollButton, setShowScrollButton] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const messagesContainerRef = useRef<HTMLDivElement>(null);
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   };
 
+  const checkScrollPosition = () => {
+    if (!messagesContainerRef.current) return;
+
+    const { scrollTop, scrollHeight, clientHeight } =
+      messagesContainerRef.current;
+    const isScrollable = scrollHeight > clientHeight;
+    const isAtBottom = scrollHeight - scrollTop - clientHeight < 50;
+
+    setShowScrollButton(isScrollable && !isAtBottom);
+  };
+
+  const handleScroll = () => {
+    checkScrollPosition();
+  };
+
   useEffect(() => {
-    scrollToBottom();
+    // Check scroll position when messages update
+    checkScrollPosition();
+
+    // Auto-scroll to bottom when new messages are added (if not manually scrolled up)
+    if (!showScrollButton) {
+      scrollToBottom();
+    }
   }, [messages]);
 
   const handleSubmit = async (query: string) => {
@@ -852,6 +201,16 @@ export default function ChatPage() {
                   updated[lastIdx] = {
                     ...updated[lastIdx],
                     charts: [...charts],
+                  };
+                  return updated;
+                });
+              } else if (data.type === "suggestions") {
+                setMessages((prev) => {
+                  const updated = [...prev];
+                  const lastIdx = updated.length - 1;
+                  updated[lastIdx] = {
+                    ...updated[lastIdx],
+                    suggestions: data.suggestions,
                   };
                   return updated;
                 });
@@ -932,69 +291,72 @@ export default function ChatPage() {
   ];
 
   return (
-    <div className="flex h-screen bg-gray-50 dark:bg-gray-900">
+    <div className="flex h-screen bg-dark-secondary">
       {/* Main Chat Area */}
       <div
-        className={`flex flex-col flex-1 transition-all duration-300 ${
+        className={`flex flex-col flex-1 transition duration-300 ${
           showMap ? "w-1/2" : "w-full"
         }`}
       >
         {/* Header */}
-        <header className="bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 px-4 py-3">
+        <header className="bg-dark-tertiary px-4 py-3">
           <div className="max-w-4xl mx-auto flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-full bg-blue-600 flex items-center justify-center">
-                <span className="text-white text-xl">💧</span>
+            <Link className="flex items-center gap-3" href={"/"}>
+              <div className="w-10 h-10 rounded-xl bg-primary flex items-center justify-center">
+                <DropletIcon size={24} className="text-white" />
               </div>
               <div>
-                <h1 className="font-semibold text-gray-900 dark:text-white">
+                <h1 className="font-semibold text-zinc-100">
                   INGRES AI Assistant
                 </h1>
-                <p className="text-sm text-gray-500 dark:text-gray-400">
+                <p className="text-sm text-zinc-400">
                   Groundwater Resource Information
                 </p>
               </div>
-            </div>
-            <button
-              onClick={() => setShowMap(!showMap)}
-              className={`flex items-center gap-2 px-4 py-2 rounded-lg transition-colors ${
-                showMap
-                  ? "bg-blue-600 text-white"
-                  : "bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600"
-              }`}
+            </Link>
+            <Button
+              onPress={() => setShowMap(!showMap)}
+              color={showMap ? "default" : "primary"}
+              startContent={
+                showMap ? <MessageIcon size={18} /> : <MapsIcon size={18} />
+              }
             >
-              {showMap ? <MessageSquare size={18} /> : <Map size={18} />}
               <span className="text-sm font-medium">
                 {showMap ? "Hide Map" : "Show Map"}
               </span>
-            </button>
+            </Button>
           </div>
         </header>
 
         {/* Messages */}
-        <main className="flex-1 overflow-y-auto p-4">
+        <main
+          ref={messagesContainerRef}
+          onScroll={handleScroll}
+          className="flex-1 overflow-y-auto p-4 bg-dark-primary"
+        >
           <div className="max-w-4xl mx-auto space-y-4">
             {messages.length === 0 && (
               <div className="text-center py-12">
-                <div className="w-16 h-16 rounded-full bg-blue-100 dark:bg-blue-900 flex items-center justify-center mx-auto mb-4">
-                  <span className="text-3xl">💧</span>
+                <div className="w-16 h-16 rounded-lg bg-dark-tertiary flex items-center justify-center mx-auto mb-4">
+                  <DropletIcon size={32} className="text-primary" />
                 </div>
-                <h2 className="text-xl font-semibold text-gray-900 dark:text-white mb-2">
+                <h2 className="text-xl font-semibold text-zinc-100 mb-2">
                   Welcome to INGRES AI
                 </h2>
-                <p className="text-gray-500 dark:text-gray-400 mb-6 max-w-md mx-auto">
+                <p className="text-zinc-400 mb-6 max-w-md mx-auto">
                   Ask me anything about India&apos;s groundwater resources -
                   state data, district comparisons, extraction levels, and more.
                 </p>
                 <div className="flex flex-wrap justify-center gap-2">
                   {suggestedQueries.map((q) => (
-                    <button
+                    <Button
                       key={q}
-                      onClick={() => handleSubmit(q)}
-                      className="px-4 py-2 text-sm bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-full hover:bg-gray-50 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300 transition-colors"
+                      onPress={() => handleSubmit(q)}
+                      variant="flat"
+                      radius="full"
                     >
                       {q}
-                    </button>
+                    </Button>
                   ))}
                 </div>
               </div>
@@ -1007,52 +369,59 @@ export default function ChatPage() {
                   message.role === "user" ? "justify-end" : "justify-start"
                 }`}
               >
+                {message.role === "assistant" && (
+                  <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center shrink-0 mt-2">
+                    <SparklesIcon
+                      width={23}
+                      height={23}
+                      className="text-primary"
+                    />
+                  </div>
+                )}
                 <div
-                  className={`max-w-[90%] rounded-2xl px-4 py-3 ${
+                  className={`max-w-[90%] px-4 py-2 ${
                     message.role === "user"
-                      ? "bg-blue-600 text-white"
-                      : "bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700"
+                      ? "bg-primary text-white rounded-3xl rounded-br-none w-fit"
+                      : "w-full"
                   }`}
                 >
                   {message.isLoading && !message.content ? (
-                    <div className="flex items-center gap-2 text-gray-500 dark:text-gray-400">
-                      <Loader2 className="animate-spin" size={16} />
-                      <span>Thinking...</span>
+                    <div className="space-y-3 w-full">
+                      <Skeleton className="h-3 w-1/3 rounded-lg" />
+                      <Skeleton className="h-3 w-3/4 rounded-lg" />
+                      <Skeleton className="h-3 w-2/3 rounded-lg" />
                     </div>
                   ) : (
                     <>
-                      <p
-                        className={`whitespace-pre-wrap ${
-                          message.role === "assistant"
-                            ? "text-gray-800 dark:text-gray-200"
-                            : ""
-                        }`}
-                      >
-                        {message.content}
-                      </p>
+                      <MarkdownRenderer
+                        content={message.content}
+                        className={
+                          message.role === "assistant" ? "text-zinc-200" : ""
+                        }
+                      />
                       {message.charts && message.charts.length > 0 && (
                         <div className="mt-3 space-y-3">
-                          {message.charts.map((viz, i) => (
-                            <VisualizationRenderer key={i} viz={viz} />
+                          {message.charts.map((chart, i) => (
+                            <ChartRenderer key={i} chart={chart} />
                           ))}
                         </div>
                       )}
                       {message.suggestions &&
-                        message.suggestions.length > 0 &&
-                        message.role === "assistant" && (
-                          <div className="mt-3 pt-3 border-t border-gray-100 dark:border-gray-700">
-                            <p className="text-xs text-gray-500 dark:text-gray-400 mb-2">
-                              Suggested follow-up questions:
+                        message.suggestions.length > 0 && (
+                          <div className="mt-4 mb-10">
+                            <p className="text-sm text-zinc-400 mb-2 font-medium">
+                              Follow-up questions:
                             </p>
                             <div className="flex flex-wrap gap-2">
                               {message.suggestions.map((suggestion, i) => (
-                                <button
+                                <Button
                                   key={i}
-                                  onClick={() => handleSubmit(suggestion)}
-                                  className="text-xs px-3 py-1.5 bg-blue-50 dark:bg-blue-900/20 text-blue-700 dark:text-blue-300 rounded-full hover:bg-blue-100 dark:hover:bg-blue-900/30 transition-colors border border-blue-200 dark:border-blue-800"
+                                  onPress={() => handleSubmit(suggestion)}
+                                  variant="light"
+                                  className="border-dashed border-zinc-600 border-1 text-zinc-400 font-light"
                                 >
                                   {suggestion}
-                                </button>
+                                </Button>
                               ))}
                             </div>
                           </div>
@@ -1068,45 +437,46 @@ export default function ChatPage() {
         </main>
 
         {/* Input */}
-        <footer className="bg-white dark:bg-gray-800 border-t border-gray-200 dark:border-gray-700 p-4">
-          <form
-            onSubmit={(e) => {
-              e.preventDefault();
-              handleSubmit(input);
-            }}
-            className="max-w-4xl mx-auto flex gap-2"
-          >
-            <input
-              type="text"
-              value={input}
-              onChange={(e) => setInput(e.target.value)}
-              placeholder="Ask about groundwater data..."
-              disabled={isLoading}
-              className="flex-1 px-4 py-3 rounded-full border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900 text-gray-900 dark:text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:opacity-50"
-            />
-            <button
-              type="submit"
-              disabled={isLoading || !input.trim()}
-              className="px-6 py-3 bg-blue-600 text-white rounded-full font-medium hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors flex items-center gap-2"
-            >
-              {isLoading ? (
-                <Loader2 className="animate-spin" size={18} />
-              ) : (
-                <Send size={18} />
-              )}
-            </button>
-          </form>
+        <footer className="p-4 relative bg-dark-primary">
+          {/* Scroll to bottom button */}
+          {showScrollButton && (
+            <div className="absolute bottom-20 left-1/2 -translate-x-1/2">
+              <Button
+                isIconOnly
+                radius="full"
+                size="sm"
+                color="default"
+                onPress={() => {
+                  scrollToBottom();
+                  setShowScrollButton(false);
+                }}
+              >
+                <ArrowDown02Icon size={18} />
+              </Button>
+            </div>
+          )}
+
+          <ChatComposer
+            value={input}
+            onChange={setInput}
+            onSubmit={handleSubmit}
+            isLoading={isLoading}
+            className="max-w-2xl mx-auto"
+          />
         </footer>
       </div>
 
       {/* Map Panel */}
-      {showMap && (
-        <div className="w-1/2 border-l border-gray-200 dark:border-gray-700 bg-gray-900">
-          <MapProvider>
-            <MapWrapper />
-          </MapProvider>
+      <div
+        className={`${
+          showMap ? "w-1/2 opacity-100" : "w-0 opacity-0"
+        } transition-all duration-300 bg-dark-tertiary flex items-center justify-center`}
+      >
+        <div className="text-center text-zinc-400">
+          <MapsIcon size={48} className="mx-auto mb-4 opacity-50" />
+          <p className="font-medium">Map View</p>
         </div>
-      )}
+      </div>
     </div>
   );
 }

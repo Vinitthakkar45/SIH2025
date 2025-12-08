@@ -1,2 +1,5 @@
 output/
 data/
+node_modules/
+.turbo/
+/backend/src/db/drizzle/meta/

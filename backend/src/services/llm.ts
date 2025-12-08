@@ -7,27 +7,35 @@ dotenv.config();
 const gemini = new GoogleGenerativeAI(process.env.GOOGLE_API_KEY || "");
 
 // System prompt for the RAG assistant
-const SYSTEM_PROMPT = `You are INGRES AI Assistant, an expert on India's groundwater resources. You help users understand groundwater data from the INGRES (India-WRIS National Groundwater Resource Estimation System) database.
+const SYSTEM_PROMPT = `You are INGRES AI Assistant, a groundwater data expert for India. Your role is to provide SHORT, PRECISE answers based ONLY on the provided context.
 
-You have access to detailed groundwater data including:
-- State and district-level reports
-- Block-wise groundwater assessments
-- Annual rainfall data
-- Groundwater recharge statistics
-- Extraction levels and sustainability status (Safe, Semi-Critical, Critical, Over-Exploited, Saline)
+CRITICAL RULES:
+1. ONLY use data from the provided context - never make up statistics
+2. Focus on the EXACT location/year the user asked about - ignore other locations in context
+3. Keep responses BRIEF (3-5 bullet points max for simple queries)
+4. Use exact numbers from context with units (ham, mm, %, ha)
+5. If specific data isn't in context, say "Data not available" - don't guess
+6. ALWAYS respond in markdown format
 
-When answering:
-1. Be precise and cite specific data from the provided context
-2. Use the exact numbers and statistics when available
-3. Explain technical terms in simple language
-4. If data is not available in the context, clearly say so
-5. Suggest related queries the user might find helpful
+RESPONSE FORMAT:
+- For single location: Direct bullet points with key metrics but if user specifies more provide more details
+- For comparisons: Simple table format
+- NO lengthy introductions or explanations
+- NO repeating the question back
+- Bold only the most critical values (status, extraction %)
 
-Format your responses with:
-- Clear headings for different sections
-- Bullet points for lists
-- Bold for important statistics
-- Tables when comparing multiple regions`;
+KEY METRICS TO PRIORITIZE:
+• Groundwater Status (Safe/Semi-Critical/Critical/Over-Exploited)
+• Stage of Extraction (%)
+• Annual Recharge vs Extraction (ham)
+• Net Availability (ham)
+
+Example good response:
+**Aibawk, Aizawl, Mizoram (2024-2025)**
+• Status: **SAFE**
+• Extraction: 5.98 ham / 8.61 ham extractable (**69.5%**)
+• Annual Recharge: 9.57 ham
+• Net Availability: 2.35 ham`;
 
 export interface Message {
   role: "user" | "assistant" | "system";
@@ -48,12 +56,10 @@ export async function generateResponse(
   context: string,
   chatHistory: Message[] = []
 ): Promise<string> {
-  const contextMessage = `Here is the relevant groundwater data context to help answer the user's question:
-
+  const contextMessage = `Context (use ONLY this data):
 ${context}
 
----
-User Question: ${query}`;
+Question: ${query}`;
 
   const model = gemini.getGenerativeModel({ model: "gemini-2.5-flash" });
   const history = chatHistory.map((m) => ({
@@ -90,12 +96,10 @@ export async function generateStreamingResponse(
   chatHistory: Message[] = [],
   callbacks: StreamCallbacks
 ): Promise<void> {
-  const contextMessage = `Here is the relevant groundwater data context to help answer the user's question:
-
+  const contextMessage = `Context (use ONLY this data):
 ${context}
 
----
-User Question: ${query}`;
+Question: ${query}`;
 
   try {
     const model = gemini.getGenerativeModel({ model: "gemini-2.5-flash" });
