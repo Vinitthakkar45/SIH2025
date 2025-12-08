@@ -1,5 +1,13 @@
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
 
 interface MarkdownRendererProps {
   content: string;
@@ -102,23 +110,15 @@ export default function MarkdownRenderer({
 
           // Tables
           table: ({ children }) => (
-            <div className="overflow-x-auto my-2">
-              <table className="min-w-full border-collapse">{children}</table>
+            <div className="my-4">
+              <Table>{children}</Table>
             </div>
           ),
-          thead: ({ children }) => (
-            <thead className="bg-zinc-800">{children}</thead>
-          ),
-          tbody: ({ children }) => <tbody>{children}</tbody>,
-          tr: ({ children }) => <tr className="">{children}</tr>,
-          th: ({ children }) => (
-            <th className="px-4 py-2 text-left text-zinc-100 font-semibold">
-              {children}
-            </th>
-          ),
-          td: ({ children }) => (
-            <td className="px-4 py-2 text-zinc-200">{children}</td>
-          ),
+          thead: ({ children }) => <TableHeader>{children}</TableHeader>,
+          tbody: ({ children }) => <TableBody>{children}</TableBody>,
+          tr: ({ children }) => <TableRow>{children}</TableRow>,
+          th: ({ children }) => <TableHead>{children}</TableHead>,
+          td: ({ children }) => <TableCell>{children}</TableCell>,
 
           // Strong and emphasis
           strong: ({ children }) => (
