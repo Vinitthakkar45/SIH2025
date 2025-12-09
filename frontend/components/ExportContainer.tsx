@@ -54,6 +54,40 @@ export default function ExportContainer({
         data-export="true"
         style={{ backgroundColor: "#ffffff", color: "#000000" }}
       >
+        <div style={{ marginBottom: "40px", textAlign: "center" }}>
+          <h1
+            style={{
+              fontSize: "28px",
+              fontWeight: "bold",
+              color: "#1e3a8a",
+              marginBottom: "8px",
+            }}
+          >
+            INGRES AI
+          </h1>
+          <p
+            style={{
+              fontSize: "14px",
+              color: "#6b7280",
+              marginBottom: "4px",
+            }}
+          >
+            Groundwater Resource Information System
+          </p>
+          <p
+            style={{
+              fontSize: "12px",
+              color: "#9ca3af",
+            }}
+          >
+            Chat Export -{" "}
+            {new Date().toLocaleDateString("en-IN", {
+              day: "numeric",
+              month: "long",
+              year: "numeric",
+            })}
+          </p>
+        </div>
         <MessageList
           messages={messages}
           onSuggestionClick={() => {}}
