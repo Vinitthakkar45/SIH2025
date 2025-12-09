@@ -1,10 +1,10 @@
-import { Message, ChatFilters, StreamResponse, Source } from "../types";
+import { Message, ChatFilters, StreamResponse, Visualization } from "../types";
 
 const API_BASE_URL = "http://localhost:3001";
 
 export interface ChatStreamCallbacks {
-  onSources: (sources: Source[]) => void;
   onToken: (token: string) => void;
+  onChart: (chart: Visualization) => void;
   onSuggestions: (suggestions: string[]) => void;
   onError: (error: string) => void;
   onComplete: () => void;
@@ -13,20 +13,20 @@ export interface ChatStreamCallbacks {
 export async function streamChat(
   query: string,
   chatHistory: Pick<Message, "role" | "content">[],
-  filters: ChatFilters,
-  callbacks: ChatStreamCallbacks
+  _filters: ChatFilters,
+  callbacks: ChatStreamCallbacks,
+  language: string = "en"
 ): Promise<void> {
   try {
-    const response = await fetch(`${API_BASE_URL}/api/chat/stream`, {
+    const response = await fetch(`${API_BASE_URL}/api/gw-chat/stream`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
         query,
+        language,
         chatHistory: chatHistory.map((m) => ({ role: m.role, content: m.content })),
-        topK: 5,
-        filters,
       }),
     });
 
@@ -60,15 +60,18 @@ export async function streamChat(
             const data: StreamResponse = JSON.parse(line.slice(6));
 
             switch (data.type) {
-              case "sources":
-                if (data.sources) {
-                  callbacks.onSources(data.sources);
-                }
-                break;
               case "token":
                 if (data.content) {
                   callbacks.onToken(data.content);
                 }
+                break;
+              case "chart":
+              case "stats":
+              case "table":
+              case "summary":
+              case "trend_summary":
+              case "data_container":
+                callbacks.onChart(data as unknown as Visualization);
                 break;
               case "suggestions":
                 if (data.suggestions) {

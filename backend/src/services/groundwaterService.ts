@@ -1,11 +1,7 @@
 import { and, asc, desc, eq, inArray, isNotNull, sql } from "drizzle-orm";
 import { db } from "../db/gw-db";
 import { groundwaterData, locations } from "../db/gw-schema";
-import {
-  aggregateGroundwaterRecords,
-  aggregateHistoricalRecords,
-  groupRecordsByYear,
-} from "../utils/aggregation";
+import { aggregateGroundwaterRecords, aggregateHistoricalRecords, groupRecordsByYear } from "../utils/aggregation";
 import {
   generateSummaryExplanation,
   generateRechargeExplanation,
@@ -46,10 +42,7 @@ export interface GroundwaterRecord {
 
 const LATEST_YEAR = "2024-2025";
 
-export async function getGroundwaterDataByLocationId(
-  locationId: string,
-  year: string = LATEST_YEAR
-): Promise<GroundwaterRecord | null> {
+export async function getGroundwaterDataByLocationId(locationId: string, year: string = LATEST_YEAR): Promise<GroundwaterRecord | null> {
   const result = await db
     .select()
     .from(groundwaterData)
@@ -97,10 +90,7 @@ export async function searchAndGetGroundwaterData(
   return getGroundwaterDataByLocationId(bestMatch.location.id, year);
 }
 
-export async function compareLocations(
-  locationIds: string[],
-  year: string = LATEST_YEAR
-): Promise<GroundwaterRecord[]> {
+export async function compareLocations(locationIds: string[], year: string = LATEST_YEAR): Promise<GroundwaterRecord[]> {
   const results: GroundwaterRecord[] = [];
 
   for (const id of locationIds) {
@@ -127,13 +117,7 @@ export async function getTopLocationsByField(
     .select()
     .from(groundwaterData)
     .innerJoin(locations, eq(groundwaterData.locationId, locations.id))
-    .where(
-      and(
-        eq(locations.type, locationType),
-        eq(groundwaterData.year, year),
-        isNotNull(sql.raw(`groundwater_data.${columnName}`))
-      )
-    )
+    .where(and(eq(locations.type, locationType), eq(groundwaterData.year, year), isNotNull(sql.raw(`groundwater_data.${columnName}`))))
     .orderBy(orderFn(sql.raw(`groundwater_data.${columnName}`)))
     .limit(limit);
 
@@ -177,10 +161,7 @@ export async function getLocationWithChildren(
   return { parent, children };
 }
 
-export async function getCategorySummary(
-  locationType: "STATE" | "DISTRICT" | "TALUK",
-  year: string = LATEST_YEAR
-): Promise<Record<string, number>> {
+export async function getCategorySummary(locationType: "STATE" | "DISTRICT" | "TALUK", year: string = LATEST_YEAR): Promise<Record<string, number>> {
   const result = await db
     .select({
       category: groundwaterData.categoryTotal,
@@ -188,9 +169,7 @@ export async function getCategorySummary(
     })
     .from(groundwaterData)
     .innerJoin(locations, eq(groundwaterData.locationId, locations.id))
-    .where(
-      and(eq(locations.type, locationType), eq(groundwaterData.year, year))
-    )
+    .where(and(eq(locations.type, locationType), eq(groundwaterData.year, year)))
     .groupBy(groundwaterData.categoryTotal);
 
   const summary: Record<string, number> = {};
@@ -202,10 +181,7 @@ export async function getCategorySummary(
   return summary;
 }
 
-export async function getAggregateStats(
-  locationType: "STATE" | "DISTRICT" | "TALUK",
-  year: string = LATEST_YEAR
-): Promise<Record<string, number>> {
+export async function getAggregateStats(locationType: "STATE" | "DISTRICT" | "TALUK", year: string = LATEST_YEAR): Promise<Record<string, number>> {
   const result = await db
     .select({
       totalRecharge: sql<number>`sum(recharge_total_total)`,
@@ -217,9 +193,7 @@ export async function getAggregateStats(
     })
     .from(groundwaterData)
     .innerJoin(locations, eq(groundwaterData.locationId, locations.id))
-    .where(
-      and(eq(locations.type, locationType), eq(groundwaterData.year, year))
-    );
+    .where(and(eq(locations.type, locationType), eq(groundwaterData.year, year)));
 
   const row = result[0];
   return {
@@ -262,10 +236,7 @@ export async function getHistoricalDataByLocationName(
   locationName: string,
   locationType: "STATE" | "DISTRICT" | "TALUK"
 ): Promise<HistoricalRecord[]> {
-  const matchingLocations = getLocationsByNameAndType(
-    locationName,
-    locationType
-  );
+  const matchingLocations = getLocationsByNameAndType(locationName, locationType);
 
   if (matchingLocations.length === 0) return [];
 
@@ -324,15 +295,8 @@ export async function getGroundwaterDataForYear(
   return searchAndGetGroundwaterData(query, locationType, undefined, year);
 }
 
-export async function compareYears(
-  locationName: string,
-  locationType: "STATE" | "DISTRICT" | "TALUK",
-  years: string[]
-): Promise<HistoricalRecord[]> {
-  const historicalData = await getHistoricalDataByLocationName(
-    locationName,
-    locationType
-  );
+export async function compareYears(locationName: string, locationType: "STATE" | "DISTRICT" | "TALUK", years: string[]): Promise<HistoricalRecord[]> {
+  const historicalData = await getHistoricalDataByLocationName(locationName, locationType);
 
   if (years.length === 0) return historicalData;
 
@@ -341,11 +305,7 @@ export async function compareYears(
 
 export function formatGroundwaterDataForLLM(record: GroundwaterRecord): string {
   const data = record.data as Record<string, unknown>;
-  const lines: string[] = [
-    `Location: ${record.location.name} (${record.location.type})`,
-    `Year: ${record.year}`,
-    "",
-  ];
+  const lines: string[] = [`Location: ${record.location.name} (${record.location.type})`, `Year: ${record.year}`, ""];
 
   if (data.rainfallTotal) {
     lines.push(`Rainfall: ${formatNumber(data.rainfallTotal)} mm`);
@@ -356,17 +316,11 @@ export function formatGroundwaterDataForLLM(record: GroundwaterRecord): string {
   }
 
   if (data.extractableTotal) {
-    lines.push(
-      `Annual Extractable Ground Water Resources: ${formatNumber(
-        data.extractableTotal
-      )} ham`
-    );
+    lines.push(`Annual Extractable Ground Water Resources: ${formatNumber(data.extractableTotal)} ham`);
   }
 
   if (data.draftTotalTotal) {
-    lines.push(
-      `Ground Water Extraction: ${formatNumber(data.draftTotalTotal)} ham`
-    );
+    lines.push(`Ground Water Extraction: ${formatNumber(data.draftTotalTotal)} ham`);
   }
 
   lines.push("");
@@ -411,17 +365,13 @@ export function formatGroundwaterDataForLLM(record: GroundwaterRecord): string {
   ].filter((r) => r.total);
 
   for (const row of rechargeRows) {
-    lines.push(
-      `  - ${row.name}: ${formatNumber(row.total)} (Cmd: ${formatNumber(
-        row.cmd
-      )}, Non-Cmd: ${formatNumber(row.nonCmd)})`
-    );
+    lines.push(`  - ${row.name}: ${formatNumber(row.total)} (Cmd: ${formatNumber(row.cmd)}, Non-Cmd: ${formatNumber(row.nonCmd)})`);
   }
   if (data.rechargeTotalTotal) {
     lines.push(
-      `  Total: ${formatNumber(data.rechargeTotalTotal)} (Cmd: ${formatNumber(
-        data.rechargeTotalCommand
-      )}, Non-Cmd: ${formatNumber(data.rechargeTotalNonCommand)})`
+      `  Total: ${formatNumber(data.rechargeTotalTotal)} (Cmd: ${formatNumber(data.rechargeTotalCommand)}, Non-Cmd: ${formatNumber(
+        data.rechargeTotalNonCommand
+      )})`
     );
   }
 
@@ -455,28 +405,18 @@ export function formatGroundwaterDataForLLM(record: GroundwaterRecord): string {
   ].filter((r) => r.total);
 
   for (const row of dischargeRows) {
-    lines.push(
-      `  - ${row.name}: ${formatNumber(row.total)} (Cmd: ${formatNumber(
-        row.cmd
-      )}, Non-Cmd: ${formatNumber(row.nonCmd)})`
-    );
+    lines.push(`  - ${row.name}: ${formatNumber(row.total)} (Cmd: ${formatNumber(row.cmd)}, Non-Cmd: ${formatNumber(row.nonCmd)})`);
   }
   if (data.lossTotal) {
-    lines.push(
-      `  Total: ${formatNumber(data.lossTotal)} (Cmd: ${formatNumber(
-        data.lossCommand
-      )}, Non-Cmd: ${formatNumber(data.lossNonCommand)})`
-    );
+    lines.push(`  Total: ${formatNumber(data.lossTotal)} (Cmd: ${formatNumber(data.lossCommand)}, Non-Cmd: ${formatNumber(data.lossNonCommand)})`);
   }
 
   lines.push("");
   lines.push("Annual Extractable Ground Water Resources (ham):");
   lines.push(
-    `  Command: ${formatNumber(
-      data.extractableCommand
-    )}, Non-Command: ${formatNumber(
-      data.extractableNonCommand
-    )}, Total: ${formatNumber(data.extractableTotal)}`
+    `  Command: ${formatNumber(data.extractableCommand)}, Non-Command: ${formatNumber(data.extractableNonCommand)}, Total: ${formatNumber(
+      data.extractableTotal
+    )}`
   );
 
   lines.push("");
@@ -503,25 +443,19 @@ export function formatGroundwaterDataForLLM(record: GroundwaterRecord): string {
   ].filter((r) => r.total);
 
   for (const row of extractionRows) {
-    lines.push(
-      `  - ${row.name}: ${formatNumber(row.total)} (Cmd: ${formatNumber(
-        row.cmd
-      )}, Non-Cmd: ${formatNumber(row.nonCmd)})`
-    );
+    lines.push(`  - ${row.name}: ${formatNumber(row.total)} (Cmd: ${formatNumber(row.cmd)}, Non-Cmd: ${formatNumber(row.nonCmd)})`);
   }
   if (data.draftTotalTotal) {
     lines.push(
-      `  Total: ${formatNumber(data.draftTotalTotal)} (Cmd: ${formatNumber(
-        data.draftTotalCommand
-      )}, Non-Cmd: ${formatNumber(data.draftTotalNonCommand)})`
+      `  Total: ${formatNumber(data.draftTotalTotal)} (Cmd: ${formatNumber(data.draftTotalCommand)}, Non-Cmd: ${formatNumber(
+        data.draftTotalNonCommand
+      )})`
     );
   }
 
   if (data.stageOfExtractionTotal) {
     lines.push("");
-    lines.push(
-      `Stage of Extraction: ${formatNumber(data.stageOfExtractionTotal)}%`
-    );
+    lines.push(`Stage of Extraction: ${formatNumber(data.stageOfExtractionTotal)}%`);
   }
 
   return lines.join("\n");
@@ -745,10 +679,7 @@ export function generateChartData(record: GroundwaterRecord): object[] {
       title: `Ground Water Recharge Sources - ${locationName}`,
       description: "Breakdown of ground water recharge by source (ham)",
       data: rechargeChartData,
-      explanation: generateRechargeExplanation(
-        rechargeChartData as Array<{ name: string; value: unknown }>,
-        data.rechargeTotalTotal
-      ),
+      explanation: generateRechargeExplanation(rechargeChartData as Array<{ name: string; value: unknown }>, data.rechargeTotalTotal),
     });
   }
 
@@ -766,9 +697,7 @@ export function generateChartData(record: GroundwaterRecord): object[] {
       title: `Ground Water Extraction by Use - ${locationName}`,
       description: "Distribution of ground water extraction (ham)",
       data: extractionPieData,
-      explanation: generateExtractionPieExplanation(
-        extractionPieData as Array<{ name: string; value: unknown }>
-      ),
+      explanation: generateExtractionPieExplanation(extractionPieData as Array<{ name: string; value: unknown }>),
     });
   }
 
@@ -817,9 +746,7 @@ export function generateChartData(record: GroundwaterRecord): object[] {
     title: `Water Balance Overview - ${locationName}`,
     description: "Overall groundwater balance",
     data: waterBalanceData,
-    explanation: generateWaterBalanceExplanation(
-      waterBalanceData as Record<string, unknown>
-    ),
+    explanation: generateWaterBalanceExplanation(waterBalanceData as Record<string, unknown>),
   });
 
   // 10. Stage of Extraction Category Status
@@ -832,32 +759,16 @@ export function generateChartData(record: GroundwaterRecord): object[] {
     data: {
       stageOfExtraction,
       category,
-      status:
-        stageOfExtraction < 70
-          ? "Safe"
-          : stageOfExtraction < 90
-          ? "Semi-Critical"
-          : stageOfExtraction < 100
-          ? "Critical"
-          : "Over-Exploited",
+      status: stageOfExtraction < 70 ? "Safe" : stageOfExtraction < 90 ? "Semi-Critical" : stageOfExtraction < 100 ? "Critical" : "Over-Exploited",
       healthIndicator:
-        stageOfExtraction < 70
-          ? "Healthy"
-          : stageOfExtraction < 90
-          ? "Moderate Stress"
-          : stageOfExtraction < 100
-          ? "High Stress"
-          : "Severe Stress",
+        stageOfExtraction < 70 ? "Healthy" : stageOfExtraction < 90 ? "Moderate Stress" : stageOfExtraction < 100 ? "High Stress" : "Severe Stress",
     },
     threshold: {
       safe: 70,
       critical: 90,
       overExploited: 100,
     },
-    explanation:
-      getStageExplanation(stageOfExtraction) +
-      " " +
-      getCategoryExplanation(category),
+    explanation: getStageExplanation(stageOfExtraction) + " " + getCategoryExplanation(category),
   });
 
   // 11. Recharge vs Extraction Comparison (Bar Chart)
@@ -872,8 +783,7 @@ export function generateChartData(record: GroundwaterRecord): object[] {
       type: "chart",
       chartType: "bar",
       title: `Recharge vs Extraction Analysis - ${locationName}`,
-      description:
-        "Comparison of recharge, extraction, and natural discharge (ham)",
+      description: "Comparison of recharge, extraction, and natural discharge (ham)",
       data: rechargeVsExtraction,
       explanation:
         "This compares water coming in (recharge) versus water going out (extraction + natural discharge). For sustainable water use, recharge should be higher than extraction. If extraction exceeds recharge, water levels will drop over time.",
@@ -886,26 +796,17 @@ export function generateChartData(record: GroundwaterRecord): object[] {
     currentExtraction: Number(data.draftTotalTotal) || 0,
     futureAvailability: Number(data.availabilityFutureTotal) || 0,
     utilizationPercent: stageOfExtraction,
-    remainingCapacity: Math.max(
-      0,
-      (Number(data.extractableTotal) || 0) - (Number(data.draftTotalTotal) || 0)
-    ),
+    remainingCapacity: Math.max(0, (Number(data.extractableTotal) || 0) - (Number(data.draftTotalTotal) || 0)),
   };
 
   visualizations.push({
     type: "stats",
     title: `Availability & Sustainability Metrics`,
-    description: `Future availability: ${formatNumber(
-      availabilityData.futureAvailability
-    )} ham`,
+    description: `Future availability: ${formatNumber(availabilityData.futureAvailability)} ham`,
     data: availabilityData,
-    explanation: `Currently using ${availabilityData.utilizationPercent.toFixed(
-      0
-    )}% of available water. ${
+    explanation: `Currently using ${availabilityData.utilizationPercent.toFixed(0)}% of available water. ${
       availabilityData.remainingCapacity > 0
-        ? `There's still ${formatNumber(
-            availabilityData.remainingCapacity
-          )} ham of unused capacity for future needs.`
+        ? `There's still ${formatNumber(availabilityData.remainingCapacity)} ham of unused capacity for future needs.`
         : "All available water is being used - no room for additional extraction."
     }`,
   });
@@ -913,9 +814,7 @@ export function generateChartData(record: GroundwaterRecord): object[] {
   return visualizations;
 }
 
-export function generateComparisonChartData(
-  records: GroundwaterRecord[]
-): object[] {
+export function generateComparisonChartData(records: GroundwaterRecord[]): object[] {
   const visualizations: object[] = [];
 
   // 1. Locations Table (like the state-wise table in screenshot)
@@ -934,13 +833,7 @@ export function generateComparisonChartData(
     type: "table",
     tableType: "locations",
     title: "Location Comparison",
-    columns: [
-      "Name",
-      "Rainfall (mm)",
-      "Extractable (ham)",
-      "Extraction (ham)",
-      "Stage (%)",
-    ],
+    columns: ["Name", "Rainfall (mm)", "Extractable (ham)", "Extraction (ham)", "Stage (%)"],
     data: locationsTableData,
     explanation: `This table compares ${records.length} locations side by side. Look at the 'Stage (%)' column - below 70% is healthy, 70-90% needs attention, above 90% is concerning, and above 100% means water is being used faster than it can be replenished.`,
   });
@@ -960,8 +853,7 @@ export function generateComparisonChartData(
     type: "chart",
     chartType: "grouped_bar",
     title: "Groundwater Metrics Comparison",
-    description:
-      "Comparison of recharge, extraction, and extractable resources (ham)",
+    description: "Comparison of recharge, extraction, and extractable resources (ham)",
     data: comparisonData,
     explanation:
       "This chart shows three key metrics for each location: recharge (water coming in), extraction (water being used), and extractable (safe limit). Ideally, extraction should be less than both recharge and extractable resources.",
@@ -980,11 +872,7 @@ export function generateComparisonChartData(
     description: "Annual rainfall across locations (mm)",
     data: rainfallData,
     color: "hsl(217, 91%, 60%)",
-    explanation: generateComparisonExplanation(
-      rainfallData as Array<{ name: string; value: unknown }>,
-      "Rainfall",
-      "mm"
-    ),
+    explanation: generateComparisonExplanation(rainfallData as Array<{ name: string; value: unknown }>, "Rainfall", "mm"),
   });
 
   // 4. Stage of Extraction Comparison
@@ -1012,9 +900,7 @@ export function generateComparisonChartData(
     data: stageData,
     threshold: { safe: 70, critical: 90, overExploited: 100 },
     colorByValue: true,
-    explanation: generateStageComparisonExplanation(
-      stageData as Array<{ name: string; value: number; category?: string }>
-    ),
+    explanation: generateStageComparisonExplanation(stageData as Array<{ name: string; value: number; category?: string }>),
   });
 
   // 5. Total Recharge Comparison
@@ -1030,11 +916,7 @@ export function generateComparisonChartData(
     description: "Annual groundwater recharge across locations (ham)",
     data: rechargeData,
     color: "hsl(142, 71%, 45%)",
-    explanation: generateComparisonExplanation(
-      rechargeData as Array<{ name: string; value: unknown }>,
-      "Groundwater recharge",
-      "ham"
-    ),
+    explanation: generateComparisonExplanation(rechargeData as Array<{ name: string; value: unknown }>, "Groundwater recharge", "ham"),
   });
 
   // 6. Total Extraction Comparison
@@ -1050,11 +932,7 @@ export function generateComparisonChartData(
     description: "Annual groundwater extraction across locations (ham)",
     data: extractionData,
     color: "hsl(4, 90%, 58%)",
-    explanation: generateComparisonExplanation(
-      extractionData as Array<{ name: string; value: unknown }>,
-      "Water extraction",
-      "ham"
-    ),
+    explanation: generateComparisonExplanation(extractionData as Array<{ name: string; value: unknown }>, "Water extraction", "ham"),
   });
 
   // 7. Extractable Resources Comparison
@@ -1070,11 +948,7 @@ export function generateComparisonChartData(
     description: "Annual extractable groundwater resources (ham)",
     data: extractableData,
     color: "hsl(258, 90%, 66%)",
-    explanation: generateComparisonExplanation(
-      extractableData as Array<{ name: string; value: unknown }>,
-      "Extractable water resources",
-      "ham"
-    ),
+    explanation: generateComparisonExplanation(extractableData as Array<{ name: string; value: unknown }>, "Extractable water resources", "ham"),
   });
 
   // 8. Net Groundwater Balance Comparison
@@ -1168,17 +1042,12 @@ export function generateComparisonChartData(
   return visualizations;
 }
 
-export function generateTrendChartData(
-  records: HistoricalRecord[],
-  locationName: string
-): object[] {
+export function generateTrendChartData(records: HistoricalRecord[], locationName: string): object[] {
   const visualizations: object[] = [];
 
   if (records.length === 0) return visualizations;
 
-  const sortedRecords = [...records].sort((a, b) =>
-    a.year.localeCompare(b.year)
-  );
+  const sortedRecords = [...records].sort((a, b) => a.year.localeCompare(b.year));
 
   visualizations.push({
     type: "trend_summary",
@@ -1197,11 +1066,8 @@ export function generateTrendChartData(
       rechargeFromRainfall: Number(data.rechargeRainfallTotal) || 0,
       rechargeFromCanal: Number(data.rechargeCanalTotal) || 0,
       rechargeFromWaterBody: Number(data.rechargeWaterBodyTotal) || 0,
-      rechargeFromArtificial:
-        Number(data.rechargeArtificialStructureTotal) || 0,
-      rechargeOther:
-        (Number(data.rechargeSurfaceIrrigationTotal) || 0) +
-        (Number(data.rechargeGwIrrigationTotal) || 0),
+      rechargeFromArtificial: Number(data.rechargeArtificialStructureTotal) || 0,
+      rechargeOther: (Number(data.rechargeSurfaceIrrigationTotal) || 0) + (Number(data.rechargeGwIrrigationTotal) || 0),
       extraction: Number(data.draftTotalTotal) || 0,
       extractionIrrigation: Number(data.draftIrrigationTotal) || 0,
       extractionDomestic: Number(data.draftDomesticTotal) || 0,
@@ -1229,15 +1095,7 @@ export function generateTrendChartData(
     type: "table",
     tableType: "trend",
     title: `Year-wise Groundwater Data - ${locationName}`,
-    columns: [
-      "Year",
-      "Rainfall (mm)",
-      "Recharge (ham)",
-      "Extractable (ham)",
-      "Extraction (ham)",
-      "Stage (%)",
-      "Category",
-    ],
+    columns: ["Year", "Rainfall (mm)", "Recharge (ham)", "Extractable (ham)", "Extraction (ham)", "Stage (%)", "Category"],
     data: tableData,
     explanation: `This table shows how groundwater conditions have changed in ${locationName} over ${tableData.length} years. Watch the 'Stage (%)' column - if it's increasing over time, water stress is getting worse. If the category changes from 'Safe' to 'Critical', it's a warning sign.`,
   });
@@ -1252,10 +1110,7 @@ export function generateTrendChartData(
     title: `Groundwater Extraction Trend - ${locationName}`,
     description: "Historical trend of groundwater extraction (ham)",
     data: extractionTrendData,
-    explanation: generateTrendExplanation(
-      extractionTrendData,
-      "Groundwater extraction"
-    ),
+    explanation: generateTrendExplanation(extractionTrendData, "Groundwater extraction"),
   });
 
   const stageTrendData = trendData.map((t) => ({
@@ -1270,8 +1125,7 @@ export function generateTrendChartData(
     data: stageTrendData,
     threshold: { safe: 70, critical: 90, overExploited: 100 },
     explanation:
-      generateTrendExplanation(stageTrendData, "Stage of extraction") +
-      " Values above the red line (100%) indicate unsustainable water use.",
+      generateTrendExplanation(stageTrendData, "Stage of extraction") + " Values above the red line (100%) indicate unsustainable water use.",
   });
 
   visualizations.push({
@@ -1309,8 +1163,7 @@ export function generateTrendChartData(
     type: "chart",
     chartType: "multi_line",
     title: `Extraction by Use Type - ${locationName}`,
-    description:
-      "Groundwater extraction breakdown: irrigation, domestic, industrial (ham)",
+    description: "Groundwater extraction breakdown: irrigation, domestic, industrial (ham)",
     data: trendData.map((t) => ({
       year: t.year,
       irrigation: t.extractionIrrigation,
@@ -1369,8 +1222,7 @@ export function generateTrendChartData(
     description: "Ratio of Recharge to Extraction (>1 is sustainable)",
     data: trendData.map((t) => ({
       year: t.year,
-      value:
-        t.extraction && t.extraction > 0 ? (t.recharge || 0) / t.extraction : 0,
+      value: t.extraction && t.extraction > 0 ? (t.recharge || 0) / t.extraction : 0,
     })),
     explanation:
       "This measures sustainability: values above 1.0 mean more water is being recharged than extracted (sustainable). Values below 1.0 mean water is being used faster than it's replenished (unsustainable). Aim for 1.0 or higher.",
@@ -1381,8 +1233,7 @@ export function generateTrendChartData(
     type: "chart",
     chartType: "multi_line",
     title: `Water Stress Indicators - ${locationName}`,
-    description:
-      "Normalized trends: High stage of extraction + Low rainfall = High stress",
+    description: "Normalized trends: High stage of extraction + Low rainfall = High stress",
     data: trendData.map((t) => ({
       year: t.year,
       "stage of extraction": t.stageOfExtraction,
@@ -1419,20 +1270,8 @@ export function generateTrendChartData(
       const curr = trendData[i];
       yoyData.push({
         name: curr.year,
-        extraction:
-          prev.extraction && prev.extraction > 0
-            ? Math.round(
-                ((curr.extraction - prev.extraction) / prev.extraction) *
-                  100 *
-                  10
-              ) / 10
-            : 0,
-        recharge:
-          prev.recharge && prev.recharge > 0
-            ? Math.round(
-                ((curr.recharge - prev.recharge) / prev.recharge) * 100 * 10
-              ) / 10
-            : 0,
+        extraction: prev.extraction && prev.extraction > 0 ? Math.round(((curr.extraction - prev.extraction) / prev.extraction) * 100 * 10) / 10 : 0,
+        recharge: prev.recharge && prev.recharge > 0 ? Math.round(((curr.recharge - prev.recharge) / prev.recharge) * 100 * 10) / 10 : 0,
       });
     }
 
@@ -1440,8 +1279,7 @@ export function generateTrendChartData(
       type: "chart",
       chartType: "grouped_bar",
       title: `Year-over-Year % Change - ${locationName}`,
-      description:
-        "Percentage change in extraction and recharge from previous year",
+      description: "Percentage change in extraction and recharge from previous year",
       data: yoyData,
       explanation: generateYoYChangeExplanation(yoyData),
     });
@@ -1460,9 +1298,7 @@ export function generateTrendChartData(
   // Enhanced category changes with more insights
   const latestData = trendData[trendData.length - 1];
   const earliestData = trendData[0];
-  const avgStageOfExtraction =
-    trendData.reduce((sum, t) => sum + (t.stageOfExtraction || 0), 0) /
-    trendData.length;
+  const avgStageOfExtraction = trendData.reduce((sum, t) => sum + (t.stageOfExtraction || 0), 0) / trendData.length;
 
   const trendSummaryData = {
     yearsAnalyzed: trendData.length,
@@ -1470,16 +1306,9 @@ export function generateTrendChartData(
     currentCategory: latestData.category || "Unknown",
     initialCategory: earliestData.category || "Unknown",
     avgStageOfExtraction: Math.round(avgStageOfExtraction * 10) / 10,
-    extractionTrend:
-      latestData.extraction > earliestData.extraction
-        ? "Increasing"
-        : "Decreasing",
-    rechargeTrend:
-      latestData.recharge > earliestData.recharge ? "Increasing" : "Decreasing",
-    overallTrend:
-      latestData.stageOfExtraction > earliestData.stageOfExtraction
-        ? "Worsening"
-        : "Improving",
+    extractionTrend: latestData.extraction > earliestData.extraction ? "Increasing" : "Decreasing",
+    rechargeTrend: latestData.recharge > earliestData.recharge ? "Increasing" : "Decreasing",
+    overallTrend: latestData.stageOfExtraction > earliestData.stageOfExtraction ? "Worsening" : "Improving",
   };
 
   const overallTrendExplanation =
@@ -1491,9 +1320,7 @@ export function generateTrendChartData(
     type: "stats",
     title: `Trend Summary - ${locationName}`,
     data: trendSummaryData,
-    explanation: `Over ${trendData.length} years, the water category changed ${
-      categoryChanges.length - 1
-    } time(s). Currently: ${
+    explanation: `Over ${trendData.length} years, the water category changed ${categoryChanges.length - 1} time(s). Currently: ${
       trendSummaryData.currentCategory
     }. Extraction is ${trendSummaryData.extractionTrend.toLowerCase()} and recharge is ${trendSummaryData.rechargeTrend.toLowerCase()}. ${overallTrendExplanation}`,
   });
@@ -1501,21 +1328,13 @@ export function generateTrendChartData(
   return visualizations;
 }
 
-export function formatHistoricalDataForLLM(
-  records: HistoricalRecord[]
-): string {
+export function formatHistoricalDataForLLM(records: HistoricalRecord[]): string {
   if (records.length === 0) return "No historical data available.";
 
-  const sortedRecords = [...records].sort((a, b) =>
-    a.year.localeCompare(b.year)
-  );
+  const sortedRecords = [...records].sort((a, b) => a.year.localeCompare(b.year));
 
   const locationName = sortedRecords[0].locationName;
-  const lines: string[] = [
-    `Historical Groundwater Data for ${locationName}`,
-    `Available Years: ${sortedRecords.map((r) => r.year).join(", ")}`,
-    "",
-  ];
+  const lines: string[] = [`Historical Groundwater Data for ${locationName}`, `Available Years: ${sortedRecords.map((r) => r.year).join(", ")}`, ""];
 
   for (const record of sortedRecords) {
     const data = record.data as Record<string, unknown>;
@@ -1525,39 +1344,21 @@ export function formatHistoricalDataForLLM(
     lines.push(`  Recharge: ${formatNumber(data.rechargeTotalTotal)} ham`);
     lines.push(`  Extractable: ${formatNumber(data.extractableTotal)} ham`);
     lines.push(`  Extraction: ${formatNumber(data.draftTotalTotal)} ham`);
-    lines.push(
-      `  Stage of Extraction: ${formatNumber(data.stageOfExtractionTotal)}%`
-    );
+    lines.push(`  Stage of Extraction: ${formatNumber(data.stageOfExtractionTotal)}%`);
     lines.push("");
   }
 
   if (sortedRecords.length >= 2) {
     const first = sortedRecords[0].data as Record<string, unknown>;
-    const last = sortedRecords[sortedRecords.length - 1].data as Record<
-      string,
-      unknown
-    >;
+    const last = sortedRecords[sortedRecords.length - 1].data as Record<string, unknown>;
 
     lines.push("--- Trend Analysis ---");
 
-    const extractionChange = calculateChange(
-      first.draftTotalTotal,
-      last.draftTotalTotal
-    );
-    const stageChange = calculateChange(
-      first.stageOfExtractionTotal,
-      last.stageOfExtractionTotal
-    );
-    const extractableChange = calculateChange(
-      first.extractableTotal,
-      last.extractableTotal
-    );
+    const extractionChange = calculateChange(first.draftTotalTotal, last.draftTotalTotal);
+    const stageChange = calculateChange(first.stageOfExtractionTotal, last.stageOfExtractionTotal);
+    const extractableChange = calculateChange(first.extractableTotal, last.extractableTotal);
 
-    lines.push(
-      `  Extraction Change (${sortedRecords[0].year} to ${
-        sortedRecords[sortedRecords.length - 1].year
-      }): ${extractionChange}`
-    );
+    lines.push(`  Extraction Change (${sortedRecords[0].year} to ${sortedRecords[sortedRecords.length - 1].year}): ${extractionChange}`);
     lines.push(`  Stage of Extraction Change: ${stageChange}`);
     lines.push(`  Extractable Resources Change: ${extractableChange}`);
   }
@@ -1576,9 +1377,7 @@ function calculateChange(oldVal: unknown, newVal: unknown): string {
   return `${sign}${change.toFixed(1)}%`;
 }
 
-export function generateHistoricalComparisonChartData(
-  locationsData: Array<{ locationName: string; records: HistoricalRecord[] }>
-): object[] {
+export function generateHistoricalComparisonChartData(locationsData: Array<{ locationName: string; records: HistoricalRecord[] }>): object[] {
   const visualizations: object[] = [];
 
   if (locationsData.length === 0) return visualizations;
@@ -1613,15 +1412,7 @@ export function generateHistoricalComparisonChartData(
     type: "table",
     tableType: "comparison",
     title: `Location Comparison - ${latestYear}`,
-    columns: [
-      "Name",
-      "Year",
-      "Rainfall (mm)",
-      "Recharge (ham)",
-      "Extraction (ham)",
-      "Stage (%)",
-      "Category",
-    ],
+    columns: ["Name", "Year", "Rainfall (mm)", "Recharge (ham)", "Extraction (ham)", "Stage (%)", "Category"],
     data: tableData,
     explanation: `This compares ${locationsData.length} locations in ${latestYear}. Look at the 'Stage (%)' column to see which areas are under most water stress. Categories range from 'Safe' (healthy) to 'Over-Exploited' (critical).`,
   });
@@ -1631,9 +1422,7 @@ export function generateHistoricalComparisonChartData(
     const point: Record<string, unknown> = { year };
     for (const loc of locationsData) {
       const record = loc.records.find((r) => r.year === year);
-      point[loc.locationName] = record
-        ? (record.data as Record<string, unknown>).draftTotalTotal
-        : null;
+      point[loc.locationName] = record ? (record.data as Record<string, unknown>).draftTotalTotal : null;
     }
     return point;
   });
@@ -1645,10 +1434,7 @@ export function generateHistoricalComparisonChartData(
     description: "Groundwater extraction over years across locations (ham)",
     data: extractionTrendData,
     lines: locationNames,
-    explanation: generateMultiLineTrendExplanation(
-      extractionTrendData as Array<Record<string, unknown>>,
-      locationNames
-    ),
+    explanation: generateMultiLineTrendExplanation(extractionTrendData as Array<Record<string, unknown>>, locationNames),
   });
 
   // 3. Stage of Extraction Trends
@@ -1656,9 +1442,7 @@ export function generateHistoricalComparisonChartData(
     const point: Record<string, unknown> = { year };
     for (const loc of locationsData) {
       const record = loc.records.find((r) => r.year === year);
-      point[loc.locationName] = record
-        ? (record.data as Record<string, unknown>).stageOfExtractionTotal
-        : null;
+      point[loc.locationName] = record ? (record.data as Record<string, unknown>).stageOfExtractionTotal : null;
     }
     return point;
   });
@@ -1680,9 +1464,7 @@ export function generateHistoricalComparisonChartData(
     const point: Record<string, unknown> = { year };
     for (const loc of locationsData) {
       const record = loc.records.find((r) => r.year === year);
-      point[loc.locationName] = record
-        ? (record.data as Record<string, unknown>).rechargeTotalTotal
-        : null;
+      point[loc.locationName] = record ? (record.data as Record<string, unknown>).rechargeTotalTotal : null;
     }
     return point;
   });
@@ -1703,9 +1485,7 @@ export function generateHistoricalComparisonChartData(
     const point: Record<string, unknown> = { year };
     for (const loc of locationsData) {
       const record = loc.records.find((r) => r.year === year);
-      point[loc.locationName] = record
-        ? (record.data as Record<string, unknown>).rainfallTotal
-        : null;
+      point[loc.locationName] = record ? (record.data as Record<string, unknown>).rainfallTotal : null;
     }
     return point;
   });
@@ -1726,9 +1506,7 @@ export function generateHistoricalComparisonChartData(
     const point: Record<string, unknown> = { year };
     for (const loc of locationsData) {
       const record = loc.records.find((r) => r.year === year);
-      point[loc.locationName] = record
-        ? (record.data as Record<string, unknown>).extractableTotal
-        : null;
+      point[loc.locationName] = record ? (record.data as Record<string, unknown>).extractableTotal : null;
     }
     return point;
   });
@@ -1778,9 +1556,7 @@ export function generateHistoricalComparisonChartData(
     const latestRecord = loc.records.find((r) => r.year === latestYear);
     return {
       name: loc.locationName,
-      value: latestRecord
-        ? (latestRecord.data as Record<string, unknown>).draftTotalTotal
-        : 0,
+      value: latestRecord ? (latestRecord.data as Record<string, unknown>).draftTotalTotal : 0,
     };
   });
 
@@ -1791,21 +1567,13 @@ export function generateHistoricalComparisonChartData(
     description: "Groundwater extraction in latest year (ham)",
     data: latestExtractionData,
     color: "hsl(4, 90%, 58%)",
-    explanation: generateComparisonExplanation(
-      latestExtractionData as Array<{ name: string; value: unknown }>,
-      "Water extraction",
-      "ham"
-    ),
+    explanation: generateComparisonExplanation(latestExtractionData as Array<{ name: string; value: unknown }>, "Water extraction", "ham"),
   });
 
   // 9. Latest Year Bar Comparison - Stage
   const latestStageData = locationsData.map((loc) => {
     const latestRecord = loc.records.find((r) => r.year === latestYear);
-    const stage = latestRecord
-      ? Number(
-          (latestRecord.data as Record<string, unknown>).stageOfExtractionTotal
-        )
-      : 0;
+    const stage = latestRecord ? Number((latestRecord.data as Record<string, unknown>).stageOfExtractionTotal) : 0;
     let color = "hsl(142, 71%, 45%)";
     if (stage >= 100) color = "hsl(4, 90%, 58%)";
     else if (stage >= 90) color = "hsl(38, 92%, 50%)";

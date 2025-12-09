@@ -1,12 +1,11 @@
 import React, { useState, useRef, useEffect, useCallback } from "react";
-import { Message, ChatFilters, Source } from "../../types";
+import { Message, ChatFilters, Visualization } from "../../types";
 import { streamChat, checkHealth } from "../../services/api";
 import { ChatMessage } from "../ChatMessage";
 import { ChatInput } from "../ChatInput";
-import { FilterBar } from "../FilterBar";
 import { Suggestions } from "../Suggestions";
 import { WelcomeScreen } from "../WelcomeScreen";
-import { X, Minimize2, Maximize2, Droplets, RefreshCw, Trash2, AlertCircle, CheckCircle } from "lucide-react";
+import { X, Minimize2, Maximize2, RefreshCw, Trash2, AlertCircle, CheckCircle, Droplet } from "lucide-react";
 
 interface ChatWidgetProps {
   isOpen: boolean;
@@ -17,10 +16,10 @@ export const ChatWidget: React.FC<ChatWidgetProps> = ({ isOpen, onClose }) => {
   const [messages, setMessages] = useState<Message[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [filters, setFilters] = useState<ChatFilters>({});
-  const [filtersOpen, setFiltersOpen] = useState(false);
   const [suggestions, setSuggestions] = useState<string[]>([]);
   const [isExpanded, setIsExpanded] = useState(false);
   const [isConnected, setIsConnected] = useState<boolean | null>(null);
+  const abortControllerRef = useRef<AbortController | null>(null);
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const chatContainerRef = useRef<HTMLDivElement>(null);
@@ -62,6 +61,7 @@ export const ChatWidget: React.FC<ChatWidgetProps> = ({ isOpen, onClose }) => {
         content: "",
         timestamp: new Date(),
         isStreaming: true,
+        charts: [],
       };
 
       setMessages((prev) => [...prev, assistantMessage]);
@@ -72,18 +72,21 @@ export const ChatWidget: React.FC<ChatWidgetProps> = ({ isOpen, onClose }) => {
         content: m.content,
       }));
 
-      let sources: Source[] = [];
+      const charts: Visualization[] = [];
 
       try {
         await streamChat(content, chatHistory, filters, {
-          onSources: (newSources) => {
-            sources = newSources;
-          },
           onToken: (token) => {
-            setMessages((prev) => prev.map((msg) => (msg.id === assistantMessageId ? { ...msg, content: msg.content + token } : msg)));
+            setMessages((prev) =>
+              prev.map((msg) => (msg.id === assistantMessageId ? { ...msg, content: msg.content + token, isStreaming: false } : msg))
+            );
+          },
+          onChart: (chart) => {
+            charts.push(chart);
+            setMessages((prev) => prev.map((msg) => (msg.id === assistantMessageId ? { ...msg, charts: [...charts] } : msg)));
           },
           onSuggestions: (newSuggestions) => {
-            setSuggestions(newSuggestions);
+            setMessages((prev) => prev.map((msg) => (msg.id === assistantMessageId ? { ...msg, suggestions: newSuggestions } : msg)));
           },
           onError: (error) => {
             setMessages((prev) =>
@@ -91,7 +94,7 @@ export const ChatWidget: React.FC<ChatWidgetProps> = ({ isOpen, onClose }) => {
                 msg.id === assistantMessageId
                   ? {
                       ...msg,
-                      content: `❌ Error: ${error}. Please try again.`,
+                      content: `Error: ${error}. Please try again.`,
                       isStreaming: false,
                     }
                   : msg
@@ -99,7 +102,7 @@ export const ChatWidget: React.FC<ChatWidgetProps> = ({ isOpen, onClose }) => {
             );
           },
           onComplete: () => {
-            setMessages((prev) => prev.map((msg) => (msg.id === assistantMessageId ? { ...msg, isStreaming: false, sources } : msg)));
+            setMessages((prev) => prev.map((msg) => (msg.id === assistantMessageId ? { ...msg, isStreaming: false } : msg)));
             setIsLoading(false);
           },
         });
@@ -109,7 +112,7 @@ export const ChatWidget: React.FC<ChatWidgetProps> = ({ isOpen, onClose }) => {
             msg.id === assistantMessageId
               ? {
                   ...msg,
-                  content: "❌ Failed to connect to the server. Please try again.",
+                  content: "Failed to connect to the server. Please try again.",
                   isStreaming: false,
                 }
               : msg
@@ -120,6 +123,12 @@ export const ChatWidget: React.FC<ChatWidgetProps> = ({ isOpen, onClose }) => {
     },
     [messages, filters, isLoading]
   );
+
+  const handleStop = () => {
+    if (abortControllerRef.current) {
+      abortControllerRef.current.abort();
+    }
+  };
 
   const handleClearChat = () => {
     setMessages([]);
@@ -132,34 +141,38 @@ export const ChatWidget: React.FC<ChatWidgetProps> = ({ isOpen, onClose }) => {
     setIsConnected(status);
   };
 
+  const handleSuggestionClick = (suggestion: string) => {
+    handleSendMessage(suggestion);
+  };
+
   if (!isOpen) return null;
 
   return (
     <div
       className={`ig-fixed ig-z-[999999] ig-transition-all ig-duration-300 ig-ease-out ${
-        isExpanded ? "ig-inset-4 ig-rounded-2xl" : "ig-bottom-6 ig-right-6 ig-w-[400px] ig-h-[600px] ig-rounded-2xl"
+        isExpanded ? "ig-inset-4 ig-rounded-2xl" : "ig-bottom-6 ig-right-6 ig-w-[420px] ig-h-[650px] ig-rounded-2xl"
       }`}>
-      <div className="ig-w-full ig-h-full ig-bg-white ig-rounded-2xl ig-shadow-2xl ig-flex ig-flex-col ig-overflow-hidden ig-border ig-border-gray-200">
+      <div className="ig-w-full ig-h-full ig-bg-zinc-950 ig-rounded-2xl ig-shadow-2xl ig-flex ig-flex-col ig-overflow-hidden ig-border ig-border-zinc-800">
         {/* Header */}
-        <div className="ig-bg-gradient-to-r ig-from-water-600 ig-to-primary-600 ig-text-white ig-px-4 ig-py-3 ig-flex ig-items-center ig-justify-between ig-flex-shrink-0">
+        <div className="ig-bg-zinc-900 ig-px-4 ig-py-3 ig-flex ig-items-center ig-justify-between ig-flex-shrink-0 ig-border-b ig-border-zinc-800">
           <div className="ig-flex ig-items-center ig-gap-3">
-            <div className="ig-w-10 ig-h-10 ig-rounded-full ig-bg-white/20 ig-flex ig-items-center ig-justify-center">
-              <Droplets className="ig-w-6 ig-h-6" />
+            <div className="ig-w-8 ig-h-8 ig-rounded-lg ig-bg-blue-600 ig-flex ig-items-center ig-justify-center">
+              <Droplet className="ig-w-4 ig-h-4 ig-text-white" />
             </div>
             <div>
-              <h3 className="ig-font-semibold ig-text-base">INGRES AI Assistant</h3>
+              <h3 className="ig-font-semibold ig-text-zinc-100 ig-text-sm">INGRES AI</h3>
               <div className="ig-flex ig-items-center ig-gap-1.5">
                 {isConnected === null ? (
-                  <span className="ig-text-xs ig-text-white/70">Checking...</span>
+                  <span className="ig-text-xs ig-text-zinc-500">Checking...</span>
                 ) : isConnected ? (
                   <>
-                    <CheckCircle className="ig-w-3 ig-h-3 ig-text-green-300" />
-                    <span className="ig-text-xs ig-text-white/80">Connected</span>
+                    <CheckCircle className="ig-w-3 ig-h-3 ig-text-green-400" />
+                    <span className="ig-text-xs ig-text-zinc-500">Connected</span>
                   </>
                 ) : (
                   <>
-                    <AlertCircle className="ig-w-3 ig-h-3 ig-text-red-300" />
-                    <span className="ig-text-xs ig-text-white/80">Disconnected</span>
+                    <AlertCircle className="ig-w-3 ig-h-3 ig-text-red-400" />
+                    <span className="ig-text-xs ig-text-zinc-500">Disconnected</span>
                   </>
                 )}
               </div>
@@ -170,50 +183,49 @@ export const ChatWidget: React.FC<ChatWidgetProps> = ({ isOpen, onClose }) => {
             {!isConnected && isConnected !== null && (
               <button
                 onClick={handleRetryConnection}
-                className="ig-p-2 ig-rounded-lg hover:ig-bg-white/20 ig-transition-colors"
+                className="ig-p-2 ig-rounded-lg hover:ig-bg-zinc-800 ig-transition-colors ig-text-zinc-400"
                 title="Retry connection">
                 <RefreshCw className="ig-w-4 ig-h-4" />
               </button>
             )}
             {messages.length > 0 && (
-              <button onClick={handleClearChat} className="ig-p-2 ig-rounded-lg hover:ig-bg-white/20 ig-transition-colors" title="Clear chat">
+              <button
+                onClick={handleClearChat}
+                className="ig-p-2 ig-rounded-lg hover:ig-bg-zinc-800 ig-transition-colors ig-text-zinc-400"
+                title="Clear chat">
                 <Trash2 className="ig-w-4 ig-h-4" />
               </button>
             )}
             <button
               onClick={() => setIsExpanded(!isExpanded)}
-              className="ig-p-2 ig-rounded-lg hover:ig-bg-white/20 ig-transition-colors"
+              className="ig-p-2 ig-rounded-lg hover:ig-bg-zinc-800 ig-transition-colors ig-text-zinc-400"
               title={isExpanded ? "Minimize" : "Expand"}>
               {isExpanded ? <Minimize2 className="ig-w-4 ig-h-4" /> : <Maximize2 className="ig-w-4 ig-h-4" />}
             </button>
-            <button onClick={onClose} className="ig-p-2 ig-rounded-lg hover:ig-bg-white/20 ig-transition-colors" title="Close">
+            <button onClick={onClose} className="ig-p-2 ig-rounded-lg hover:ig-bg-zinc-800 ig-transition-colors ig-text-zinc-400" title="Close">
               <X className="ig-w-4 ig-h-4" />
             </button>
           </div>
         </div>
 
-        {/* Filter Bar */}
-        <FilterBar filters={filters} onFilterChange={setFilters} isOpen={filtersOpen} onToggle={() => setFiltersOpen(!filtersOpen)} />
-
         {/* Messages Area */}
-        <div ref={chatContainerRef} className="ig-flex-1 ig-overflow-y-auto ig-p-4 ig-space-y-4 ig-bg-gradient-to-b ig-from-gray-50 ig-to-white">
+        <div ref={chatContainerRef} className="ig-flex-1 ig-overflow-y-auto ig-p-4 ig-space-y-4 ig-bg-zinc-950">
           {messages.length === 0 ? (
             <WelcomeScreen onQuerySelect={handleSendMessage} />
           ) : (
-            messages.map((message) => <ChatMessage key={message.id} message={message} />)
+            messages.map((message) => <ChatMessage key={message.id} message={message} onSuggestionClick={handleSuggestionClick} />)
           )}
           <div ref={messagesEndRef} />
         </div>
 
-        {/* Suggestions */}
-        {suggestions.length > 0 && <Suggestions suggestions={suggestions} onSelect={handleSendMessage} />}
-
         {/* Input Area */}
-        <div className="ig-p-4 ig-bg-white ig-border-t ig-border-gray-100 ig-flex-shrink-0">
+        <div className="ig-p-4 ig-bg-zinc-950 ig-border-t ig-border-zinc-800 ig-flex-shrink-0">
           <ChatInput
             onSend={handleSendMessage}
-            disabled={isLoading || !isConnected}
-            placeholder={!isConnected ? "Connecting to server..." : "Ask about groundwater resources..."}
+            onStop={handleStop}
+            disabled={!isConnected}
+            isLoading={isLoading}
+            placeholder={!isConnected ? "Connecting to server..." : "Ask about groundwater data..."}
           />
         </div>
       </div>
