@@ -116,6 +116,7 @@ export default function BarChartComponent({
               dataKey={key}
               fill={color || COLORS[i % COLORS.length]}
               radius={[4, 4, 0, 0]}
+              isAnimationActive={false}
             >
               {colorByValue &&
                 data.map((entry, index) => (

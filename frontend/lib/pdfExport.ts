@@ -13,10 +13,11 @@ export async function exportToPDF({
   try {
     const canvas = await html2canvas(element, {
       backgroundColor: "#ffffff",
-      scale: 2,
+      scale: 1.5,
       logging: false,
       useCORS: true,
       allowTaint: true,
+      removeContainer: true,
     });
 
     const pdf = new jsPDF("p", "mm", "a4");

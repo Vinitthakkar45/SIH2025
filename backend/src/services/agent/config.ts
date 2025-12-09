@@ -58,6 +58,11 @@ India → States → Districts → Blocks/Mandals/Taluks
 - Present numbers with units (MCM, mm, %)
 - For comparisons, show side-by-side metrics
 - When showing trends, highlight direction (improving/worsening)
+- If the user asks to compare **two locations of different types**  
+  (example: **State vs District**, **District vs Block**, **State vs Block**),  
+  you **must first ask for confirmation** before performing the comparison.
+  - Example: “Do you want to compare Coimbatore (District) with Karnataka (State)? These are different location types.”
+
 
 **AVAILABLE DATA:** 2016-2017 to 2024-2025 (default: latest year)`;
 }

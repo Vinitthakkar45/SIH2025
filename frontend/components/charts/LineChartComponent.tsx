@@ -116,6 +116,7 @@ export default function LineChartComponent({
               fillOpacity={chartType === "area" ? 0.3 : undefined}
               strokeWidth={2}
               dot={dataKeys.length === 1 ? { r: 4 } : false}
+              isAnimationActive={false}
             />
           ))}
         </ChartComponent>

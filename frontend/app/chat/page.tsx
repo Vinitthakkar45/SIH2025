@@ -30,7 +30,7 @@ export default function ChatPage() {
   const [isExporting, setIsExporting] = useState(false);
   const [userLocation, setUserLocation] = useState<LocationInfo>({
     state: "Maharashtra",
-    district: "Mumbai",
+    district: "Delhi",
   });
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const messagesContainerRef = useRef<HTMLDivElement>(null);
@@ -102,7 +102,6 @@ export default function ChatPage() {
   }, [messages, showScrollButton]);
 
   const handleSubmit = async (query: string) => {
-    console.log("test");
     if (!query.trim() || isLoading) return;
 
     const userMessage: Message = { role: "user", content: query };

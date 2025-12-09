@@ -67,6 +67,7 @@ export default function PieChartComponent({
               `${name} (${((percent || 0) * 100).toFixed(0)}%)`
             }
             labelLine={{ stroke: "#71717a", strokeWidth: 1 }}
+            isAnimationActive={false}
           >
             {data.map((entry, index) => (
               <Cell
