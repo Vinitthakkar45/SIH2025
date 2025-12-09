@@ -2,10 +2,11 @@
 "use client";
 
 import { Accordion, AccordionItem } from "@heroui/react";
+import React from "react";
 
 interface DataAccordionItemProps {
-  title: string;
-  subtitle?: string;
+  title: string | React.ReactElement;
+  subtitle?: string | React.ReactElement;
   explanation?: string;
   defaultOpen?: boolean;
   children: React.ReactNode;
@@ -28,7 +29,6 @@ export default function DataAccordion({
     >
       <AccordionItem
         key="1"
-        aria-label={title}
         title={title}
         classNames={{
           trigger: "bg-zinc-900 cursor-pointer rounded-xl",

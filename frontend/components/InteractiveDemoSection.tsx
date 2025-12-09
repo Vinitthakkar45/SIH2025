@@ -72,7 +72,7 @@ const EXAMPLES = [
     response: (
       <>
         Rajasthan has several blocks classified as Critical based on the latest
-        assessment. Here's the category distribution:
+        assessment. Here&apos;s the category distribution:
       </>
     ),
     charts: [
