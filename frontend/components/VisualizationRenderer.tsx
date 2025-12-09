@@ -80,40 +80,42 @@ export default function VisualizationRenderer({
     // Stats/Summary Cards - Now collapsible
     if (viz.type === "stats" || viz.type === "summary") {
       return (
-        <DataAccordion
-          key={index}
-          title={viz.title}
-          subtitle={viz.description}
-          explanation={viz.explanation}
-          defaultOpen={true}
-          variant={isNested ? "light" : "shadow"}
-        >
-          <StatsChart
-            title=""
-            data={viz.data as Record<string, unknown>}
-            explanation=""
-          />
-        </DataAccordion>
+        <div key={index} data-chart-title={viz.title}>
+          <DataAccordion
+            title={viz.title}
+            subtitle={viz.description}
+            explanation={viz.explanation}
+            defaultOpen={true}
+            variant={isNested ? "light" : "shadow"}
+          >
+            <StatsChart
+              title=""
+              data={viz.data as Record<string, unknown>}
+              explanation=""
+            />
+          </DataAccordion>
+        </div>
       );
     }
 
     // Tables
     if (viz.type === "table" && viz.columns && viz.data) {
       return (
-        <DataAccordion
-          key={index}
-          title={viz.title}
-          subtitle={
-            viz.headerValue
-              ? `Total: ${viz.headerValue.toLocaleString("en-IN")} ham`
-              : viz.description
-          }
-          explanation={viz.explanation}
-          defaultOpen={true}
-          variant={isNested ? "light" : "shadow"}
-        >
-          <DataTable columns={viz.columns} data={viz.data as TableRow[]} />
-        </DataAccordion>
+        <div key={index} data-chart-title={viz.title}>
+          <DataAccordion
+            title={viz.title}
+            subtitle={
+              viz.headerValue
+                ? `Total: ${viz.headerValue.toLocaleString("en-IN")} ham`
+                : viz.description
+            }
+            explanation={viz.explanation}
+            defaultOpen={true}
+            variant={isNested ? "light" : "shadow"}
+          >
+            <DataTable columns={viz.columns} data={viz.data as TableRow[]} />
+          </DataAccordion>
+        </div>
       );
     }
 
@@ -121,39 +123,41 @@ export default function VisualizationRenderer({
     if (viz.type === "chart" && viz.data) {
       if (viz.chartType === "bar" || viz.chartType === "grouped_bar") {
         return (
-          <DataAccordion
-            key={index}
-            title={viz.title}
-            subtitle={viz.description}
-            explanation={viz.explanation}
-            defaultOpen={true}
-            variant={isNested ? "light" : "shadow"}
-          >
-            <BarChartComponent
-              title=""
-              data={viz.data as ChartDataItem[]}
-              color={viz.color}
-              colorByValue={viz.colorByValue}
-            />
-          </DataAccordion>
+          <div key={index} data-chart-title={viz.title}>
+            <DataAccordion
+              title={viz.title}
+              subtitle={viz.description}
+              explanation={viz.explanation}
+              defaultOpen={true}
+              variant={isNested ? "light" : "shadow"}
+            >
+              <BarChartComponent
+                title=""
+                data={viz.data as ChartDataItem[]}
+                color={viz.color}
+                colorByValue={viz.colorByValue}
+              />
+            </DataAccordion>
+          </div>
         );
       }
 
       if (viz.chartType === "pie") {
         return (
-          <DataAccordion
-            key={index}
-            title={viz.title}
-            subtitle={viz.description}
-            explanation={viz.explanation}
-            defaultOpen={true}
-            variant={isNested ? "light" : "shadow"}
-          >
-            <PieChartComponent
-              title=""
-              data={viz.data as { name: string; value: number }[]}
-            />
-          </DataAccordion>
+          <div key={index} data-chart-title={viz.title}>
+            <DataAccordion
+              title={viz.title}
+              subtitle={viz.description}
+              explanation={viz.explanation}
+              defaultOpen={true}
+              variant={isNested ? "light" : "shadow"}
+            >
+              <PieChartComponent
+                title=""
+                data={viz.data as { name: string; value: number }[]}
+              />
+            </DataAccordion>
+          </div>
         );
       }
 
@@ -163,20 +167,21 @@ export default function VisualizationRenderer({
         viz.chartType === "area"
       ) {
         return (
-          <DataAccordion
-            key={index}
-            title={viz.title}
-            subtitle={viz.description}
-            explanation={viz.explanation}
-            defaultOpen={true}
-            variant={isNested ? "light" : "shadow"}
-          >
-            <LineChartComponent
-              title=""
-              data={viz.data as Record<string, unknown>[]}
-              chartType={viz.chartType}
-            />
-          </DataAccordion>
+          <div key={index} data-chart-title={viz.title}>
+            <DataAccordion
+              title={viz.title}
+              subtitle={viz.description}
+              explanation={viz.explanation}
+              defaultOpen={true}
+              variant={isNested ? "light" : "shadow"}
+            >
+              <LineChartComponent
+                title=""
+                data={viz.data as Record<string, unknown>[]}
+                chartType={viz.chartType}
+              />
+            </DataAccordion>
+          </div>
         );
       }
     }

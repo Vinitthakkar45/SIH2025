@@ -1,17 +1,30 @@
 "use client";
 "use i18n";
 
-import { DropletIcon, MapsIcon, Message01Icon } from "@/components/icons";
+import {
+  DropletIcon,
+  MapsIcon,
+  Message01Icon,
+  Download04Icon,
+} from "@/components/icons";
 import { Avatar, Button } from "@heroui/react";
 import Link from "next/link";
 import LanguageSelector from "@/components/LanguageSelector";
+import { useState } from "react";
 
 interface ChatHeaderProps {
   showMap: boolean;
   onToggleMap: () => void;
+  hasMessages?: boolean;
+  onExport?: () => void;
 }
 
-export default function ChatHeader({ showMap, onToggleMap }: ChatHeaderProps) {
+export default function ChatHeader({
+  showMap,
+  onToggleMap,
+  hasMessages = false,
+  onExport,
+}: ChatHeaderProps) {
   return (
     <header className="bg-zinc-900 px-3 py-2.5">
       <div className="max-w-5xl mx-auto flex items-center justify-between">
@@ -32,6 +45,21 @@ export default function ChatHeader({ showMap, onToggleMap }: ChatHeaderProps) {
         </Link>
         <div className="flex items-center gap-2">
           <LanguageSelector />
+          {hasMessages && onExport && (
+            <Button
+              size="sm"
+              onPress={onExport}
+              color="default"
+              startContent={
+                <Download04Icon className="min-w-4" width={15} height={15} />
+              }
+              className="h-8"
+            >
+              <span className="text-xs font-medium">
+                <>Export</>
+              </span>
+            </Button>
+          )}
           <Button
             size="sm"
             onPress={onToggleMap}

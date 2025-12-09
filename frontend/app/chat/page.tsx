@@ -11,6 +11,8 @@ import ChatHeader from "./ChatHeader";
 import MapWrapper from "./MapWrapper";
 import ScrollToBottom from "./ScrollToBottom";
 import WelcomeView from "./WelcomeView";
+import html2canvas from "html2canvas-pro";
+import jsPDF from "jspdf";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001";
 
@@ -25,12 +27,14 @@ export default function ChatPage() {
   const [input, setInput] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [showScrollButton, setShowScrollButton] = useState(false);
+  const [isExporting, setIsExporting] = useState(false);
   const [userLocation, setUserLocation] = useState<LocationInfo>({
-    state: "India",
-    district: "India",
+    state: "Maharashtra",
+    district: "Mumbai",
   });
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const messagesContainerRef = useRef<HTMLDivElement>(null);
+  const exportContainerRef = useRef<HTMLDivElement>(null);
   const abortControllerRef = useRef<AbortController | null>(null);
 
   useEffect(() => {
@@ -252,12 +256,101 @@ export default function ChatPage() {
     }
   };
 
+  const handleExport = async () => {
+    if (messages.length === 0) return;
+
+    setIsExporting(true);
+
+    await new Promise((resolve) => setTimeout(resolve, 1000));
+
+    const exportContainer = exportContainerRef.current;
+    if (!exportContainer) {
+      console.error("Export container not found");
+      setIsExporting(false);
+      return;
+    }
+
+    const accordions = exportContainer.querySelectorAll(
+      '[data-slot="trigger"]'
+    );
+    console.log("Found accordions:", accordions.length);
+
+    accordions.forEach((acc) => {
+      const button = acc as HTMLElement;
+      const isExpanded = button.getAttribute("aria-expanded") === "true";
+      if (!isExpanded) {
+        button.click();
+      }
+    });
+
+    await new Promise((resolve) => setTimeout(resolve, 2000));
+
+    try {
+      const canvas = await html2canvas(exportContainer, {
+        backgroundColor: "#ffffff",
+        scale: 2,
+        logging: false,
+        useCORS: true,
+        allowTaint: true,
+      });
+
+      const pdf = new jsPDF("p", "mm", "a4");
+      const imgWidth = 210;
+      const pageHeight = 297;
+      const imgHeight = (canvas.height * imgWidth) / canvas.width;
+
+      const totalPages = Math.ceil(imgHeight / pageHeight);
+
+      for (let page = 0; page < totalPages; page++) {
+        if (page > 0) {
+          pdf.addPage();
+        }
+
+        const yPosition = -(page * pageHeight);
+
+        pdf.addImage(
+          canvas.toDataURL("image/png"),
+          "PNG",
+          0,
+          yPosition,
+          imgWidth,
+          imgHeight
+        );
+
+        pdf.setFontSize(9);
+        pdf.setTextColor(100, 100, 100);
+        pdf.text(
+          "INGRES AI - Groundwater Resource Information",
+          10,
+          pageHeight - 10
+        );
+        pdf.text(
+          `Page ${page + 1} of ${totalPages}`,
+          imgWidth - 30,
+          pageHeight - 10
+        );
+      }
+
+      const timestamp = new Date()
+        .toISOString()
+        .replace(/[:.]/g, "-")
+        .slice(0, -5);
+      pdf.save(`INGRES-AI-Chat-${timestamp}.pdf`);
+    } catch (error) {
+      console.error("Export failed:", error);
+    } finally {
+      setIsExporting(false);
+    }
+  };
+
   return (
     <div className="flex h-screen bg-dark-primary overflow-hidden">
       <div className="flex flex-col flex-1 min-w-0 relative">
         <ChatHeader
           onToggleMap={() => setShowMap(!showMap)}
           showMap={showMap}
+          hasMessages={messages.length > 0}
+          onExport={handleExport}
         />
 
         <main
@@ -300,6 +393,55 @@ export default function ChatPage() {
           />
         </div>
       </div>
+
+      {/* Hidden Export Container */}
+      {isExporting && (
+        <div
+          ref={exportContainerRef}
+          className="light"
+          style={{
+            position: "absolute",
+            left: "-10000px",
+            top: "-10000px",
+            width: "800px",
+            backgroundColor: "#ffffff",
+            padding: "40px",
+            minHeight: "100vh",
+            color: "#000000",
+          }}
+        >
+          <style
+            dangerouslySetInnerHTML={{
+              __html: `
+              [data-export="true"] * {
+                color: #000000 !important;
+                border-color: #e5e5e5 !important;
+              }
+              [data-export="true"] .text-zinc-200,
+              [data-export="true"] .text-zinc-300,
+              [data-export="true"] .text-zinc-400,
+              [data-export="true"] .text-zinc-500 {
+                color: #404040 !important;
+              }
+              [data-export="true"] .bg-zinc-800,
+              [data-export="true"] .bg-zinc-900 {
+                background-color: #f5f5f5 !important;
+              }
+              [data-export="true"] .text-primary {
+                color: #2563eb !important;
+              }
+            `,
+            }}
+          />
+          <div
+            className="space-y-6"
+            data-export="true"
+            style={{ backgroundColor: "#ffffff", color: "#000000" }}
+          >
+            <MessageList messages={messages} onSuggestionClick={() => {}} />
+          </div>
+        </div>
+      )}
 
       {/* Map Panel */}
       <div
