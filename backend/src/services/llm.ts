@@ -4,7 +4,48 @@ import logger from "../utils/logger";
 
 dotenv.config();
 
+// LLM Provider Configuration
+const LLM_PROVIDER = process.env.LLM_PROVIDER || "gemini";
+const LOCAL_LLM_URL = process.env.LOCAL_LLM_URL || "http://localhost:11434";
+
 const gemini = new GoogleGenerativeAI(process.env.GOOGLE_API_KEY || "");
+
+logger.info(`LLM Provider: ${LLM_PROVIDER}${LLM_PROVIDER === "local" ? ` (${LOCAL_LLM_URL})` : ""}`);
+
+/**
+ * Generate response using Local LLM with retry
+ */
+async function generateLocalResponse(prompt: string, retries: number = 2): Promise<string> {
+  let lastError: Error | null = null;
+
+  for (let attempt = 0; attempt <= retries; attempt++) {
+    try {
+      const response = await fetch(`${LOCAL_LLM_URL}/api/generate`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          prompt,
+          options: { num_predict: 4096, num_ctx: 8192 },
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error(`Local LLM error: ${await response.text()}`);
+      }
+
+      const data = (await response.json()) as { response?: string };
+      return data.response || "I couldn't generate a response.";
+    } catch (error) {
+      lastError = error instanceof Error ? error : new Error(String(error));
+      if (attempt < retries) {
+        logger.warn({ attempt: attempt + 1, error: lastError.message }, "Retrying local LLM...");
+        await new Promise((r) => setTimeout(r, 1000));
+      }
+    }
+  }
+
+  throw lastError;
+}
 
 // System prompt for the RAG assistant
 const SYSTEM_PROMPT = `You are INGRES AI Assistant, a groundwater data expert for India. Your role is to provide SHORT, PRECISE answers based ONLY on the provided context.
@@ -49,17 +90,21 @@ export interface StreamCallbacks {
 }
 
 /**
- * Generate a response using Gemini
+ * Generate a response using Gemini or Local LLM
  */
-export async function generateResponse(
-  query: string,
-  context: string
-): Promise<string> {
+export async function generateResponse(query: string, context: string): Promise<string> {
   const contextMessage = `Context (use ONLY this data):
 ${context}
 
 Question: ${query}`;
 
+  // Use Local LLM if configured
+  if (LLM_PROVIDER === "local") {
+    const fullPrompt = `${SYSTEM_PROMPT}\n\n${contextMessage}`;
+    return generateLocalResponse(fullPrompt);
+  }
+
+  // Default: Gemini
   const model = gemini.getGenerativeModel({ model: "gemini-2.5-flash" });
 
   const chat = model.startChat({
@@ -82,19 +127,25 @@ Question: ${query}`;
 }
 
 /**
- * Generate a streaming response using Gemini
+ * Generate a streaming response using Gemini or Local LLM
  */
-export async function generateStreamingResponse(
-  query: string,
-  context: string,
-  callbacks: StreamCallbacks
-): Promise<void> {
+export async function generateStreamingResponse(query: string, context: string, callbacks: StreamCallbacks): Promise<void> {
   const contextMessage = `Context (use ONLY this data):
 ${context}
 
 Question: ${query}`;
 
   try {
+    // Use Local LLM if configured (non-streaming fallback)
+    if (LLM_PROVIDER === "local") {
+      const fullPrompt = `${SYSTEM_PROMPT}\n\n${contextMessage}`;
+      const response = await generateLocalResponse(fullPrompt);
+      callbacks.onToken(response);
+      callbacks.onComplete(response);
+      return;
+    }
+
+    // Default: Gemini streaming
     const model = gemini.getGenerativeModel({ model: "gemini-2.5-flash" });
 
     const chat = model.startChat({
@@ -126,20 +177,14 @@ Question: ${query}`;
     callbacks.onComplete(fullResponse);
   } catch (error) {
     logger.error({ err: error }, "Streaming response failed");
-    callbacks.onError(
-      error instanceof Error ? error : new Error(String(error))
-    );
+    callbacks.onError(error instanceof Error ? error : new Error(String(error)));
   }
 }
 
 /**
  * Generate suggested follow-up questions
  */
-export async function generateSuggestions(
-  query: string,
-  context: string,
-  language: string = "en"
-): Promise<string[]> {
+export async function generateSuggestions(query: string, context: string, language: string = "en"): Promise<string[]> {
   const languageMap: Record<string, string> = {
     en: "English",
     hi: "Hindi (हिन्दी)",
@@ -151,10 +196,7 @@ export async function generateSuggestions(
     ur: "Urdu (اردو)",
   };
 
-  const languageInstruction =
-    language !== "en"
-      ? `Generate the suggestions in ${languageMap[language] || language}. `
-      : "";
+  const languageInstruction = language !== "en" ? `Generate the suggestions in ${languageMap[language] || language}. ` : "";
 
   const toolDescriptions = `Based on available capabilities, follow-up questions can be of these 5 types:
 1. SPECIFIC DATA: Ask for groundwater data of a specific location (state, district, or taluk)
@@ -172,6 +214,17 @@ IMPORTANT: Never mention tools, functions, APIs, databases, or any technical imp
 
 Generate 4-5 relevant follow-up questions the user might want to ask. Each question must fit into ONE of the 5 types above. ${languageInstruction}Return only the questions, one per line.`;
 
+  // Use Local LLM if configured
+  if (LLM_PROVIDER === "local") {
+    const response = await generateLocalResponse(prompt);
+    return response
+      .split("\n")
+      .map((q) => q.replace(/^\d+\.\s*/, "").trim())
+      .filter((q) => q.length > 0)
+      .slice(0, 3);
+  }
+
+  // Default: Gemini
   const model = gemini.getGenerativeModel({ model: "gemini-2.0-flash" });
   const result = await model.generateContent(prompt);
   const response = result.response.text() || "";
@@ -185,10 +238,7 @@ Generate 4-5 relevant follow-up questions the user might want to ask. Each quest
 /**
  * Translate text to the target language
  */
-export async function translateText(
-  text: string,
-  language: string = "en"
-): Promise<string> {
+export async function translateText(text: string, language: string = "en"): Promise<string> {
   if (language === "en") return text;
 
   const languageMap: Record<string, string> = {
@@ -208,6 +258,12 @@ export async function translateText(
 Text: ${text}`;
 
   try {
+    // Use Local LLM if configured
+    if (LLM_PROVIDER === "local") {
+      return await generateLocalResponse(prompt);
+    }
+
+    // Default: Gemini
     const model = gemini.getGenerativeModel({ model: "gemini-2.5-flash" });
     const result = await model.generateContent(prompt);
     return result.response.text()?.trim() || text;
