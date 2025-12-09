@@ -189,52 +189,6 @@ export default function VisualizationRenderer({
     return null;
   };
 
-  const renderVisualization = (viz: Visualization, index: number) => {
-    // Data container - outer collapsible that contains all visualizations
-    if (viz.type === "data_container" && viz.visualizations) {
-      return (
-        <DataAccordion
-          key={index}
-          title={viz.title}
-          subtitle={viz.subtitle}
-          explanation={viz.explanation}
-          defaultOpen={false}
-        >
-          <div className="space-y-3">
-            {viz.visualizations.map((innerViz, idx) =>
-              innerViz.type === "collapsible" ||
-              innerViz.type === "data_container"
-                ? renderVisualization(innerViz, idx)
-                : renderSingleVisualization(innerViz, idx, true)
-            )}
-          </div>
-        </DataAccordion>
-      );
-    }
-
-    // Collapsible type - nested visualizations in a collapsible block
-    if (viz.type === "collapsible" && viz.children) {
-      return (
-        <DataAccordion
-          key={index}
-          title={viz.title}
-          subtitle={viz.subtitle}
-          explanation={viz.explanation}
-          defaultOpen={viz.defaultOpen !== false}
-        >
-          <div className="space-y-3">
-            {viz.children.map((child: Visualization, idx: number) =>
-              renderSingleVisualization(child, idx, true)
-            )}
-          </div>
-        </DataAccordion>
-      );
-    }
-
-    // Fallback for non-container visualizations
-    return renderSingleVisualization(viz, index);
-  };
-
   return (
     <>
       {chartContent.length > 0 && (

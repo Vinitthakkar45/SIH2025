@@ -10,20 +10,20 @@ const nextConfig: NextConfig = {
   turbopack: {},
 };
 
-export default nextConfig;
+// export default nextConfig;
 
-// export default lingoCompiler.next({
-//   sourceRoot: "app",
-//   sourceLocale: SOURCE_LOCALE,
-//   targetLocales: [...TARGET_LOCALES],
-//   useDirective: true, // when true, use i18n in files.
-//   rsc: true,
-//   debug: true,
-//   // models: "lingo.dev",
-//   models: {
-//     "*:*": "mistral:mistral-large-latest",
-//     // "*:*": "ollama:llama3.1:8b",
-//     // "*:*": "groq:llama-3.1-8b-instant",
-//     // "*:*": "google:gemini-2.0-flash",
-//   },
-// })(nextConfig);
+export default lingoCompiler.next({
+  sourceRoot: "app",
+  sourceLocale: SOURCE_LOCALE,
+  targetLocales: [...TARGET_LOCALES],
+  useDirective: true, // when true, use i18n in files.
+  rsc: true,
+  debug: true,
+  // models: "lingo.dev",
+  models: {
+    "*:*": "mistral:mistral-large-latest",
+    // "*:*": "ollama:llama3.1:8b",
+    // "*:*": "groq:llama-3.1-8b-instant",
+    // "*:*": "google:gemini-2.0-flash",
+  },
+})(nextConfig);
