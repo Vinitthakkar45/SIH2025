@@ -1587,6 +1587,22 @@
     },
     "layout.tsx": {
       "scopes": {
+        "10/declaration/body/0/argument/1/1/1-content": {
+          "type": "attribute",
+          "hash": "1ec2f03a259b3e50ba9cbae31317a266",
+          "context": "",
+          "skip": false,
+          "overrides": {},
+          "content": "viewport-fit=cover, width=device-width, initial-scale=1.0, minimum-scale=1.0, maximum-scale=1.0, user-scalable=no"
+        },
+        "11/declaration/body/2/argument/1/1/1-content": {
+          "type": "attribute",
+          "hash": "1ec2f03a259b3e50ba9cbae31317a266",
+          "context": "",
+          "skip": false,
+          "overrides": {},
+          "content": "viewport-fit=cover, width=device-width, initial-scale=1.0, minimum-scale=1.0, maximum-scale=1.0, user-scalable=no"
+        },
         "9/declaration/body/0/argument/1/1/1-content": {
           "type": "attribute",
           "hash": "1ec2f03a259b3e50ba9cbae31317a266",
