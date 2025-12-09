@@ -4,6 +4,7 @@
 import ChatComposer from "@/components/ChatComposer";
 import { Location01Icon } from "@/components/icons";
 import MessageList, { type Message } from "@/components/MessageList";
+import ExportContainer from "@/components/ExportContainer";
 import type { Visualization } from "@/types/visualizations";
 import Cookies from "js-cookie";
 import { useEffect, useRef, useState } from "react";
@@ -11,8 +12,7 @@ import ChatHeader from "./ChatHeader";
 import MapWrapper from "./MapWrapper";
 import ScrollToBottom from "./ScrollToBottom";
 import WelcomeView from "./WelcomeView";
-import html2canvas from "html2canvas-pro";
-import jsPDF from "jspdf";
+import { exportToPDF } from "@/lib/pdfExport";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001";
 
@@ -34,7 +34,7 @@ export default function ChatPage() {
   });
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const messagesContainerRef = useRef<HTMLDivElement>(null);
-  const exportContainerRef = useRef<HTMLDivElement>(null);
+  const exportContainerRef = useRef<HTMLDivElement | null>(null);
   const abortControllerRef = useRef<AbortController | null>(null);
 
   useEffect(() => {
@@ -273,7 +273,6 @@ export default function ChatPage() {
     const accordions = exportContainer.querySelectorAll(
       '[data-slot="trigger"]'
     );
-    console.log("Found accordions:", accordions.length);
 
     accordions.forEach((acc) => {
       const button = acc as HTMLElement;
@@ -286,56 +285,7 @@ export default function ChatPage() {
     await new Promise((resolve) => setTimeout(resolve, 2000));
 
     try {
-      const canvas = await html2canvas(exportContainer, {
-        backgroundColor: "#ffffff",
-        scale: 2,
-        logging: false,
-        useCORS: true,
-        allowTaint: true,
-      });
-
-      const pdf = new jsPDF("p", "mm", "a4");
-      const imgWidth = 210;
-      const pageHeight = 297;
-      const imgHeight = (canvas.height * imgWidth) / canvas.width;
-
-      const totalPages = Math.ceil(imgHeight / pageHeight);
-
-      for (let page = 0; page < totalPages; page++) {
-        if (page > 0) {
-          pdf.addPage();
-        }
-
-        const yPosition = -(page * pageHeight);
-
-        pdf.addImage(
-          canvas.toDataURL("image/png"),
-          "PNG",
-          0,
-          yPosition,
-          imgWidth,
-          imgHeight
-        );
-
-        pdf.setFontSize(9);
-        pdf.setTextColor(100, 100, 100);
-        pdf.text(
-          "INGRES AI - Groundwater Resource Information",
-          10,
-          pageHeight - 10
-        );
-        pdf.text(
-          `Page ${page + 1} of ${totalPages}`,
-          imgWidth - 30,
-          pageHeight - 10
-        );
-      }
-
-      const timestamp = new Date()
-        .toISOString()
-        .replace(/[:.]/g, "-")
-        .slice(0, -5);
-      pdf.save(`INGRES-AI-Chat-${timestamp}.pdf`);
+      await exportToPDF({ element: exportContainer });
     } catch (error) {
       console.error("Export failed:", error);
     } finally {
@@ -351,6 +301,7 @@ export default function ChatPage() {
           showMap={showMap}
           hasMessages={messages.length > 0}
           onExport={handleExport}
+          isExporting={isExporting}
         />
 
         <main
@@ -396,51 +347,10 @@ export default function ChatPage() {
 
       {/* Hidden Export Container */}
       {isExporting && (
-        <div
-          ref={exportContainerRef}
-          className="light"
-          style={{
-            position: "absolute",
-            left: "-10000px",
-            top: "-10000px",
-            width: "800px",
-            backgroundColor: "#ffffff",
-            padding: "40px",
-            minHeight: "100vh",
-            color: "#000000",
-          }}
-        >
-          <style
-            dangerouslySetInnerHTML={{
-              __html: `
-              [data-export="true"] * {
-                color: #000000 !important;
-                border-color: #e5e5e5 !important;
-              }
-              [data-export="true"] .text-zinc-200,
-              [data-export="true"] .text-zinc-300,
-              [data-export="true"] .text-zinc-400,
-              [data-export="true"] .text-zinc-500 {
-                color: #404040 !important;
-              }
-              [data-export="true"] .bg-zinc-800,
-              [data-export="true"] .bg-zinc-900 {
-                background-color: #f5f5f5 !important;
-              }
-              [data-export="true"] .text-primary {
-                color: #2563eb !important;
-              }
-            `,
-            }}
-          />
-          <div
-            className="space-y-6"
-            data-export="true"
-            style={{ backgroundColor: "#ffffff", color: "#000000" }}
-          >
-            <MessageList messages={messages} onSuggestionClick={() => {}} />
-          </div>
-        </div>
+        <ExportContainer
+          messages={messages}
+          containerRef={exportContainerRef}
+        />
       )}
 
       {/* Map Panel */}

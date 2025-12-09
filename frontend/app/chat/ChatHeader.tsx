@@ -2,21 +2,21 @@
 "use i18n";
 
 import {
+  Download04Icon,
   DropletIcon,
   MapsIcon,
   Message01Icon,
-  Download04Icon,
 } from "@/components/icons";
+import LanguageSelector from "@/components/LanguageSelector";
 import { Avatar, Button } from "@heroui/react";
 import Link from "next/link";
-import LanguageSelector from "@/components/LanguageSelector";
-import { useState } from "react";
 
 interface ChatHeaderProps {
   showMap: boolean;
   onToggleMap: () => void;
   hasMessages?: boolean;
   onExport?: () => void;
+  isExporting?: boolean;
 }
 
 export default function ChatHeader({
@@ -24,6 +24,7 @@ export default function ChatHeader({
   onToggleMap,
   hasMessages = false,
   onExport,
+  isExporting = false,
 }: ChatHeaderProps) {
   return (
     <header className="bg-zinc-900 px-3 py-2.5">
@@ -49,14 +50,16 @@ export default function ChatHeader({
             <Button
               size="sm"
               onPress={onExport}
-              color="default"
+              isLoading={isExporting}
               startContent={
-                <Download04Icon className="min-w-4" width={15} height={15} />
+                !isExporting && (
+                  <Download04Icon className="min-w-4" width={15} height={15} />
+                )
               }
               className="h-8"
             >
               <span className="text-xs font-medium">
-                <>Export</>
+                {isExporting ? <>Exporting...</> : <>Export</>}
               </span>
             </Button>
           )}

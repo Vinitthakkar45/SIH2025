@@ -20,11 +20,13 @@ export interface Message {
 interface MessageListProps {
   messages: Message[];
   onSuggestionClick: (suggestion: string) => void;
+  showSuggestions?: boolean;
 }
 
 export default function MessageList({
   messages,
   onSuggestionClick,
+  showSuggestions = true,
 }: MessageListProps) {
   return (
     <>
@@ -74,31 +76,33 @@ export default function MessageList({
                 {message.charts && message.charts.length > 0 && (
                   <VisualizationRenderer visualizations={message.charts} />
                 )}
-                {message.suggestions && message.suggestions.length > 0 && (
-                  <motion.div
-                    initial={{ opacity: 0, y: 10 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ delay: 0.3 }}
-                    className="mb-8"
-                  >
-                    <div className="text-xs text-zinc-500 mb-4 font-semibold pl-2.5 flex items-center gap-2">
-                      <>Suggestions</>
-                      <Idea01Icon width={17} height={17} />
-                    </div>
-                    <div className="flex flex-wrap gap-2">
-                      {message.suggestions.map((suggestion, i) => (
-                        <Button
-                          key={i}
-                          onPress={() => onSuggestionClick(suggestion)}
-                          variant="flat"
-                          className="h-auto py-2 px-3 border-1 border-dashed border-zinc-600 font-light text-zinc-400 text-left justify-start whitespace-normal"
-                        >
-                          {suggestion}
-                        </Button>
-                      ))}
-                    </div>
-                  </motion.div>
-                )}
+                {showSuggestions &&
+                  message.suggestions &&
+                  message.suggestions.length > 0 && (
+                    <motion.div
+                      initial={{ opacity: 0, y: 10 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ delay: 0.3 }}
+                      className="mb-8"
+                    >
+                      <div className="text-xs text-zinc-500 mb-4 font-semibold pl-2.5 flex items-center gap-2">
+                        <>Suggestions</>
+                        <Idea01Icon width={17} height={17} />
+                      </div>
+                      <div className="flex flex-wrap gap-2">
+                        {message.suggestions.map((suggestion, i) => (
+                          <Button
+                            key={i}
+                            onPress={() => onSuggestionClick(suggestion)}
+                            variant="flat"
+                            className="h-auto py-2 px-3 border-1 border-dashed border-zinc-600 font-light text-zinc-400 text-left justify-start whitespace-normal"
+                          >
+                            {suggestion}
+                          </Button>
+                        ))}
+                      </div>
+                    </motion.div>
+                  )}
               </>
             )}
           </div>
