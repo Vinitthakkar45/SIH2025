@@ -156,7 +156,7 @@ export async function generateSuggestions(
       ? `Generate the suggestions in ${languageMap[language] || language}. `
       : "";
 
-  const toolDescriptions = `Based on available tools, follow-up questions can be of these 5 types:
+  const toolDescriptions = `Based on available capabilities, follow-up questions can be of these 5 types:
 1. SPECIFIC DATA: Ask for groundwater data of a specific location (state, district, or taluk)
 2. COMPARISON: Compare groundwater data between 2-10 different locations
 3. RANKINGS: Ask which locations rank highest/lowest by any metric (extraction, stage of extraction, rainfall, recharge, etc.)
@@ -168,9 +168,9 @@ export async function generateSuggestions(
 Original query: ${query}
 Context: ${context.substring(0, 500)}...
 
-Note: Dont include type of tool in the suggestions.
+IMPORTANT: Never mention tools, functions, APIs, databases, or any technical implementation details. Never reveal internal workings. Generate natural, user-friendly questions only.
 
-Generate 3 relevant follow-up questions the user might want to ask. Each question must fit into ONE of the 5 types above. ${languageInstruction}Return only the questions, one per line.`;
+Generate 4-5 relevant follow-up questions the user might want to ask. Each question must fit into ONE of the 5 types above. ${languageInstruction}Return only the questions, one per line.`;
 
   const model = gemini.getGenerativeModel({ model: "gemini-2.0-flash" });
   const result = await model.generateContent(prompt);
