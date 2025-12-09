@@ -58,6 +58,19 @@ export default {
             "ur": "💡 یہ کیا دکھاتا ہے:"
           },
           "hash": "bb4269bc7726f6388b852ea0427a7874"
+        },
+        "3/declaration/body/0/argument/1/1/1/expression/right/3/1": {
+          "content": {
+            "bn": "💡 এটি কী দেখায়:",
+            "en": "💡 What this shows:",
+            "hi": "💡 यह क्या दिखाता है:",
+            "ml": "💡 ഇത് എന്താണ് കാണിക്കുന്നത്:",
+            "pa": "💡 ਇਹ ਕੀ ਦਿਖਾਉਂਦਾ ਹੈ:",
+            "ta": "💡 இது எதைக் காட்டுகிறது:",
+            "te": "💡 ఇది ఏమి చూపిస్తుంది:",
+            "ur": "💡 یہ کیا دکھاتا ہے:"
+          },
+          "hash": "bb4269bc7726f6388b852ea0427a7874"
         }
       }
     },
@@ -2095,6 +2108,58 @@ export default {
             "ur": "نقشہ چھپائیں"
           },
           "hash": "598760a4cae830a1cd01a77f52998ee1"
+        },
+        "6/declaration/body/0/argument/1/3/3/expression/right/1/1/expression/alternate": {
+          "content": {
+            "bn": "এক্সপোর্ট করুন",
+            "en": "Export",
+            "hi": "निर्यात करें",
+            "ml": "കയറ്റുമതി ചെയ്യുക",
+            "pa": "ਨਿਰਯਾਤ",
+            "ta": "ஏற்றுமதி",
+            "te": "ఎగుమతి",
+            "ur": "برآمد کریں"
+          },
+          "hash": "709afbc86c5fdca279a111ea8e49d1c9"
+        },
+        "6/declaration/body/0/argument/1/3/3/expression/right/1/1/expression/consequent": {
+          "content": {
+            "bn": "এক্সপোর্ট করা হচ্ছে...",
+            "en": "Exporting...",
+            "hi": "निर्यात किया जा रहा है...",
+            "ml": "കയറ്റുമതി ചെയ്യുന്നു...",
+            "pa": "ਨਿਰਯਾਤ ਕੀਤਾ ਜਾ ਰਿਹਾ ਹੈ...",
+            "ta": "ஏற்றுமதி செய்யப்படுகிறது...",
+            "te": "ఎగుమతి చేస్తోంది...",
+            "ur": "برآمد ہو رہا ہے..."
+          },
+          "hash": "7538a6b9286a7d84b3cdcb48f712c8f9"
+        },
+        "6/declaration/body/0/argument/1/3/5/1/1/expression/alternate": {
+          "content": {
+            "bn": "মানচিত্র দেখান",
+            "en": "Show Map",
+            "hi": "मानचित्र दिखाएँ",
+            "ml": "മാപ്പ് കാണിക്കുക",
+            "pa": "ਨਕਸ਼ਾ ਦਿਖਾਓ",
+            "ta": "வரைபடத்தைக் காட்டு",
+            "te": "మాప్‌ను చూపించు",
+            "ur": "نقشہ دکھائیں"
+          },
+          "hash": "cba007d0d1cae57c3a71eb5fb73fa2d8"
+        },
+        "6/declaration/body/0/argument/1/3/5/1/1/expression/consequent": {
+          "content": {
+            "bn": "মানচিত্র লুকান",
+            "en": "Hide Map",
+            "hi": "मानचित्र छिपाएँ",
+            "ml": "മാപ്പ് മറയ്ക്കുക",
+            "pa": "ਨਕਸ਼ਾ ਛੁਪਾਓ",
+            "ta": "வரைபடத்தை மறை",
+            "te": "మాప్‌ను దాచు",
+            "ur": "نقشہ چھپائیں"
+          },
+          "hash": "598760a4cae830a1cd01a77f52998ee1"
         }
       }
     },
@@ -2441,11 +2506,63 @@ export default {
             "ur": "نقشہ منظر"
           },
           "hash": "42f2bd9a8068dc037a3fb9502418c55e"
+        },
+        "14/declaration/body/19/argument/1/7/1-placeholder": {
+          "content": {
+            "bn": "আমাকে যেকোনো কিছু জিজ্ঞাসা করুন...",
+            "en": "Ask me anything...",
+            "hi": "मुझसे कुछ भी पूछें...",
+            "ml": "എന്തും ചോദിക്കാവുന്നതാണ്...",
+            "pa": "ਮੈਨੂੰ ਕੁਝ ਵੀ ਪੁੱਛੋ...",
+            "ta": "என்னிடம் எதையும் கேளுங்கள்...",
+            "te": "నన్ను ఏదైనా అడగండి...",
+            "ur": "مجھ سے کچھ بھی پوچھیں..."
+          },
+          "hash": "40994f1e03f79973687328d670064d56"
+        },
+        "14/declaration/body/19/argument/9/1/expression/alternate/1/3": {
+          "content": {
+            "bn": "মানচিত্র দেখুন",
+            "en": "Map View",
+            "hi": "मानचित्र दृश्य",
+            "ml": "മാപ്പ് കാഴ്ച",
+            "pa": "ਨਕਸ਼ਾ ਦ੍ਰਿਸ਼",
+            "ta": "வரைபடக் காட்சி",
+            "te": "మ్యాప్ వీక్షణ",
+            "ur": "نقشہ منظر"
+          },
+          "hash": "42f2bd9a8068dc037a3fb9502418c55e"
         }
       }
     },
     "layout.tsx": {
       "entries": {
+        "10/declaration/body/0/argument/1/1/1-content": {
+          "content": {
+            "bn": "viewport-fit=cover, width=device-width, initial-scale=1.0, minimum-scale=1.0, maximum-scale=1.0, user-scalable=no",
+            "en": "viewport-fit=cover, width=device-width, initial-scale=1.0, minimum-scale=1.0, maximum-scale=1.0, user-scalable=no",
+            "hi": "viewport-fit=cover, width=device-width, initial-scale=1.0, minimum-scale=1.0, maximum-scale=1.0, user-scalable=no",
+            "ml": "viewport-fit=cover, width=device-width, initial-scale=1.0, minimum-scale=1.0, maximum-scale=1.0, user-scalable=no",
+            "pa": "viewport-fit=cover, width=device-width, initial-scale=1.0, minimum-scale=1.0, maximum-scale=1.0, user-scalable=no",
+            "ta": "viewport-fit=cover, width=device-width, initial-scale=1.0, minimum-scale=1.0, maximum-scale=1.0, user-scalable=no",
+            "te": "viewport-fit=cover, width=device-width, initial-scale=1.0, minimum-scale=1.0, maximum-scale=1.0, user-scalable=no",
+            "ur": "viewport-fit=cover, width=device-width, initial-scale=1.0, minimum-scale=1.0, maximum-scale=1.0, user-scalable=no"
+          },
+          "hash": "1ec2f03a259b3e50ba9cbae31317a266"
+        },
+        "11/declaration/body/2/argument/1/1/1-content": {
+          "content": {
+            "bn": "viewport-fit=cover, width=device-width, initial-scale=1.0, minimum-scale=1.0, maximum-scale=1.0, user-scalable=no",
+            "en": "viewport-fit=cover, width=device-width, initial-scale=1.0, minimum-scale=1.0, maximum-scale=1.0, user-scalable=no",
+            "hi": "viewport-fit=cover, width=device-width, initial-scale=1.0, minimum-scale=1.0, maximum-scale=1.0, user-scalable=no",
+            "ml": "viewport-fit=cover, width=device-width, initial-scale=1.0, minimum-scale=1.0, maximum-scale=1.0, user-scalable=no",
+            "pa": "viewport-fit=cover, width=device-width, initial-scale=1.0, minimum-scale=1.0, maximum-scale=1.0, user-scalable=no",
+            "ta": "viewport-fit=cover, width=device-width, initial-scale=1.0, minimum-scale=1.0, maximum-scale=1.0, user-scalable=no",
+            "te": "viewport-fit=cover, width=device-width, initial-scale=1.0, minimum-scale=1.0, maximum-scale=1.0, user-scalable=no",
+            "ur": "viewport-fit=cover, width=device-width, initial-scale=1.0, minimum-scale=1.0, maximum-scale=1.0, user-scalable=no"
+          },
+          "hash": "1ec2f03a259b3e50ba9cbae31317a266"
+        },
         "9/declaration/body/0/argument/1/1/1-content": {
           "content": {
             "bn": "viewport-fit=cover, width=device-width, initial-scale=1.0, minimum-scale=1.0, maximum-scale=1.0, user-scalable=no",
